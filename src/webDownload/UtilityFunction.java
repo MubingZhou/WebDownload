@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -136,6 +137,27 @@ public class UtilityFunction {
 		try {
 			int i = Integer.parseInt(str);
 		}catch(NumberFormatException nfe) {
+			isOK = false;
+		}
+		catch(Exception e) {
+			isOK = false;
+		}
+		
+		return isOK;
+	}
+	
+	/**
+	 * check if a String is a date
+	 * @param str
+	 * @return
+	 */
+	public static boolean isDate(String str, String dateFormat) {
+		boolean isOK = true;
+		
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+			sdf.parse(str);
+		}catch(ParseException pe) {
 			isOK = false;
 		}
 		catch(Exception e) {

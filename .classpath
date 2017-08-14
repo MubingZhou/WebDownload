@@ -16,5 +16,19 @@
 	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/poi-bin-3.16-20170419/poi-3.16/poi-ooxml-3.16.jar"/>
 	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/poi-bin-3.16-20170419/poi-3.16/poi-ooxml-schemas-3.16.jar"/>
 	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/poi-bin-3.16-20170419/poi-3.16/poi-scratchpad-3.16.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-core-4.4.6/lib/commons-cli-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-core-4.4.6/lib/httpcore-4.4.6.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-core-4.4.6/lib/httpcore-ab-4.4.6.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-core-4.4.6/lib/httpcore-nio-4.4.6.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/commons-codec-1.9.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/fluent-hc-4.5.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/httpclient-4.5.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/httpclient-cache-4.5.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/httpclient-win-4.5.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/httpcore-4.4.6.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/httpmime-4.5.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/jna-4.1.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/zhoumubing/eclipse-workspace/httpcomponents-client-4.5.3/lib/jna-platform-4.1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

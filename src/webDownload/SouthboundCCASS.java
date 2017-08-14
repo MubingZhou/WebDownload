@@ -31,7 +31,7 @@ public class SouthboundCCASS { // downloading southbound CCASS data
 			String startDate_sz = "2016-12-07";
 			String startDate_sh = "2014-11-19";
 			
-			ArrayList<String> dates = UtilityFunction.getWorkingDaysBetweenDates("2017-07-19", "2017-07-19", "yyyy-MM-dd");
+			ArrayList<String> dates = UtilityFunction.getWorkingDaysBetweenDates("2017-07-20", "2017-07-20", "yyyy-MM-dd");
 			
 			UtilityFunction.trustAllCertificates();
 			

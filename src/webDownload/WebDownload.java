@@ -59,7 +59,8 @@ public class WebDownload {
 		long startTime = System.currentTimeMillis();    //获取开始时间
 		System.out.println("******************** Web Download ********************");
 		try {
-			String[] dates = {"2017-07-19"};
+			String[] dates = {"2017-08-03"};
+			//String[] dates = {"2017-07-28","2017-07-31","2017-08-01","2017-08-02","2017-08-03"};
 			
 			for(int i = 0; i < dates.length; i++) {
 				String date = dates[i];
@@ -110,7 +111,7 @@ public class WebDownload {
 				
 				String stockCode = stockCodeList.get(i);
 				
-				System.out.println("======== i = " + i + ", stock code = " + stockCode + " " + date + " ==========");
+				System.out.println("======== i = " + i + "/" + String.valueOf(stockCodeList.size()) +", stock code = " + stockCode + " " + date + " ==========");
 				Boolean isDownloadOK = downloadWebpageByStock(stockCode, date);
 				
 				if(isDownloadOK){
@@ -162,6 +163,7 @@ public class WebDownload {
 			// connect to the website
 			HttpURLConnection connection = (HttpURLConnection) webb_url.openConnection();
 			connection.setRequestProperty("User-Agent", "Mozilla/31.0 (compatible; MSIE 10.0; Windows NT; DigExt)");
+			connection.setReadTimeout(30 * 1000); // timeout = 30s
 			if(HttpURLConnection.HTTP_OK != connection.getResponseCode()){ // get connection
 				isOK = false;
 				return isOK;
@@ -408,7 +410,7 @@ public class WebDownload {
 	 * @return
 	 * @throws Exception
 	 */
-	private static ArrayList<String> getCGITopHoldingStocks(String readStockPath) throws Exception{
+	public static ArrayList<String> getCGITopHoldingStocks(String readStockPath) throws Exception{
 		ArrayList<String> topNStocks = new ArrayList<String>();
 		
 		FileInputStream in = new FileInputStream(readStockPath);  
