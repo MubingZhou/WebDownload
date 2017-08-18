@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/*
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -28,12 +29,12 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
+*/
 import utils.Utils;
 import webDownload.ConstVal;
 import webDownload.UtilityFunction;
 
-//åŸºæœ¬ä¸Šè¿™ä¸ªclassæ²¡ç”¨äº†ã€‚ã€‚ã€‚
+//şıºæœ¬ä¸Šèşıä¸ªclassæ²¡ç”¨äº†ãşışı‚ãşı
 public class AnalyzeData {
 
 	private static final int topNStocks_notOwnedByCGI = 5; // stock not owned by CGI: num of stocks for each blacklist broker
@@ -134,7 +135,7 @@ public class AnalyzeData {
 			currentStockNum = i;
 			
 			// data to collect
-			String stockCode = stockOwnedByCGIList[i];  //è—©é»ç¨è·ºstockè…”æ…ç’ƒã„›è««éš…é —è¿¡ç¨ä¿´æ…æ“‚
+			String stockCode = stockOwnedByCGIList[i];  //şı©éşışı¨è·ºstockşı”æşışıƒãşıè««éşışı—è¿¡şı¨ä¿´şı…æşı
 			System.out.println("========== stock code = " + stockCode + " " + date + " ==========");
 			
 			toWriteStrList = addStockInfoLine(stockCode, date, toWriteStrList);
@@ -625,6 +626,7 @@ public class AnalyzeData {
 	 */
 	private static void writeDataIntoExcel(ArrayList<String> toWriteStrList, String date) throws Exception{
 		try {
+			/*
 			//output file 
 			FileOutputStream excelOut = new FileOutputStream(OUTPUT_FILE_PATH + "\\" + date + "\\" + OUTPUT_FILE_NAME + " " + date + ".xlsx"); 
 			
@@ -706,6 +708,7 @@ public class AnalyzeData {
 			
 			
 			wb.write(excelOut); // output excel
+			*/
 			
 		}catch(Exception e) {
 			e.printStackTrace();

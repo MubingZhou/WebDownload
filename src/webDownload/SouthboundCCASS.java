@@ -24,14 +24,15 @@ public class SouthboundCCASS { // downloading southbound CCASS data
 
 	public static void main(String[] args) {
 		try{
-			Boolean toDownloadSH = true;
+			Boolean toDownloadSH = false;
 			Boolean toDownloadSZ = true;
 			
 			// get tradings dates
 			String startDate_sz = "2016-12-07";
 			String startDate_sh = "2014-11-19";
 			
-			ArrayList<String> dates = UtilityFunction.getWorkingDaysBetweenDates("2017-07-20", "2017-07-20", "yyyy-MM-dd");
+			//ArrayList<String> dates = UtilityFunction.getWorkingDaysBetweenDates("2017-07-20", "2017-07-20", "yyyy-MM-dd");
+			ArrayList<String> dates = UtilityFunction.getWorkingDaysBetweenDates(startDate_sz, "2017-08-16", "yyyy-MM-dd");
 			
 			UtilityFunction.trustAllCertificates();
 			
@@ -61,13 +62,13 @@ public class SouthboundCCASS { // downloading southbound CCASS data
 					InputStream inputStream_sh = connection_sh.getInputStream();
 					
 					// output file path
-					String outputFilePath_sh = outputFilePath + "\\" + date + "_sh.html";
+					String outputFilePath_sh = outputFilePath + "\\sh\\" + date + ".html";
 					
 					//store html
 					UtilityFunction.storeHTML(inputStream_sh, outputFilePath_sh);
 					
 					//write to csv
-					String outputCSVPath_sh = outputFilePath + "\\" + date + "_sh.csv";
+					String outputCSVPath_sh = outputFilePath + "\\sh\\" + date + ".csv";
 					extractHTML2CSV(outputFilePath_sh, outputCSVPath_sh);
 				}
 				
@@ -82,13 +83,13 @@ public class SouthboundCCASS { // downloading southbound CCASS data
 					InputStream inputStream_sz = connection_sz.getInputStream();
 					
 					// output file path
-					String outputFilePath_sz = outputFilePath + "\\" + date + "_sz.html";
+					String outputFilePath_sz = outputFilePath + "\\sz\\" + date + ".html";
 					
 					//store html
 					UtilityFunction.storeHTML(inputStream_sz, outputFilePath_sz);
 					
 					//write to csv
-					String outputCSVPath_sz = outputFilePath + "\\" + date + "_sz.csv";
+					String outputCSVPath_sz = outputFilePath + "\\sz\\" + date + ".csv";
 					extractHTML2CSV(outputFilePath_sz, outputCSVPath_sz);
 				}
 			/////////////// pause ///////////
@@ -108,40 +109,46 @@ public class SouthboundCCASS { // downloading southbound CCASS data
 	 * @param inputFilePath
 	 * @param outputFilePath
 	 */
-	private static void extractHTML2CSV(String inputFilePath, String outputFilePath) throws Exception{
-		// write file
-		FileWriter fw2 = new FileWriter(outputFilePath);
-					
-		//read html
-		File html_read = new File(inputFilePath);
-		Document doc = (Document) Jsoup.parse(html_read, "utf-8", "");
-		
-	///////////////  get stock holdings data ////////////////////
-		Elements html_table = doc.getElementsByClass("optable");
-		//System.out.println(html_table);
-		Elements html_table_tr = html_table.get(0).select("tr");  // the 2nd table contains main info
-							
-		int counter2 = 0;
-		for(Element data_tr:html_table_tr ){
-			Elements data_td = data_tr.getElementsByTag("td");
+	private static void extractHTML2CSV(String inputFilePath, String outputFilePath) {
+		try {
+			// write file
+			FileWriter fw2 = new FileWriter(outputFilePath);
+						
+			//read html
+			File html_read = new File(inputFilePath);
+			Document doc = (Document) Jsoup.parse(html_read, "utf-8", "");
 			
-			String to_write_str = "";
-			if(counter2 == 0){
-				to_write_str = "Last Code,Issue,Holding,Value,Stake%,Date\n";
+			///////////////  get stock holdings data ////////////////////
+			Elements html_table = doc.getElementsByClass("optable");
+			//System.out.println(html_table);
+			Elements html_table_tr = html_table.get(0).select("tr");  // the 2nd table contains main info
+								
+			int counter2 = 0;
+			for(Element data_tr:html_table_tr ){
+				Elements data_td = data_tr.getElementsByTag("td");
+				
+				String to_write_str = "";
+				if(counter2 == 0){
+					to_write_str = "Last Code,Issue,Holding,Value,Stake%,Date\n";
+				}
+				else{
+					to_write_str = data_td.get(1).text().replace(",", "") + "," 
+									+ data_td.get(2).text().replace(",", "") + ","
+									+ data_td.get(3).text().replace(",", "") + ","
+									+ data_td.get(4).text().replace(",", "") + ","
+									+ data_td.get(6).text().replace(",", "") + ","
+									+ data_td.get(7).text().replace(",", "") + "\n";
+				}
+				counter2++;
+				
+				fw2.write(to_write_str);
 			}
-			else{
-				to_write_str = data_td.get(1).text().replace(",", "") + "," 
-								+ data_td.get(2).text().replace(",", "") + ","
-								+ data_td.get(3).text().replace(",", "") + ","
-								+ data_td.get(4).text().replace(",", "") + ","
-								+ data_td.get(6).text().replace(",", "") + ","
-								+ data_td.get(7).text().replace(",", "") + "\n";
-			}
-			counter2++;
-			
-			fw2.write(to_write_str);
+			fw2.close();
+		}catch(Exception e) {
+			e.printStackTrace();
+			System.out.print("Extract HTML error: input: " + inputFilePath + " output: " + outputFilePath);
 		}
-		fw2.close();
+		
 	}
 
 }

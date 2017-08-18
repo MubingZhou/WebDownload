@@ -3,6 +3,7 @@ package webDownload;
 import java.awt.Color;
 import java.io.FileOutputStream;
 
+/*
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -14,11 +15,13 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+*/
 
 public class PoiTest {
 
 	public static void main(String[] args) {
 		try {
+			/*
 			// TODO Auto-generated method stub
 			Workbook wb = new XSSFWorkbook();
 			
@@ -53,6 +56,7 @@ public class PoiTest {
 			wb.write(fo);
 			
 			fo.close();
+			*/
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
