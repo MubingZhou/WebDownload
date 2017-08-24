@@ -76,17 +76,17 @@ public class Utils {
     	
     	URL url = new URL(urlStr);    
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();    
-                //设置超时间为3秒  
+                //扢离閉奀潔峈3鏃  
         conn.setConnectTimeout(3*1000);  
-        //防止屏蔽程序抓取而返回403错误  
+        //滅砦敖最唗蚰奧殿隙403渣昫  
         conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");  
   
-        //得到输入流  
+        //腕善怀霜  
         InputStream inputStream = conn.getInputStream();    
-        //获取自己数组  
+        //鳳赻撩杅郪  
         byte[] getData = readInputStream(inputStream);      
   
-        //文件保存位置  
+        //恅璃悵湔弇离  
         File saveDir = new File(savePath);  
         if(!saveDir.exists()){  
             saveDir.mkdir();  
@@ -117,12 +117,12 @@ public class Utils {
     	
     	URL url = new URL(urlStr);    
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();    
-                //设置超时间为3秒  
+                //扢离閉奀潔峈3鏃  
         conn.setConnectTimeout(3*1000);  
-        //防止屏蔽程序抓取而返回403错误  
+        //滅砦敖最唗蚰奧殿隙403渣昫  
         conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");  
   
-        //得到输入流  
+        //腕善怀霜  
         InputStream inputStream = conn.getInputStream();  
         
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream, "utf-8");
@@ -240,13 +240,17 @@ public class Utils {
 			return data;
 		}
 		
-		public static BufferedReader readFile_returnBufferedReader(String filePath) throws Exception{
-			ArrayList<String> data = new ArrayList<String> ();
+		public static BufferedReader readFile_returnBufferedReader(String filePath) {
+			//ArrayList<String> data = new ArrayList<String> ();
+			BufferedReader bufReader = null;
 			
-			InputStream input = new FileInputStream(new File(filePath));
-			InputStreamReader inputStreamReader = new InputStreamReader(input);
-			BufferedReader bufReader = new BufferedReader(inputStreamReader);
-			
+			try{
+				InputStream input = new FileInputStream(new File(filePath));
+				InputStreamReader inputStreamReader = new InputStreamReader(input);
+				bufReader = new BufferedReader(inputStreamReader);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
 			return bufReader;
 		}
 		
@@ -282,10 +286,36 @@ public class Utils {
 			return cal;
 		}
 		
+		/**
+		 * convert Calendar to String
+		 * @param cal
+		 * @param dateFormat
+		 * @return
+		 * @throws Exception
+		 */
 		public static String date2Str(Calendar cal, String dateFormat) throws Exception{
 			SimpleDateFormat sdf =   new SimpleDateFormat(dateFormat);
 			
 			return sdf.format(cal.getTime());
+		}
+		
+		/**
+		 * Input: an ArrayList of Calendar
+		 * output: an ArrayList of String with specified date format
+		 * @param calArr
+		 * @param dateFormat
+		 * @return
+		 * @throws Exception
+		 */
+		public static ArrayList<String> date2Str(ArrayList<Calendar> calArr, String dateFormat) throws Exception{
+			ArrayList<String> toReturn = new ArrayList<String> ();
+			
+			for(int i = 0; i < calArr.size(); i++) {
+				Calendar cal = calArr.get(i);
+				toReturn.add(date2Str(cal, dateFormat));
+			}
+			
+			return toReturn;
 		}
 		
 		/**
@@ -366,9 +396,9 @@ public class Utils {
 		}
 		
 		/** 
-		* 复制单个文件 
-		* @param oldPath String 原文件路径 如：c:/fqf.txt 
-		* @param newPath String 复制后路径 如：f:/fqf.txt 
+		* 葩秶等跺恅璃 
+		* @param oldPath String 埻恅璃繚噤 ㄩc:/fqf.txt 
+		* @param newPath String 葩秶綴繚噤 ㄩf:/fqf.txt 
 		* @return boolean 
 		*/ 
 		public static boolean copyFile(String oldPath, String newPath) { 
@@ -377,13 +407,13 @@ public class Utils {
 				int bytesum = 0; 
 				int byteread = 0; 
 				File oldfile = new File(oldPath); 
-				if (oldfile.exists()) { //文件存在时 
-					InputStream inStream = new FileInputStream(oldPath); //读入原文件 
+				if (oldfile.exists()) { //恅璃湔婓奀 
+					InputStream inStream = new FileInputStream(oldPath); //黍埻恅璃 
 					FileOutputStream fs = new FileOutputStream(newPath); 
 					byte[] buffer = new byte[1444]; 
 					int length; 
 					while ( (byteread = inStream.read(buffer)) != -1) { 
-						bytesum += byteread; //字节数 文件大小 
+						bytesum += byteread; //趼誹杅 恅璃湮苤 
 						System.out.println(bytesum); 
 						fs.write(buffer, 0, byteread); 
 					} 
@@ -419,6 +449,71 @@ public class Utils {
 			}
 			
 			return s;
+		}
+		
+		/**
+		 * to format the date into specified format. This function will automatically recognize the original date format
+		 * @param date
+		 * @param toFormat
+		 * @return
+		 */
+		public static String formatDate(String date, String fromFormat, String toFormat){
+			/*
+			ArrayList<SimpleDateFormat> sdf = new ArrayList<SimpleDateFormat>();
+			sdf.add(new SimpleDateFormat("yyyyMMdd"));
+			sdf.add(new SimpleDateFormat("yyyy-MM-dd"));
+			sdf.add(new SimpleDateFormat("dd/MM/yyyy"));
+			sdf.add(new SimpleDateFormat("d/MM/yyyy"));
+			sdf.add(new SimpleDateFormat("yyyy/MM/dd"));
+			sdf.add(new SimpleDateFormat("yyyy/M/dd"));
+			
+			SimpleDateFormat sdf2 = new SimpleDateFormat(toFormat);
+			Date d = null;
+			
+			for(int i = 0; i < sdf.size(); i++){
+				boolean isRecognized = true;
+				
+				try{
+					d = sdf.get(i).parse(date);
+					System.out.println("pase");
+				}catch(Exception e){
+					isRecognized = false;
+				}
+				
+				if(isRecognized){
+					break;
+				}
+			}
+			
+			String toReturn = sdf2.format(d);
+			return toReturn;*/
+			
+			SimpleDateFormat sdf1 = new SimpleDateFormat(fromFormat);
+			SimpleDateFormat sdf2 = new SimpleDateFormat(toFormat);
+			
+			try{
+				return sdf2.format(sdf1.parse(date));
+			}catch(Exception e){
+				return null;
+			}
+			
+		}
+		
+		/**
+		 * to return Bloomberg formula. Compatible with .csv file.
+		 * to use the formula in csv file, you have to manually add " to the front and end of the formula
+		 * e.g. this function may return BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")
+		 * but to show is correctly in csv file, you have to use "=BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")" 
+		 * @param stock e.g. 1 HK Equity
+		 * @param field, e.g. PX_LAST
+		 * @param startDate e.g. 20170801
+		 * @param endDate e.g.20170819
+		 * @return
+		 */
+		public static String BBG_BDH_Formula(String stock, String field, String startDate, String endDate){
+			return "BDH(" + "\"\"" + stock + "\"\"" 
+					+ ",\"\"" + field + "\"\"," + "\"\"" + startDate + "\"\"" + "," + "\"\"" + endDate + "\"\"" 
+					+ ")";  //e.g. =BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")
 		}
 	  
 }
