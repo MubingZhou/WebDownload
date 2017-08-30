@@ -16,6 +16,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -34,6 +36,9 @@ public class Utils {
 	
 	// csv file storing all trading date
 	public static final String TRADING_DATE_FILE_PATH = "D:\\stock data\\all trading date.csv";
+	
+	public static final String SH_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SSE Southbound Stocks.csv";
+	public static final String SZ_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SZSE Southbound Stocks.csv";
 	
 	/**
 	 * Using HttpConnection to link url with "https://"
@@ -514,6 +519,216 @@ public class Utils {
 			return "BDH(" + "\"\"" + stock + "\"\"" 
 					+ ",\"\"" + field + "\"\"," + "\"\"" + startDate + "\"\"" + "," + "\"\"" + endDate + "\"\"" 
 					+ ")";  //e.g. =BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")
+		}
+		
+		/**
+		 * to get the southbound stock list for some specified date
+		 * @param date
+		 * @param dateFormat
+		 * @param isSH
+		 * @param isSZ
+		 * @return
+		 */
+		public static ArrayList<String> getSouthboundStocks(String date, String dateFormat, boolean isSH, boolean isSZ){
+			ArrayList<String> allStockList = new ArrayList<String>();
+			try {
+				ArrayList<String> shStockList = getSouthboundStocks_support(SH_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+				ArrayList<String> szStockList = getSouthboundStocks_support(SZ_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+				allStockList = shStockList;
+				for(int i = 0; i < szStockList.size(); i++) {
+					if(allStockList.indexOf(szStockList.get(i)) == -1) {
+						allStockList.add(szStockList.get(i));
+					}
+				}
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+			
+			return allStockList;
+		}
+		private static ArrayList<String> getSouthboundStocks_support(String filePath, String date, String dateFormat) throws Exception{
+			ArrayList<String> stockList = new ArrayList<String>();
+			String special = "2969";  // it seems that this code always represents a temporary code, so if it appears in the list, it should be mapped back to its original code
+			
+			// allData is in the following form:
+			// stock code1, direction, date
+			// stock code2, direction, date ...
+			ArrayList<ArrayList<Object>> allData = new ArrayList<ArrayList<Object>>();
+			
+			// read data
+			BufferedReader bf = readFile_returnBufferedReader(filePath);
+			String line = "";
+			int counter = 0;
+			while((line = bf.readLine())!= null) {
+				if(counter == 0) {
+					counter ++; // skip the first line
+					continue;
+				}
+				
+				String[] thisLineArr = line.split(",");
+				String stockCode = thisLineArr[0];
+				String direction = thisLineArr[3];
+				String thisDate = thisLineArr[4];
+				Calendar cal = Calendar.getInstance();
+				cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(thisDate));
+				
+				ArrayList<Object> dataLine = new ArrayList<Object> ();
+				dataLine.add(stockCode);
+				dataLine.add(direction);
+				dataLine.add(cal);
+				
+				allData.add(dataLine);
+			}
+			
+			// sort data with date descending, latest date in the front
+			Comparator cp = new Comparator() {
+				public int compare(Object o0, Object o1) {
+					
+					ArrayList<Object> arg0 = (ArrayList<Object>) o0;
+					ArrayList<Object> arg1 = (ArrayList<Object>) o1;
+					int cp = 0;
+					
+					Calendar c0 = (Calendar) arg0.get(2);
+					Calendar c1 = (Calendar) arg1.get(2);
+					
+					if(c0.before(c1)) {
+						cp = -1;
+						if(c0.after(c1)) {
+							cp = 1;
+						}else {
+							cp = 0;
+						}
+							
+					}
+					return cp;
+				}
+				
+			};
+			Collections.sort(allData, cp);
+			
+			// display [temp]
+			if(false)
+			for(int i = 0; i < 20; i++) {
+				ArrayList<Object> thisLine = allData.get(i);
+				Calendar c = (Calendar) thisLine.get(2);
+				String stockCode = (String) thisLine.get(0);
+				String dir = (String) thisLine.get(1);
+				
+				System.out.println(stockCode + " " + dir + " " + new SimpleDateFormat("yyyyMMdd").format(c.getTime())); 
+			}
+			
+			//get the stock list
+			Calendar benchDate = Calendar.getInstance();
+			benchDate.setTime(new SimpleDateFormat(dateFormat).parse(date));
+			for(int i = allData.size()-1; i > -1; i--) {
+				ArrayList<Object> thisLine = allData.get(i);
+				
+				Calendar c = (Calendar) thisLine.get(2);
+				String stockCode = (String) thisLine.get(0);
+				String dir = (String) thisLine.get(1);
+				
+				if(!c.after(benchDate)) {
+					if(dir.equals("1")) {
+						int ind = stockList.indexOf(stockCode);
+						if(ind == -1)
+							stockList.add(stockCode);
+					}else if(dir.equals("-1")) {
+						int ind = stockList.indexOf(stockCode);
+						if(ind != -1)
+							stockList.remove(ind);
+					}else {
+						System.out.println("[Get Southbound Data] direction not correct! " + stockCode + benchDate.getTime());
+					}
+				}else
+					break;
+			}
+			
+			// print out [temp]
+			if(false) {
+				FileWriter fw = new FileWriter("D:\\test.csv");
+				for(int i = 0; i < stockList.size(); i++) {
+					fw.write(stockList.get(i) + "\n");
+				}
+				fw.close();
+			}
+			
+			
+			return stockList;
+		}
+		
+		/**
+		 * get all trading date and sort them ascendingly, i.e. older dates in the front
+		 * @param filePath
+		 * @return
+		 */
+		public static ArrayList<Calendar> getAllTradingDate(String filePath){
+			ArrayList<Calendar> allTradingDate = new ArrayList<Calendar>();
+			
+			try {
+				BufferedReader bf  = utils.Utils.readFile_returnBufferedReader(filePath);
+				String line = bf.readLine();
+				String[] lineArr = line.split(",");
+				
+				String dateFormat = "dd/MM/yyyy";
+				SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+				
+				for(int i = 0; i < lineArr.length; i++) {
+					Calendar cal = Calendar.getInstance();
+					cal.setTime(sdf.parse(lineArr[i]));
+					allTradingDate.add(cal);
+				}
+				
+				// sorting - ascending, i.e. older date at the front
+				Collections.sort(allTradingDate);
+			}catch(Exception e) {
+				System.out.println("getting all trading date failed!");
+			}
+			
+			
+			return allTradingDate;
+		}
+		
+		/**
+		 * Get the most recent date before thisCal, for example, if thisCal = 20170801, calArr = {20170701,20170820,20170920}
+		 * this function will return 20170701
+		 * if thisCal is before every date of calArr, it returns null
+		 * @param thisCal
+		 * @param calArr
+		 * @return
+		 * @throws Exception
+		 */
+		public static Calendar getMostRecentDate(Calendar thisCal, ArrayList<Calendar> calArr) throws Exception{
+			Collections.sort(calArr); // ascending
+			
+			if(calArr== null || calArr.size() == 0) {
+				return null;
+			}
+			if(calArr.size() == 1) {
+				if(thisCal.before(calArr.get(0)))
+					return null;
+				else
+					return calArr.get(0);
+			}
+			
+			boolean isFound = false;
+			for(int i = calArr.size() - 2; i > -1 ; i--) {
+				Calendar nextTradingDate = calArr.get(i+1);
+				Calendar thisTradingDate = calArr.get(i);
+				
+				if(i == calArr.size() - 2) {
+					if(thisCal.after(nextTradingDate) || thisCal.equals(nextTradingDate))
+						return nextTradingDate;
+				}
+				if(!thisCal.before(thisTradingDate) && thisCal.before(nextTradingDate)) {
+					thisCal = thisTradingDate;
+				}
+				if(i == 0) {  // thisCal is before every date of calArr
+					if(thisCal.before(thisTradingDate))
+						return null;
+				}
+			}
+			
+			return thisCal;
 		}
 	  
 }

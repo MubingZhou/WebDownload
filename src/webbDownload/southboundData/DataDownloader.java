@@ -1,4 +1,4 @@
-package southboundData;
+package webbDownload.southboundData;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -27,15 +27,15 @@ public class DataDownloader { // downloading southbound CCASS data
 	
 	public static void dataDownloader() {
 		try{
-			Boolean toDownloadSH = false;
+			Boolean toDownloadSH = true;
 			Boolean toDownloadSZ = true;
 			
 			// get tradings dates
 			String startDate_sz = "2016-12-07";
 			String startDate_sh = "2014-11-19";
 			
-			//ArrayList<String> dates = UtilityFunction.getWorkingDaysBetweenDates("2017-07-20", "2017-07-20", "yyyy-MM-dd");
-			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate_sz, "2017-08-16", "yyyy-MM-dd");
+			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates("2017-08-17", "2017-08-18", "yyyy-MM-dd");
+			//ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate_sz, "2017-08-25", "yyyy-MM-dd");
 			
 			utils.Utils.trustAllCertificates();
 			
@@ -72,7 +72,7 @@ public class DataDownloader { // downloading southbound CCASS data
 					
 					//write to csv
 					String outputCSVPath_sh = outputFilePath + "\\sh\\" + date + ".csv";
-					convertHTML2CSV(outputFilePath_sh, outputCSVPath_sh);
+					convertHTML2CSV_WebbCCASS(outputFilePath_sh, outputCSVPath_sh);
 				}
 				
 			////////// downloading SZ data //////////////
@@ -93,7 +93,7 @@ public class DataDownloader { // downloading southbound CCASS data
 					
 					//write to csv
 					String outputCSVPath_sz = outputFilePath + "\\sz\\" + date + ".csv";
-					convertHTML2CSV(outputFilePath_sz, outputCSVPath_sz);
+					convertHTML2CSV_WebbCCASS(outputFilePath_sz, outputCSVPath_sz);
 				}
 			/////////////// pause ///////////
 				Thread.sleep((long) (Math.random() * 3 + 2) * 1000);
@@ -112,7 +112,7 @@ public class DataDownloader { // downloading southbound CCASS data
 	 * @param inputFilePath
 	 * @param outputFilePath
 	 */
-	private static void convertHTML2CSV(String inputFilePath, String outputFilePath) {
+	private static void convertHTML2CSV_WebbCCASS(String inputFilePath, String outputFilePath) {
 		try {
 			// write file
 			FileWriter fw2 = new FileWriter(outputFilePath);

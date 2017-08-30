@@ -21,7 +21,7 @@ public class Main {
 		System.out.println("******************** Web Download From HKEX ********************");
 		try {
 			//String[] dates = {"2017-08-04"};
-			String[] dates = {"2017-08-02","2017-08-03","2017-08-04","2017-08-07","2017-08-08","2017-08-09","2017-08-10"};
+			String[] dates = {"2017-08-24","2017-08-25"};
 			//String[] dates = {"2017-07-03"};
 			
 			for(int i = 0; i < dates.length; i++) {
@@ -95,7 +95,7 @@ public class Main {
 				
 				long endTime_i = System.currentTimeMillis();    //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 				double runningTime = ((double) endTime_i - startTime_i) / 1000; // s
-				//System.out.println("======== running time"  + runningTime + "s ==========");    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+				//System.out.println("======== running time"  + runningTime + "s ==========");    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿þý
 				
 			} // end of "for"
 			

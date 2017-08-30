@@ -1,6 +1,8 @@
-package southboundData;
+package webbDownload.southboundData;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class DataGetter extends myAbstract.DataFetch{
 
@@ -41,6 +43,10 @@ public static String SOUTHBOUND_DATAPATH = "D:\\stock data\\HK CCASS - WEBB SITE
 		int ind = 0;
 		
 		return dataFetch(filePath, stockCode, ind, separator, errMsgHead);
+	}
+	
+	public static ArrayList<String> getStockData(String stockCode, Calendar cal) throws Exception{
+		return getStockData(stockCode, new SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()), "yyyy-MM-dd");
 	}
 	
 	public enum SOUTHBOUND_FIELD{

@@ -157,7 +157,7 @@ public class SI_CompareWithSouthBound {
 						}
 					}
 				// ======= southbound =========
-					ArrayList<String> southboundLine = southboundData.DataGetter.getStockData(stock, thisDateStr, "yyyyMMdd");
+					ArrayList<String> southboundLine = webbDownload.southboundData.DataGetter.getStockData(stock, thisDateStr, "yyyyMMdd");
 					if(southboundLine == null || southboundLine.size() == 0) {
 						southboundHolding = southboundHolding + ","; //if no south bound data, then skip this date
 						southboundStake = southboundStake + ",";
@@ -168,7 +168,7 @@ public class SI_CompareWithSouthBound {
 						southboundHolding = southboundHolding + "," + thisSB;
 						southboundStake = southboundStake+ "," + "\"" + "=IFERROR(" + thisSB + "/" + freeFloatShareCol + rowNum + ",\"\"\"\")\""; // e.g. "=10000/B2"
 						
-						ArrayList<String> lastWkSouthboundLine = southboundData.DataGetter.getStockData(stock, lastWkStr, "yyyyMMdd");
+						ArrayList<String> lastWkSouthboundLine = webbDownload.southboundData.DataGetter.getStockData(stock, lastWkStr, "yyyyMMdd");
 						if(lastWkSouthboundLine == null || lastWkSouthboundLine.size() == 0) {
 							southboundChange = southboundChange  + ",";
 						}else {
@@ -183,7 +183,7 @@ public class SI_CompareWithSouthBound {
 				//SI_SB_up = "\"=IFERROR(IF(AND(F" + rowNum + ">0,H" + rowNum + ">0),1,\"\"\"\"),\"\"\"\")\"";  // if col for SI & SB change, there will also be changes here
 				
 				// ======= short interest over trading volume =========
-				int thisDateCalInd = allTrdDate.indexOf(thisDateCal);
+			//	int thisDateCalInd = allTrdDate.indexOf(thisDateCal);
 				String T_5 = "";
 				String T_1 = "";
 				String T_2 = "";

@@ -20,7 +20,7 @@ public class DataFetch {
 	 * @param errMsgHead
 	 * @return
 	 */
-	public static ArrayList<String> dataFetch(String filePath, String identifier, int indPlace, String separator, String errMsgHead	) {
+	protected static ArrayList<String> dataFetch(String filePath, String identifier, int indPlace, String separator, String errMsgHead	) {
 		ArrayList<String> dataLine = new ArrayList<String> ();
 		
 		try{
