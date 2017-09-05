@@ -1,4 +1,4 @@
-package backtesting;
+package backtesting.backtesting;
 
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
@@ -36,10 +36,12 @@ public class Backtesting {
 			// ======== backtesting =====
 			portfolio.cashRemained = initialFunding;
 			portfolio.tradingCost = tradingCost;
-			int rotationalInd = 0;
+			int rotationalInd = 0; // trace the rotational date
 			for(int i = 0; i < allTradingDate.size(); i++) {
 				Calendar thisCal = allTradingDate.get(i);
 				String thisDateStr = new SimpleDateFormat("yyyyMMdd").format(thisCal.getTime());
+				if(thisDateStr.equals("20160801"))
+					System.out.println("~~~ get date 20160801");
 				
 				Calendar rotationalCal = Calendar.getInstance();
 				if(rotationalInd < dateArr.size())

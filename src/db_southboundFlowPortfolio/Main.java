@@ -13,8 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import backtesting.Backtesting;
-import backtesting.Portfolio;
+import backtesting.backtesting.Backtesting;
+import backtesting.backtesting.Portfolio;
+import backtesting.backtesting.PortfolioOneDaySnapshot;
+import utils.XMLUtil;
 
 public class Main {
 
@@ -28,7 +30,7 @@ public class Main {
 			String[] stockList = {};
 			for(int i = 0; i< stockList.length; i++) {
 				System.out.println("Stock = " + stockList[i]);
-				//webDownload.GetPrice.getHistoricalData(stockList[i], stockList[i]+".csv", "D:\\stock data\\stock hist data - webb\\");
+				webDownload.GetPrice.getHistoricalData(stockList[i], stockList[i]+".csv", "D:\\stock data\\stock hist data - webb\\");
 				webbDownload.outstanding.DataDownloader.dataDownloader(stockList[i]);
 			}
 			
@@ -64,6 +66,9 @@ public class Main {
 					System.out.println(s.stockCode + " " + String.valueOf(s.SB_over_vol));
 				}
 			*/
+			
+			//Thread.sleep(1000 * 10000 *10000); // wait infinitely....
+			
 			String dateFormat = "yyyyMMdd";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 			
@@ -75,8 +80,18 @@ public class Main {
 			PortfolioScreening.outputPath = mvFilePath;
 			
 			ArrayList<String> rebalDateArr = new ArrayList<String>();
+			/*
+			rebalDateArr .add("20160704");
+			rebalDateArr .add("20160801");
+			rebalDateArr .add("20160901");
+			rebalDateArr .add("20161003");
+			rebalDateArr .add("20161101");
+			rebalDateArr .add("20161201");
+			rebalDateArr .add("20170104");
+			rebalDateArr .add("20170206");
+			rebalDateArr .add("20170301");
 			rebalDateArr .add("20170403");
-			rebalDateArr .add("20170510");
+			rebalDateArr .add("20170510");*/
 			rebalDateArr .add("20170615");
 			rebalDateArr .add("20170717");
 			rebalDateArr .add("20170821");
@@ -91,14 +106,15 @@ public class Main {
 			dateArr.addAll(rebalDateArr);
 			
 			Backtesting bt = new Backtesting();
-			bt.startDate = "20170331";
+			//bt.startDate = "20160630";
+			bt.startDate = rebalDateArr.get(0);
 			bt.endDate = "20170824";
-			bt.tradingCost = 0.001;
+			bt.tradingCost = 0.000;
 			
 			bt.rotationalTrading(dateArr, "yyyyMMdd", data);
 			
 			Portfolio pf = bt.portfolio;
-			Map<Calendar, ArrayList<Object>> histSnap = pf.histSnap;
+			Map<Calendar, PortfolioOneDaySnapshot> histSnap = pf.histSnap;
 			Set<Calendar> keys = histSnap.keySet();
 			List<Calendar> keysArr = new ArrayList<Calendar>(keys);
 			Collections.sort(keysArr);
@@ -108,11 +124,11 @@ public class Main {
 			FileWriter fw2 = new FileWriter(mvFilePath + "\\market value.csv");
 			for(Calendar date : keysArr) {
 				String dateStr = sdf.format(date.getTime());
-				ArrayList<Object> snapData = histSnap.get(date);
+				PortfolioOneDaySnapshot snapData = histSnap.get(date);
 				
-				Double marketValue = (Double) snapData.get(0);
-				Double cash = (Double) snapData.get(1);
-				Map<String, Double> stockHeld = (Map<String, Double>) snapData.get(2);
+				Double marketValue = snapData.marketValue;
+				Double cash = snapData.cashRemained;
+				Map<String, Double> stockHeld = snapData.stockHeld;
 				
 				//System.out.println("======== " + dateStr + " =============");
 				fw.write("======== " + dateStr + " =============\n");
@@ -138,6 +154,9 @@ public class Main {
 			}
 			fw.close();
 			fw2.close();
+			
+			// save the portfolio
+			XMLUtil.convertToXml(pf, portFilePath + "\\portfolio.xml");
 			
 			
 		} catch (Exception e) {

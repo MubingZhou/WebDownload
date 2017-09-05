@@ -48,6 +48,9 @@ public class StockSingleDate {
 	public Double dummy3 = 0.0;
 	public Double dummy4 = 0.0;
 	
+	public Double db_SB_over_ff = 0.0;
+	public Double db_SB_over_turnover = 0.0;
+	
 	public StockSingleDate(String stockCode, String date, String dateFormat) {
 		this.stockCode = stockCode;
 		try {
@@ -71,7 +74,7 @@ public class StockSingleDate {
 	// sort ascendingly
 	public static java.util.Comparator<StockSingleDate> getComparator(int dir) {
 		// dir = 1 - sort ascendingly
-		// dir = 2 - sort descendingly
+		// dir = -1 - sort descendingly
 		return new  java.util.Comparator<StockSingleDate>() {
 			public int compare(StockSingleDate arg0, StockSingleDate arg1) {
 				return dir*arg0.sorting_indicator.compareTo(arg1.sorting_indicator);

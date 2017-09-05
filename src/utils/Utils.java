@@ -730,5 +730,19 @@ public class Utils {
 			
 			return thisCal;
 		}
+		
+		/**
+		 * Add "\" to the end of a string if it is not ended with "\"
+		 * e.g String s = "D:\\test" will become "D:\\test\\"
+		 * @param s
+		 * @return
+		 */
+		public static String checkPath(String s) {
+			if(!s.substring(s.length() - 1).equals("\\")) {
+				return (s + "\\");
+			}else
+				return s;
+			
+		}
 	  
 }

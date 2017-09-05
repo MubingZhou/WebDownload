@@ -78,7 +78,8 @@ public class PortfolioScreening {
 				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockPrice.DataGetter.STOCK_DATA_PATH + stockCode + ".csv");
 				String dataLine = "";
 				int rowC = 0;
-				int stockCount = 0;
+				int dayCount = 0;
+				int numDays = 60;
 				while((dataLine = bf.readLine()) != null) {
 					if(rowC > 0) {
 						ArrayList<String> dataLineArr = new ArrayList<String>(Arrays.asList(dataLine.split(",")));
@@ -86,7 +87,7 @@ public class PortfolioScreening {
 						Calendar thisDate = utils.Utils.dateStr2Cal(thisDateStr, "yyyy-MM-dd");
 						if(!thisDate.before(oneMonthBefore) && !thisDate.after(benchCal)) {
 							// if thisDate is between benchCal & oneMonthBefore
-							if(stockCount < 60) {
+							if(dayCount < numDays) {
 								String volStr = dataLineArr.get(8);
 								String turnoverStr = dataLineArr.get(9);
 								
@@ -109,7 +110,7 @@ public class PortfolioScreening {
 							}else
 								break;
 							
-							stockCount++;
+							dayCount++;
 						}
 					}
 					rowC++;
@@ -127,13 +128,27 @@ public class PortfolioScreening {
 				//Thread.sleep(1000 * 10000000);
 				
 				// ========== get outstanding shares / value ==========
-				//String todayOsSharesStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
-				//		webbDownload.outstanding.DataGetter.OutstandingDataField.OUTSTANDING_SHARES, date, dateFormat);
+				String todayOsSharesStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
+						webbDownload.outstanding.DataGetter.OutstandingDataField.OUTSTANDING_SHARES, date, dateFormat);
 				String todayOsValueStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
 						webbDownload.outstanding.DataGetter.OutstandingDataField.MKT_CAP, date, dateFormat);
 				//if(stockCode.equals("680"))
 				//	System.out.println("680 today os shares" + todayOsSharesStr);
 				//Double todayOsShares = 0.0;
+				if(todayOsSharesStr  != null && !todayOsSharesStr.equals("")) {
+					try {
+						stock.osShares_today = Double.parseDouble(todayOsSharesStr);
+					}catch(Exception e) {
+						
+					}
+					
+					try {
+						stock.osShares_freefloat_today = stock.osShares_today * Double.parseDouble(ffPctMap.get(stockCode));
+					}catch(Exception e) {
+						stock.osShares_freefloat_today = stock.osShares_today * 1;
+					}
+				}
+				
 				if(todayOsValueStr  != null && !todayOsValueStr.equals("")) {
 					try {
 						stock.osValue_today = Double.parseDouble(todayOsValueStr);
@@ -144,20 +159,36 @@ public class PortfolioScreening {
 					try {
 						stock.osValue_freefloat_today = stock.osValue_today * Double.parseDouble(ffPctMap.get(stockCode));
 					}catch(Exception e) {
-						stock.osValue_freefloat_today = stock.osValue_today * 1;
+						stock.osValue_freefloat_today = stock.osValue_today * 1.0;
 					}
 				}
 				
-				//String oneMonthBefore_osShareStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
-				//		webbDownload.outstanding.DataGetter.OutstandingDataField.OUTSTANDING_SHARES, new SimpleDateFormat(dateFormat).format(oneMonthBefore.getTime()), dateFormat);
+				String oneMonthBefore_osShareStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
+						webbDownload.outstanding.DataGetter.OutstandingDataField.OUTSTANDING_SHARES, new SimpleDateFormat(dateFormat).format(oneMonthBefore.getTime()), dateFormat);
 				String oneMonthBefore_osValueStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
 						webbDownload.outstanding.DataGetter.OutstandingDataField.MKT_CAP, new SimpleDateFormat(dateFormat).format(oneMonthBefore.getTime()), dateFormat);
-				if(oneMonthBefore_osValueStr != null && !oneMonthBefore_osValueStr.equals("")) {
+				if(oneMonthBefore_osShareStr != null && !oneMonthBefore_osShareStr.equals("")) {
 					try {
-						stock.osValue_1MBefore = Double.parseDouble(oneMonthBefore_osValueStr);
-						stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
+						stock.osShares_1MBefore = Double.parseDouble(oneMonthBefore_osShareStr); 
 					}catch(Exception e) {
 						
+					}
+					try {
+						stock.osShares_freefloat_1MBefore = stock.osShares_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
+					}catch(Exception e) {
+						stock.osShares_freefloat_1MBefore = stock.osShares_1MBefore * 1.0;
+					}
+				}
+				if(oneMonthBefore_osValueStr != null && !oneMonthBefore_osValueStr.equals("")) {
+					try {
+						stock.osValue_1MBefore = Double.parseDouble(oneMonthBefore_osValueStr); 
+					}catch(Exception e) {
+						
+					}
+					try {
+						stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
+					}catch(Exception e) {
+						stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * 1.0;
 					}
 				}
 				
@@ -167,14 +198,26 @@ public class PortfolioScreening {
 					stock.SB_over_turnover = (stock.SB_today_holdingValue - stock.SB_1MBefore_holdingValue) / stock.Turnover_3M_avg;
 				else
 					stock.SB_over_turnover = 0.0;
-				
-				// southbound flow change vs. total outstanding shares
-				/*
-				if(!stock.osShares_today.equals(0.0) && !stock.osShares_1MBefore.equals(0.0))
-					stock.SB_over_os_shares = stock.SB_today_holding/stock.osShares_today - stock.SB_1MBefore_holding/stock.osShares_1MBefore;
+				if(!stock.Vol_3M_avg.equals(0.0))
+					stock.SB_over_vol = (stock.SB_today_holding - stock.SB_1MBefore_holding) / stock.Vol_3M_avg;
 				else
-					stock.SB_over_os_shares = 0.0;
-				*/
+					stock.SB_over_vol = 0.0;
+				
+				// southbound change (in shares)
+				int totalOrFreeFloat = 0;
+				if(totalOrFreeFloat == 1) {
+					// southbound flow change vs. total outstanding shares
+					if(!stock.osShares_today.equals(0.0) && !stock.osShares_1MBefore.equals(0.0))
+						stock.SB_over_os_shares = stock.SB_today_holding/stock.osShares_today - stock.SB_1MBefore_holding/stock.osShares_1MBefore;
+					else
+						stock.SB_over_os_shares = 0.0;
+				}else {
+					// southbound flow change vs. free float shares
+					if(!stock.osShares_freefloat_today.equals(0.0) && !stock.osShares_freefloat_1MBefore.equals(0.0))
+						stock.SB_over_os_shares = stock.SB_today_holding/stock.osShares_freefloat_today - stock.SB_1MBefore_holding/stock.osShares_freefloat_1MBefore;
+					else
+						stock.SB_over_os_shares = 0.0;
+				}
 				
 				// southbound flow change vs. free float value
 				if(!stock.osValue_freefloat_today.equals(0.0) && !stock.osValue_freefloat_1MBefore.equals(0.0))
@@ -182,9 +225,17 @@ public class PortfolioScreening {
 				else
 					stock.SB_over_os_value_freefloat = 0.0;
 				
+				// DB's method to define Southbound over Freefloat
+				if(!stock.osValue_freefloat_today.equals(0.0))
+					stock.db_SB_over_ff = (stock.SB_today_holdingValue - stock.SB_1MBefore_holdingValue) / stock.osValue_freefloat_today;
+				// DB's method to define Southbound over turnover
+				if(!stock.Turnover_3M_avg.equals(0.0))
+					stock.db_SB_over_turnover = (stock.SB_today_holdingValue - stock.SB_1MBefore_holdingValue) / 20 / stock.Turnover_3M_avg;
+				
 				// ========== calculate the indicator ==========
 				//stock.sorting_indicator = stock.SB_over_os_shares;
-				stock.sorting_indicator = stock.SB_over_os_value_freefloat;
+				//stock.sorting_indicator = stock.SB_over_os_value_freefloat;
+				stock.sorting_indicator  = stock.db_SB_over_ff; // DB's method
 				//stock.sorting_indicator = Math.random();
 					
 				// ========== add to the list ===========
@@ -197,7 +248,9 @@ public class PortfolioScreening {
 				for(int i = 0; i < stockList.size(); i++) {
 					StockSingleDate stock = stockList.get(i);
 					stock.dummy1 = (double) i;
-					stock.sorting_indicator = stock.SB_over_turnover;
+					//stock.sorting_indicator = stock.SB_over_vol;
+					//stock.sorting_indicator = stock.SB_over_turnover;
+					stock.sorting_indicator = stock.db_SB_over_turnover; // DB's method
 				}
 				Collections.sort(stockList, StockSingleDate.getComparator(1));  
 				for(int i = 0; i < stockList.size(); i++) {
@@ -247,31 +300,86 @@ public class PortfolioScreening {
 				//fw.write("stock,1M avg vol,rank1,SB today holding,SB 1M before holding,os share today,os shares 1M before,SB today/os today,SB 1M/os 1M,diff,rank2,rank1+2\n");
 				fw.write("stock,mkt cap (US mm),3M ADV (US mm),Score,"
 						+ "H-share discount,SB Holding (US mm),SB Holding to FF,"
-						+ "1M Change to SB holding,1M Change in SB holding/FF,1m SB Flow to Turnover,"
+						+ "1M Change in SB holding (US mm),1M Change in SB holding/FF,1m SB Flow to Turnover,"
 						+ "suspend,turnover > 7.5m US?\n");
+				
+				FileWriter fw2 = new FileWriter(outputPath + "\\screening " + date + " shares.csv");
+				fw2.write("stock,SB today (shares),SB 1M Before (shares),change,"
+						+ "3M ADV (shares),"
+						+ "FF today (shares),FF 1M Before (shares),"
+						+ "SB today / FF, SB 1M Before / FF,change,"
+						+ "SB change / 3M ADV,rank,"
+						+ "SB change / FF,rank,"
+						+ "suspend,turnover > 7.5m US,"
+						+ "\n");
+				FileWriter fw3 = new FileWriter(outputPath + "\\screening " + date + " value.csv");
+				fw3.write("stock,SB today (value),SB 1M Before (value),change,"
+						+ "3M ADV (value USD mm),"
+						+ "FF today (value),FF 1M Before (value),"
+						+ "SB today / FF, SB 1M Before / FF,change,"
+						+ "SB change / 3M ADV,rank,"
+						+ "SB change / FF,rank,"
+						+ "suspend,turnover > 7.5m US,"
+						+ "\n");
+				
 				for(int i = 0; i < stockList.size(); i++) {
 					StockSingleDate s = stockList.get(i);
 					//System.out.println(s.stockCode + " " + String.valueOf(s.SB_over_vol));
 					//System.out.println("s.stock = " + s.stockCode);
-					Double ff = s.osValue_today;
+					Double ffValue = s.osValue_today;
+					Double ffShare =s.osShares_today;
+					Double ffValue_1MBefore = s.osValue_1MBefore;
+					Double ffShare_1MBefore =s.osShares_1MBefore;
 					try {
-						ff = s.osValue_today* Double.parseDouble(ffPctMap.get(s.stockCode));
+						ffValue = s.osValue_today* Double.parseDouble(ffPctMap.get(s.stockCode));
+						ffShare = s.osShares_today* Double.parseDouble(ffPctMap.get(s.stockCode));
+						ffValue_1MBefore = s.osValue_1MBefore * Double.parseDouble(ffPctMap.get(s.stockCode));
+						ffShare_1MBefore =s.osShares_1MBefore * Double.parseDouble(ffPctMap.get(s.stockCode));
 					}catch(Exception e) {
 						
 					}
 					
-					int t = 0;
-					if(t == 0)
-						fw.write(s.stockCode + "," + String.valueOf(s.osValue_today / 7.8 / 1000000) + "," + String.valueOf(s.Turnover_3M_avg / 7.8 / 1000000) + "," + String.valueOf(s.dummy1 + s.dummy2) + ","
-								+ "" + "," + String.valueOf(s.SB_today_holding / 7.8 / 1000000) + "," + String.valueOf(s.SB_today_holdingValue / ff) + "," 
-								+ String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / 7.8 / 1000000) + "," + String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / ff) + "," + String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / s.Turnover_3M_avg) + ","
-								+ String.valueOf(s.suspended) + "," + String.valueOf(s.Turnover_3M_avg / 7.8 / 1000000 > 7.5?1:0)
-								+ "\n");
+					Double SB_over_ff_today_shares = s.SB_today_holding / ffShare;
+					Double SB_over_ff_1MBefore_shares = s.SB_1MBefore_holding / ffShare_1MBefore;
+					Double SB_over_ff_today_value = s.SB_today_holdingValue / ffValue;
+					Double SB_over_ff_1MBefore_value = s.SB_1MBefore_holdingValue / ffValue_1MBefore;
+	
+					Double SB_change_share = s.SB_today_holding - s.SB_1MBefore_holding;
+					Double SB_change_value = s.SB_today_holdingValue - s.SB_1MBefore_holdingValue; 
 					
-					if(t == 1)
-						fw.write(s.stockCode + "," + String.valueOf(s.SB_over_os_shares_freefloat) + "," + String.valueOf(s.dummy1) + "\n");
+					Double isVolLarge = s.Turnover_3M_avg / 7.8 / 1000000 > 7.5?1.0:0.0;
+							
+					fw.write(s.stockCode + "," + String.valueOf(s.osValue_today / 7.8 / 1000000) + "," + String.valueOf(s.Turnover_3M_avg / 7.8 / 1000000) + "," + String.valueOf(s.dummy1 + s.dummy2) + ","
+							+ "" + "," + String.valueOf(s.SB_today_holdingValue / 7.8 / 1000000) + "," + String.valueOf(s.SB_today_holdingValue / ffValue) + "," 
+							+ String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / 7.8 / 1000000) + "," + String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / ffValue) + "," + String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / s.Turnover_3M_avg / 20.0) + ","
+							+ String.valueOf(s.suspended) + "," + String.valueOf(isVolLarge)
+							+ "\n");
+				
+		
+					//fw.write(s.stockCode + "," + String.valueOf(s.SB_over_os_shares_freefloat) + "," + String.valueOf(s.dummy1) + "\n");
+				
+					fw2.write(s.stockCode + "," + String.valueOf(s.SB_today_holding) + "," + String.valueOf(s.SB_1MBefore_holding) + "," + String.valueOf(SB_change_share) + ","
+							+ String.valueOf(s.Vol_3M_avg ) + ","
+							+ String.valueOf(ffShare) + "," + String.valueOf(ffShare_1MBefore) + "," 
+							+ String.valueOf(SB_over_ff_today_shares) + "," + String.valueOf(SB_over_ff_1MBefore_shares) + "," + String.valueOf(SB_over_ff_today_shares - SB_over_ff_1MBefore_shares) + ","
+							+ String.valueOf(SB_change_share / s.Vol_3M_avg) + "," + String.valueOf(s.dummy2) + "," 
+							+ String.valueOf(SB_over_ff_today_shares - SB_over_ff_1MBefore_shares) + "," + String.valueOf(s.dummy1) + "," 
+							+ String.valueOf(s.suspended) + "," + String.valueOf(isVolLarge) + ","
+							+ "\n"
+							);
+					fw3.write(s.stockCode + "," + String.valueOf(s.SB_today_holdingValue) + "," + String.valueOf(s.SB_1MBefore_holdingValue) + "," + String.valueOf(SB_change_value) + ","
+							+ String.valueOf(s.Turnover_3M_avg / 7.8 / 1000000 ) + ","
+							+ String.valueOf(ffValue) + "," + String.valueOf(ffValue_1MBefore) + "," 
+							+ String.valueOf(SB_over_ff_today_value) + "," + String.valueOf(SB_over_ff_1MBefore_value) + "," + String.valueOf(SB_over_ff_today_value - SB_over_ff_1MBefore_value) + ","
+							+ String.valueOf(SB_change_value / s.Turnover_3M_avg) + "," + String.valueOf(s.dummy2) + "," 
+							+ String.valueOf(SB_over_ff_today_value - SB_over_ff_1MBefore_value) + "," + String.valueOf(s.dummy1) + "," 
+							+ String.valueOf(s.suspended) + "," + String.valueOf(isVolLarge) + ","
+							+ "\n"
+							);
 				}
 				fw.close();
+				fw2.close();
+				fw3.close();
 			}
 				
 		}catch(Exception e) {

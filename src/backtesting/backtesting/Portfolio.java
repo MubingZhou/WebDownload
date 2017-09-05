@@ -1,5 +1,6 @@
-package backtesting;
+package backtesting.backtesting;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -7,11 +8,31 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class Portfolio {
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
+
+@XmlAccessorType(XmlAccessType.FIELD)  
+//XML文件中的根标识  
+@XmlRootElement(name = "Portfolio")  
+//控制JAXB 绑定类中属性和字段的排序  
+@XmlType(propOrder = {   
+     "marketValue",   
+     "cashRemained",   
+     "tradingCost",   
+     "stockHeld",   
+     "todayCal",   
+     "histSnap"
+})  
+
+public class Portfolio implements Serializable {
+	private static final long serialVersionUID = 1L;
+	
 	public Double marketValue;
 	public Double cashRemained;
 	public Double tradingCost = 0.001;
-	public Map<String, Double> stockHeld = new HashMap();
+	public Map<String, Double> stockHeld = new HashMap();  // String = date string, Double = holding amt, only holds current holdings
 	public  Calendar todayCal;  // today's calendar 
 	
 	/*
@@ -21,10 +42,14 @@ public class Portfolio {
 	 * date2, [marketValue2, cashRemained2, stockHeld2]
 	 * ]
 	 */
-	public Map<Calendar, ArrayList<Object>> histSnap = new HashMap();
+	public Map<Calendar, PortfolioOneDaySnapshot> histSnap = new HashMap();
 	
 	public Portfolio(double initialFunding) {
+		super();
 		cashRemained = initialFunding;
+	}
+	public Portfolio() {
+		super();
 	}
 	
 	/**
@@ -187,10 +212,10 @@ public class Portfolio {
 			
 			marketValue = cumStockValue + cashRemained;
 			
-			ArrayList<Object> snapData = new ArrayList<Object>();
-			snapData.add(marketValue);
-			snapData.add(cashRemained);
-			snapData.add(stockHeld_copy);
+			PortfolioOneDaySnapshot snapData = new PortfolioOneDaySnapshot();
+			snapData.marketValue = marketValue;
+			snapData.cashRemained = cashRemained;
+			snapData.stockHeld = stockHeld_copy;
 			
 			histSnap.put(todayCal, snapData);
 			

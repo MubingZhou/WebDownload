@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
+import backtesting.backtesting.Portfolio;
+
 public class Test {
 
 	public static void main(String[] args) {
@@ -12,16 +14,14 @@ public class Test {
 		try {
 			SimpleDateFormat sdf = new SimpleDateFormat ("yyyyMMdd");
 			Calendar c1 = Calendar.getInstance();
-			c1.setTime(sdf.parse("20170807"));
 			
-			ArrayList<Calendar> allT = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			String s = "D:\\test\\";
+			if(!s.substring(s.length() - 1).equals("\\")) {
+				System.out.println(s + "\\");
+			}
 			
-			Calendar c2 = utils.Utils.getMostRecentDate(c1, allT);
+			Portfolio p = new Portfolio(100);
 			
-			System.out.println(sdf.format(new Date()));
-			
-			System.out.println(webbDownload.outstanding.DataGetter.getStockDataField("680", 
-					webbDownload.outstanding.DataGetter.OutstandingDataField.OUTSTANDING_SHARES, "20170401", "yyyyMMdd"));
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
