@@ -2,12 +2,16 @@ package utils;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import backtesting.backtesting.Portfolio;
-import backtesting.backtesting.PortfolioOneDaySnapshot;
+import backtesting.backtesting.Order;
+import backtesting.backtesting.Trade;
+import backtesting.backtesting.TradeType;
+import backtesting.portfolio.Portfolio;
+import backtesting.portfolio.PortfolioOneDaySnapshot;
 
 public class TestXML {
 
@@ -29,18 +33,20 @@ public class TestXML {
 		//System.out.println(keysArr.get(0).getTime());
 		//System.out.println(ob1.get(0));
 		*/
-		PortfolioOneDaySnapshot pos = new PortfolioOneDaySnapshot();
-		pos.cashRemained = 10.0;
-		pos.marketValue = 11.0;
+		Trade tr = new Trade();
+		tr.amount = 10.0;
+		tr.stock = "sdfs"	;
+		tr.type = TradeType.SHORT;
 		
-		Map<String, Double> stockHeld = new HashMap();
-		stockHeld.put("1", 100.0);
-		stockHeld.put("2", 200.0);
-		pos.stockHeld = stockHeld;
 		
-		XMLUtil.convertToXml(pos, "D:\\test.xml");
-		PortfolioOneDaySnapshot pos2 = (PortfolioOneDaySnapshot) XMLUtil.convertXmlFileToObject(PortfolioOneDaySnapshot.class,"D:\\test.xml");
-		System.out.println(pos2.stockHeld.get("1"));
+		String portFilePath = "D:\\stock data\\southbound flow strategy - db\\20170907 114703\\portfolio.xml";
+		Portfolio pf = (Portfolio) XMLUtil.convertXmlFileToObject(Portfolio.class,portFilePath);
+		Map<Calendar, PortfolioOneDaySnapshot> histSnap = pf.histSnap;
+		
+		ArrayList<Calendar> allDays = new ArrayList<Calendar>(histSnap.keySet());
+		Collections.sort(allDays);
+		System.out.println(allDays.get(0).getTime());
+		
 		
 	}
 

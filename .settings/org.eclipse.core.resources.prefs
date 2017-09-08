@@ -1,5 +1,5 @@
 eclipse.preferences.version=1
-encoding//src/backtesting/backtesting/Portfolio.java=UTF-8
-encoding//src/backtesting/backtesting/PortfolioOneDaySnapshot.java=UTF-8
+encoding//src/backtesting/portfolio/Portfolio.java=UTF-8
+encoding//src/backtesting/portfolio/PortfolioOneDaySnapshot.java=UTF-8
 encoding//src/utils/Utils.java=UTF-8
 encoding//src/utils/XMLUtil.java=UTF-8

@@ -7,7 +7,11 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Map;
 
+import backtesting.portfolio.Portfolio;
+
 public class Backtesting {
+	public static Integer orderNum = 0;
+	
 	public String startDate = "20170101";
 	public Calendar startDateCal = Calendar.getInstance();
 	public String endDate = "20170825";
@@ -19,7 +23,7 @@ public class Backtesting {
 	
 	public Portfolio portfolio = new Portfolio(initialFunding);
 	// at this stage, assume using equal-value method
-	public void rotationalTrading(ArrayList<String> date, String dateFormat, ArrayList<ArrayList<String>> data) {
+	public void rotationalTrading(ArrayList<String> date, String dateFormat, ArrayList<ArrayList<String>> rebalStocks) {
 		System.out.println("*********** Backtesting - " + date + " ***********");
 		try {
 			//FileWriter fw =  new FileWriter("D:\\stock data\\southbound flow strategy - db\\backtesting.csv");
@@ -34,14 +38,14 @@ public class Backtesting {
 			
 			
 			// ======== backtesting =====
-			portfolio.cashRemained = initialFunding;
+			portfolio.availableCash = initialFunding;
 			portfolio.tradingCost = tradingCost;
 			int rotationalInd = 0; // trace the rotational date
 			for(int i = 0; i < allTradingDate.size(); i++) {
 				Calendar thisCal = allTradingDate.get(i);
 				String thisDateStr = new SimpleDateFormat("yyyyMMdd").format(thisCal.getTime());
-				if(thisDateStr.equals("20160801"))
-					System.out.println("~~~ get date 20160801");
+				//if(thisDateStr.equals("20160801"))
+					//System.out.println("~~~ get date 20160801");
 				
 				Calendar rotationalCal = Calendar.getInstance();
 				if(rotationalInd < dateArr.size())
@@ -53,120 +57,75 @@ public class Backtesting {
 					if(thisCal.equals(rotationalCal)) {  // date to rotation
 						System.out.println("********** rebal date = " + sdf.format(thisCal.getTime()) + " ***********");
 						// ========= re-balancing =========
-						ArrayList<String> thisAllStocks = data.get(rotationalInd);
+						ArrayList<String> thisAllStocks = rebalStocks.get(rotationalInd);
+						ArrayList<Order> buyOrdersArr = new ArrayList<Order>();
+						ArrayList<Order> sellOrdersArr = new ArrayList<Order>();
 						
-						if(rotationalInd == 0) { // first time to buy
-							int numOfStocks = thisAllStocks.size();
-							System.out.println("First time to buy. Num of stocks = " + numOfStocks);
-							
-							ArrayList<String> priceArrStr = stockPrice.DataGetter.getStockDataField(thisAllStocks, 
-									stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
-							ArrayList<Double> priceArr = new ArrayList<Double>();
-							for(int j = 0; j < priceArrStr.size(); j++) {
-								priceArr .add(Double.parseDouble(priceArrStr.get(j)));
-							}
-							
-							int temp = allTradingDate.indexOf(thisCal);
-							//Calendar oneDayBefore = allTradingDate.get(temp - 1);
-							Double cashRemained = portfolio.cashRemained*0.99;
-							Double equalValue = cashRemained / numOfStocks;
-							
-							// amount
-							ArrayList<Double> amtArr = new ArrayList<Double>();
-							for(int j = 0; j < priceArr.size(); j++) {
-								amtArr.add(Math.floor(equalValue / (priceArr.get(j) * (1 + portfolio.tradingCost))));
-								
-								System.out.println("stock = " + thisAllStocks.get(j) + " price = " + priceArr.get(j) + " amt = " + amtArr.get(j));
-							}
-							portfolio.buyStocks(thisAllStocks, priceArr, amtArr, thisCal);
-						}else {
-							ArrayList<String> prevAllStocks = data.get(rotationalInd-1);
+						if(rotationalInd > 0) { // not the first time to buy
+							ArrayList<String> prevAllStocks = rebalStocks.get(rotationalInd-1);
 							ArrayList<String> prevAllStocksCopy = prevAllStocks; 
-							ArrayList<String> stocksToBuy = new ArrayList<String>();
 							ArrayList<String> stocksToSell = new ArrayList<String>();
 							
-							if(false) {
-							for(int j = 0; j < thisAllStocks.size(); j++) {
-								String thisStock = thisAllStocks.get(j);
-								
-								if(!prevAllStocks.contains(thisStock)) {
-									stocksToBuy.add(thisStock);
-								}else {
-									prevAllStocksCopy.remove(thisStock);
-								}
-							}
+							// ============ sell old stocks first ============
 							stocksToSell = prevAllStocksCopy;
 							
-							// amt
-							ArrayList<Double> amtToSell = new ArrayList<Double> ();
 							for(int j = 0; j < stocksToSell.size(); j++) {
-								amtToSell.add(0.0);
-							}
-							
-							// update  sell price
-							ArrayList<String> priceToSellStr = stockPrice.DataGetter.getStockDataField(stocksToSell, 
-									stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
-							ArrayList<Double> priceToSell = new ArrayList<Double>();
-							for(int j = 0; j < priceToSellStr.size(); j++) {
-								priceToSell .add(Double.parseDouble(priceToSellStr.get(j)));
+								String stock = stocksToSell.get(j);
+								Double amt = 0.0; // if amt=0.0, it will sell all quantities of the underlying stock
+								
+								// deal with price
+								String priceStr = stockPrice.DataGetter.getStockDataField(stock,stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
+								Double price = 0.0;
+								try {
+									price = Double.parseDouble(priceStr);
+								}catch(Exception e) {
+									
+								}
+								if(price.equals(0.0)) {
+									System.out.println("[sell order failed - price incorrect] stock=" + stock + " price=" + priceStr);
+									continue;
+								}
+								
+								Order order = new Order(OrderType.SELL, thisCal, stock, price, amt, orderNum++);
+								sellOrdersArr.add(order);
 							}
 							
 							// sell first
-							portfolio.sellStocks(stocksToSell, priceToSell, amtToSell, thisCal);
-							
-							// update buy price
-							ArrayList<String> priceToBuyStr = stockPrice.DataGetter.getStockDataField(stocksToBuy, 
-									stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
-							ArrayList<Double> priceToBuy = new ArrayList<Double>();
-							for(int j = 0; j < priceToBuyStr.size(); j++) {
-								priceToBuy .add(Double.parseDouble(priceToBuyStr.get(j)));
-							}
-							
-							// buy amount
-							Double cashRemained = portfolio.cashRemained;
-							Double equalValue = cashRemained / stocksToBuy.size();
-							
-							ArrayList<Double> amtToBuy = new ArrayList<Double>();
-							for(int j = 0; j < stocksToBuy.size(); j++) {
-								amtToBuy.add(Math.floor(equalValue / (priceToBuy.get(j) * (1 + portfolio.tradingCost))));
-							}
-							
-							portfolio.buyStocks(thisAllStocks, priceToBuy, amtToBuy, thisCal);
-							}
-							
-							if(true) {
-								// ==== sell previous stocks first =======
-								ArrayList<String> priceToSellStr = stockPrice.DataGetter.getStockDataField(prevAllStocks, 
-										stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
-								ArrayList<Double> amtArrToSell = new ArrayList<Double>();
-								ArrayList<Double> priceArrToSell = new ArrayList<Double>();
-								for(int j = 0; j < priceToSellStr.size(); j++) {
-									priceArrToSell .add(Double.parseDouble(priceToSellStr.get(j)));
-									amtArrToSell.add(0.0);  // amt=0 represents that to sell all holding stocks
-								}
-								portfolio.sellStocks(prevAllStocks, priceArrToSell, amtArrToSell, thisCal);
-								
-								// ======== then buy new stocks ========
-								// update price
-								ArrayList<String> priceToBuyStr = stockPrice.DataGetter.getStockDataField(thisAllStocks, 
-										stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
-								ArrayList<Double> priceArrToBuy = new ArrayList<Double>();
-								
-								// update amt to buy
-								Double cashRemained = portfolio.cashRemained*0.99;
-								Double equalValue = cashRemained / thisAllStocks.size();
-								ArrayList<Double> amtArrToBuy = new ArrayList<Double>();
-								
-								for(int j = 0; j < priceToBuyStr.size(); j++) {
-									Double thisPrice = Double.parseDouble(priceToBuyStr.get(j));
-									priceArrToBuy .add(thisPrice );
-									amtArrToBuy.add(equalValue/(thisPrice * (1 + tradingCost)));  // amt=0 represents that to sell all holding stocks
-								}
-								portfolio.buyStocks(thisAllStocks, priceArrToBuy, amtArrToBuy, thisCal);
-								System.out.println("After buying - Cash Remained = " + portfolio.cashRemained);
-								
-							}
+							portfolio.sellStocks(sellOrdersArr);
 						}
+					
+						// update amt to buy
+						Double cashRemained = portfolio.availableCash*0.99;
+						Double equalValue = cashRemained / thisAllStocks.size();
+						for(int j = 0; j < thisAllStocks.size(); j++) {
+							String stock = thisAllStocks.get(j);
+							
+							// deal with price
+							String priceStr = stockPrice.DataGetter.getStockDataField(stock,stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
+							Double price = 0.0;
+							try {
+								price = Double.parseDouble(priceStr);
+							}catch(Exception e) {
+								
+							}
+							if(price.equals(0.0)) {
+								System.out.println("[buy order failed - price incorrect] stock=" + stock + " price=" + priceStr);
+								continue;
+							}
+							
+							// deal with amt
+							Double amt = Math.floor(equalValue / (price * (1 + portfolio.tradingCost)));
+							if(amt <= 0.0) {
+								System.out.println("[buy order failed - amount incorrect] stock=" + stock + " price=" + priceStr + " amt=" + amt);
+								continue;
+							}
+							
+							Order order = new Order(OrderType.BUY, thisCal, stock, price, amt, orderNum++);
+							buyOrdersArr .add(order);
+						}
+						portfolio.buyStocks(buyOrdersArr );
+						System.out.println("After buying - Cash Remained = " + portfolio.availableCash);
+				
 						
 						portfolio.commitDayEndValue();
 						rotationalInd++;

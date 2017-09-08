@@ -13,9 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import backtesting.analysis.DrawDownAnalysis;
 import backtesting.backtesting.Backtesting;
-import backtesting.backtesting.Portfolio;
-import backtesting.backtesting.PortfolioOneDaySnapshot;
+import backtesting.backtesting.Trade;
+import backtesting.portfolio.Portfolio;
+import backtesting.portfolio.PortfolioOneDaySnapshot;
+import backtesting.portfolio.Underlying;
 import utils.XMLUtil;
 
 public class Main {
@@ -25,138 +28,126 @@ public class Main {
 		try {
 			//System.out.println(southboundData.DataGetter.getStockData("700", "20170801", "yyyyMMdd").get(2));
 			
-			
-			BufferedReader bf = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\all stock list.csv");
-			String[] stockList = {};
-			for(int i = 0; i< stockList.length; i++) {
-				System.out.println("Stock = " + stockList[i]);
-				webDownload.GetPrice.getHistoricalData(stockList[i], stockList[i]+".csv", "D:\\stock data\\stock hist data - webb\\");
-				webbDownload.outstanding.DataDownloader.dataDownloader(stockList[i]);
-			}
-			
-			
+			int mode = 2;
 			/*
-			StockSingleDate s1 = new StockSingleDate("1", "20170101", "yyyyMMdd"); 
-			s1.SB_over_vol = 0.0;
+			 * 0 - downloading data
+			 * 1 - full backtesting
+			 * 2 - drawdown analysis
+			 */
 			
-			StockSingleDate s2 = new StockSingleDate("2", "20170101", "yyyyMMdd"); 
-			s2.SB_over_vol = 10.0;
-			
-			StockSingleDate s3 = new StockSingleDate("3", "20170101", "yyyyMMdd"); 
-			s3.SB_over_vol = 5.0;
-			
-			ArrayList<StockSingleDate> arr = new ArrayList<StockSingleDate>();
-			arr.add(s1);
-			arr.add(s2);
-			arr.add(s3);
-			StockSingleDate[] arr2 = {s1,s2,s3};
-			
-			Arrays.sort(arr2, StockSingleDate.getComparator());
-			Collections.sort(arr, StockSingleDate.getComparator());
-			
-			if(true)
-			for(int i = 0; i < arr.size(); i++) {
-				StockSingleDate s = arr.get(i);
-				System.out.println(s.stockCode + " " + String.valueOf(s.SB_over_vol));
-			}
-			
-			if(false)
-				for(int i = 0; i < arr2.length; i++) {
-					StockSingleDate s = arr2[i];
-					System.out.println(s.stockCode + " " + String.valueOf(s.SB_over_vol));
+			if(mode == 0) {
+				BufferedReader bf = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\all stock list.csv");
+				String[] stockList = {};
+				for(int i = 0; i< stockList.length; i++) {
+					System.out.println("Stock = " + stockList[i]);
+					webDownload.GetPrice.getHistoricalData(stockList[i], stockList[i]+".csv", "D:\\stock data\\stock hist data - webb\\");
+					webbDownload.outstanding.DataDownloader.dataDownloader(stockList[i]);
 				}
-			*/
-			
-			//Thread.sleep(1000 * 10000 *10000); // wait infinitely....
-			
-			String dateFormat = "yyyyMMdd";
-			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
-			
-			SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-			String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
-			String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
-			File f = new File(mvFilePath);
-			f.mkdir();
-			PortfolioScreening.outputPath = mvFilePath;
-			
-			ArrayList<String> rebalDateArr = new ArrayList<String>();
-			/*
-			rebalDateArr .add("20160704");
-			rebalDateArr .add("20160801");
-			rebalDateArr .add("20160901");
-			rebalDateArr .add("20161003");
-			rebalDateArr .add("20161101");
-			rebalDateArr .add("20161201");
-			rebalDateArr .add("20170104");
-			rebalDateArr .add("20170206");
-			rebalDateArr .add("20170301");
-			rebalDateArr .add("20170403");
-			rebalDateArr .add("20170510");*/
-			rebalDateArr .add("20170615");
-			rebalDateArr .add("20170717");
-			rebalDateArr .add("20170821");
-			
-			ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
-			for(int i = 0; i < rebalDateArr.size(); i++) {
-				ArrayList<String> stockToBuy = PortfolioScreening.portfolioScreening_singleDate(rebalDateArr.get(i), "yyyyMMdd");
-				data.add(stockToBuy);
 			}
 			
-			ArrayList<String> dateArr = new ArrayList<String>();
-			dateArr.addAll(rebalDateArr);
-			
-			Backtesting bt = new Backtesting();
-			//bt.startDate = "20160630";
-			bt.startDate = rebalDateArr.get(0);
-			bt.endDate = "20170824";
-			bt.tradingCost = 0.000;
-			
-			bt.rotationalTrading(dateArr, "yyyyMMdd", data);
-			
-			Portfolio pf = bt.portfolio;
-			Map<Calendar, PortfolioOneDaySnapshot> histSnap = pf.histSnap;
-			Set<Calendar> keys = histSnap.keySet();
-			List<Calendar> keysArr = new ArrayList<Calendar>(keys);
-			Collections.sort(keysArr);
-			
-			
-			FileWriter fw = new FileWriter(portFilePath + "\\portfolio.csv");
-			FileWriter fw2 = new FileWriter(mvFilePath + "\\market value.csv");
-			for(Calendar date : keysArr) {
-				String dateStr = sdf.format(date.getTime());
-				PortfolioOneDaySnapshot snapData = histSnap.get(date);
+			if(mode == 1) {
+				String dateFormat = "yyyyMMdd";
+				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				
-				Double marketValue = snapData.marketValue;
-				Double cash = snapData.cashRemained;
-				Map<String, Double> stockHeld = snapData.stockHeld;
+				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
+				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
+				String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
+				File f = new File(mvFilePath);
+				f.mkdir();
+				PortfolioScreening.outputPath = mvFilePath;
 				
-				//System.out.println("======== " + dateStr + " =============");
-				fw.write("======== " + dateStr + " =============\n");
+				ArrayList<String> rebalDateArr = new ArrayList<String>();
 				
-				//System.out.println("  MV = " + String.valueOf(marketValue)); 
-				fw.write(",MV," + String.valueOf(marketValue)+"\n");
+				rebalDateArr .add("20160704");
+				rebalDateArr .add("20160801");
+				rebalDateArr .add("20160901");
+				rebalDateArr .add("20161003");
+				rebalDateArr .add("20161101");
+				rebalDateArr .add("20161201");
+				rebalDateArr .add("20170104");
+				rebalDateArr .add("20170206");
+				rebalDateArr .add("20170301");
+				rebalDateArr .add("20170403");
+				rebalDateArr .add("20170510");
+				rebalDateArr .add("20170615");
+				rebalDateArr .add("20170717");
+				rebalDateArr .add("20170821");
 				
-				//System.out.println("  Cash = " + String.valueOf(cash));
-				fw.write(",Cash,"+ String.valueOf(cash) + "\n");
+				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
+				for(int i = 0; i < rebalDateArr.size(); i++) {
+					ArrayList<String> stockToBuy = PortfolioScreening.portfolioScreening_singleDate(rebalDateArr.get(i), "yyyyMMdd");
+					data.add(stockToBuy);
+				}
 				
-				//System.out.println("  Stock holdings:");
-				fw.write(",Stock holding\n");
+				ArrayList<String> dateArr = new ArrayList<String>();
+				dateArr.addAll(rebalDateArr);
 				
-				Set<String> stockKeys = stockHeld.keySet()	;
-				for(String stock : stockKeys) {
-					Double holding = stockHeld.get(stock);
+				Backtesting bt = new Backtesting();
+				//bt.startDate = "20160630";
+				bt.startDate = rebalDateArr.get(0);
+				bt.endDate = "20170824";
+				bt.tradingCost = 0.000;
+				
+				bt.rotationalTrading(dateArr, "yyyyMMdd", data);
+				
+				Portfolio pf = bt.portfolio;
+				Map<Calendar, PortfolioOneDaySnapshot> histSnap = pf.histSnap;
+				Set<Calendar> keys = histSnap.keySet();
+				List<Calendar> keysArr = new ArrayList<Calendar>(keys);
+				Collections.sort(keysArr);
+				
+				
+				FileWriter fw = new FileWriter(portFilePath + "\\portfolio.csv");
+				FileWriter fw2 = new FileWriter(mvFilePath + "\\market value.csv");
+				for(Calendar date : keysArr) {
+					String dateStr = sdf.format(date.getTime());
+					PortfolioOneDaySnapshot snapData = histSnap.get(date);
 					
-					//System.out.println("    stock = " + stock + " amt = " + holding);
-					fw.write(",," + stock + "," + holding + "\n");
+					Double marketValue = snapData.marketValue;
+					Double cash = snapData.cashRemained;
+					Map<String, Underlying> stockHeld = snapData.stockHeld;
+					
+					//System.out.println("======== " + dateStr + " =============");
+					fw.write("======== " + dateStr + " =============\n");
+					
+					//System.out.println("  MV = " + String.valueOf(marketValue)); 
+					fw.write(",MV," + String.valueOf(marketValue)+"\n");
+					
+					//System.out.println("  Cash = " + String.valueOf(cash));
+					fw.write(",Cash,"+ String.valueOf(cash) + "\n");
+					
+					//System.out.println("  Stock holdings:");
+					fw.write(",Stock holding\n");
+					
+					Set<String> stockKeys = stockHeld.keySet()	;
+					for(String stock : stockKeys) {
+						Underlying holding = stockHeld.get(stock);
+						
+						//System.out.println("    stock = " + stock + " amt = " + holding);
+						if(holding.amount > 0.0)
+							fw.write(",," + stock + "," + holding.amount + "\n");
+					}
+					
+					fw2.write(dateStr + "," + String.valueOf(marketValue) + "\n");
 				}
+				fw.close();
+				fw2.close();
 				
-				fw2.write(dateStr + "," + String.valueOf(marketValue) + "\n");
+				// save the portfolio
+				XMLUtil.convertToXml(pf, portFilePath + "\\portfolio.xml");
 			}
-			fw.close();
-			fw2.close();
 			
-			// save the portfolio
-			XMLUtil.convertToXml(pf, portFilePath + "\\portfolio.xml");
+			if(mode == 2) {
+				String portFilePathRoot =  "D:\\stock data\\southbound flow strategy - db\\20170907 150710\\";
+				String portFilePath = portFilePathRoot + "portfolio.xml";
+				Portfolio pf = (Portfolio) XMLUtil.convertXmlFileToObject(Portfolio.class,portFilePath);
+				
+				String startDate = "20161201";
+				String endDate = "20170101";
+				String dateFormat = "yyyyMMdd";
+				DrawDownAnalysis.analysisBetweenDates_outputPath = portFilePathRoot + "drawdown_analysis " + startDate + " - " + endDate + ".csv";
+				DrawDownAnalysis.pnlAnalysisBetweenDates(pf,startDate ,endDate ,dateFormat );
+			}
 			
 			
 		} catch (Exception e) {

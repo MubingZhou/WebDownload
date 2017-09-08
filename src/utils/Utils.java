@@ -532,8 +532,16 @@ public class Utils {
 		public static ArrayList<String> getSouthboundStocks(String date, String dateFormat, boolean isSH, boolean isSZ){
 			ArrayList<String> allStockList = new ArrayList<String>();
 			try {
+				if(isSH && !isSZ)
+					return getSouthboundStocks_support(SH_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+				if(!isSH && isSZ)
+					return getSouthboundStocks_support(SZ_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+				if(!isSH && !isSZ)
+					return null;
+				
 				ArrayList<String> shStockList = getSouthboundStocks_support(SH_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
 				ArrayList<String> szStockList = getSouthboundStocks_support(SZ_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+				
 				allStockList = shStockList;
 				for(int i = 0; i < szStockList.size(); i++) {
 					if(allStockList.indexOf(szStockList.get(i)) == -1) {

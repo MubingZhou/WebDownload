@@ -4,23 +4,30 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-import backtesting.backtesting.Portfolio;
+import backtesting.backtesting.Order;
+import backtesting.backtesting.OrderType;
+import backtesting.portfolio.Portfolio;
 
 public class Test {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			SimpleDateFormat sdf = new SimpleDateFormat ("yyyyMMdd");
-			Calendar c1 = Calendar.getInstance();
 			
-			String s = "D:\\test\\";
-			if(!s.substring(s.length() - 1).equals("\\")) {
-				System.out.println(s + "\\");
-			}
 			
-			Portfolio p = new Portfolio(100);
+			ArrayList<String> list = utils.Utils.getSouthboundStocks("20170206", "yyyyMMdd", true, true);
+			if(list.indexOf("3699") != -1) // 3699 exists
+				System.out.println("dssdfsfsdfsdf " + list.get(list.indexOf("3699")));
+			
+			if(false)
+			for(String l : list)
+				System.out.println(l);
+			
 			
 		}catch(Exception e) {
 			e.printStackTrace();
