@@ -16,7 +16,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 		try {
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
-			ArrayList<String> stockCodeList = WebDownload.getCGITopHoldingStocks(ConstVal.FILE_OUTPUT_PATH + "\\cgi stock list.csv");
+			ArrayList<String> stockCodeList = WebDownload.getCGITopHoldingStocks("D:\\stock data\\all stock list.csv");
 			
 			// to download all stocks
 			while(stockCodeList.size() > 0) {
@@ -28,7 +28,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 					System.out.println("=========== i = " + i + "/" + stockCodeList.size() + " " + stockCode + " ================");
 					
 					String fileName = stockCode + ".csv";
-					String filePath = "D:\\stock data\\stock daily data\\stock daily data";
+					String filePath = "D:\\stock data\\stock hist data - webb";
 					boolean isOK = getHistoricalData(stockCode, fileName, filePath);
 					if(!isOK) {
 						failedList.add(stockCode);

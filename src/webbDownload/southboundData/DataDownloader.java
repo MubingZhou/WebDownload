@@ -31,10 +31,10 @@ public class DataDownloader { // downloading southbound CCASS data
 			Boolean toDownloadSZ = true;
 			
 			// get tradings dates
-			String startDate_sz = "2016-12-07";
-			String startDate_sh = "2014-11-19";
+			String startDate_sz = "2017-08-26";
+			String startDate_sh = "2017-09-13";
 			
-			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates("2017-08-17", "2017-08-18", "yyyy-MM-dd");
+			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates("2017-08-26", "2017-09-13", "yyyy-MM-dd");
 			//ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate_sz, "2017-08-25", "yyyy-MM-dd");
 			
 			utils.Utils.trustAllCertificates();

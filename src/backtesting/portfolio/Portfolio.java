@@ -26,6 +26,7 @@ import backtesting.backtesting.TradeType;
 @XmlType(propOrder = {   
      "marketValue",   
      "availableCash",   
+     "totalCash",
      "tradingCost",
      "shortMarginReq",
      "stockHeld",   
@@ -63,6 +64,7 @@ public class Portfolio implements Serializable {
 	public Portfolio(double initialFunding) {
 		super();
 		availableCash = initialFunding;
+		totalCash  = initialFunding;
 	}
 	public Portfolio() {
 		super();
