@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.log4j.Logger;
+
 public class DataFetch {
-	
+	private static Logger logger = Logger.getLogger(DataFetch.class.getName());
 	/**
 	 * Read a .csv file and return specified value. e.g. if the csv file is in the form 
 		 * stock,price,volume
@@ -26,7 +28,7 @@ public class DataFetch {
 		try{
 			BufferedReader bf = utils.Utils.readFile_returnBufferedReader( filePath );
 			if(bf==null){
-				System.out.println(errMsgHead + "no such file.");
+				logger.info(errMsgHead + "no such file.");
 			}else{
 				String line = "";
 				while((line = bf.readLine()) != null){
@@ -44,7 +46,7 @@ public class DataFetch {
 				
 				if(dataLine == null || dataLine.size() == 0){
 					//System.out.println("Southbound - get stock data:no data for " + stockCode + " at " + date);
-					System.out.println(errMsgHead + "no data.");
+					logger.info(errMsgHead + "no data.");
 				}
 			}
 		}catch(Exception e){

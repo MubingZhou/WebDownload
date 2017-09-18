@@ -10,10 +10,8 @@ public class Main {
 		try {
 			//System.out.println(DataGetter.getStockDataField("1", DataGetter.OutstandingDataField.PRICE, "19920801", "yyyyMMdd"));
 			
-			BufferedReader bf = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\all trading date - hk.csv");
-			String str = bf.readLine();
-			String[] s  =str.split(",");
-			ArrayList<String> arr = new ArrayList<String>(Arrays.asList(s));
+			ArrayList<String> arr = new ArrayList<String>();
+			arr.add("8328");
 			
 			DataDownloader.dataDownloader(arr);
 		} catch (Exception e) {

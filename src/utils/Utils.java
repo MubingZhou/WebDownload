@@ -20,12 +20,16 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import org.apache.log4j.Logger;
 
 public class Utils {
 	// OUTPUT root path
@@ -39,6 +43,8 @@ public class Utils {
 	
 	public static final String SH_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SSE Southbound Stocks.csv";
 	public static final String SZ_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SZSE Southbound Stocks.csv";
+	
+	private static Logger logger = Logger.getLogger(Utils.class.getName());
 	
 	/**
 	 * Using HttpConnection to link url with "https://"
@@ -508,7 +514,7 @@ public class Utils {
 		 * to return Bloomberg formula. Compatible with .csv file.
 		 * to use the formula in csv file, you have to manually add " to the front and end of the formula
 		 * e.g. this function may return BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")
-		 * but to show is correctly in csv file, you have to use "=BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")" 
+		 * but to show it correctly in csv file, you have to use "=BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")" 
 		 * @param stock e.g. 1 HK Equity
 		 * @param field, e.g. PX_LAST
 		 * @param startDate e.g. 20170801
@@ -519,6 +525,11 @@ public class Utils {
 			return "BDH(" + "\"\"" + stock + "\"\"" 
 					+ ",\"\"" + field + "\"\"," + "\"\"" + startDate + "\"\"" + "," + "\"\"" + endDate + "\"\"" 
 					+ ")";  //e.g. =BDH(""1 HK Equity"",""EQ_SH_OUT"", ""20170801"", ""20170818"")
+		}
+		
+		public static String BBG_BDP_Formula(String stock, String field) {
+			return "BDH(" + "\"\"" + stock + "\"\"" 
+					+ ",\"\"" + field + "\"\"" + ")";  // e.g. =BDP(""1 HK Equity"", ""EQ_SH_OUT"")
 		}
 		
 		/**
@@ -751,6 +762,68 @@ public class Utils {
 			}else
 				return s;
 			
+		}
+		
+		/**
+		 * To get the stock-sector pair value.
+		 * The default file path might be "D:\\stock data\\stock sector - karen.csv"
+		 * @param path
+		 * @return
+		 */
+		public static Map<String, String> getStockSectors(String path){
+			Map<String, String> map = new HashMap();
+			
+			try {
+				BufferedReader bf = readFile_returnBufferedReader(path);
+				String line1 = bf.readLine();
+				String line2 = bf.readLine();
+				bf.close();
+				
+				ArrayList<String> stock = new ArrayList<String>(Arrays.asList(line1.split(",")));
+				ArrayList<String> sector = new ArrayList<String>(Arrays.asList(line2.split(",")));
+				
+				if(stock.size() != sector.size()) {
+					logger.error("stock list length and sector list length not match!");
+					return null;
+				}
+				
+				for(int i = 0; i < stock.size(); i++) {
+					map.put(stock.get(i), sector.get(i));
+				}
+				
+				
+			}catch(Exception e) {
+				e.printStackTrace();
+				map = null;
+			}
+			
+			
+			return map;
+		}
+		
+		/**
+		 * To get the stock-free_float_pct pair value.
+		 * The default file path might be "D:\\stock data\\freefloat pct - hk.csv"
+		 * @param path
+		 * @return
+		 */
+		public static Map<String, String> getFreeFloatPct(String path){
+			Map<String, String> map = new HashMap();
+			try {
+				BufferedReader bf = readFile_returnBufferedReader(path);
+				
+				String line = ""	;
+				while((line = bf.readLine())!= null) {
+					String[]  lineArr = line.split(",");
+					map.put(lineArr[0], lineArr[1]);
+				}
+				
+			}catch(Exception e) {
+				e.printStackTrace();
+				map = null;
+			}
+			
+			return map;
 		}
 	  
 }
