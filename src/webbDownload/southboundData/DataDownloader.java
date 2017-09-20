@@ -27,14 +27,14 @@ public class DataDownloader { // downloading southbound CCASS data
 	
 	public static void dataDownloader() {
 		try{
-			Boolean toDownloadSH = true;
+			Boolean toDownloadSH = false;
 			Boolean toDownloadSZ = true;
 			
 			// get tradings dates
-			String startDate_sz = "2017-08-26";
-			String startDate_sh = "2017-09-13";
+			String startDate_sz = "2016-12-07";
+			String startDate_sh = "2014-11-19";
 			
-			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates("2017-08-26", "2017-09-13", "yyyy-MM-dd");
+			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates("2017-02-06", "2017-09-19", "yyyy-MM-dd");
 			//ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate_sz, "2017-08-25", "yyyy-MM-dd");
 			
 			utils.Utils.trustAllCertificates();
@@ -44,7 +44,7 @@ public class DataDownloader { // downloading southbound CCASS data
 			
 			for(int i = 0; i < dates.size(); i++){
 				String date = dates.get(i);
-				System.out.println("========== date = " + date + " ============");
+				//System.out.println("========== date = " + date + " ============");
 				
 				String outputFilePath = FILE_OUTPUT_PATH + "\\southbound" ;
 				utils.Utils.checkDir(outputFilePath);
@@ -135,7 +135,7 @@ public class DataDownloader { // downloading southbound CCASS data
 					to_write_str = "Last Code,Issue,Holding,Value,Stake%,Date\n";
 				}
 				else{
-					to_write_str = data_td.get(1).text().replace(",", "") + "," 
+					to_write_str = formatStockCode(data_td.get(1).text().replace(",", "")) + "," 
 									+ data_td.get(2).text().replace(",", "") + ","
 									+ data_td.get(3).text().replace(",", "") + ","
 									+ data_td.get(4).text().replace(",", "") + ","
@@ -152,6 +152,24 @@ public class DataDownloader { // downloading southbound CCASS data
 			System.out.print("Extract HTML error: input: " + inputFilePath + " output: " + outputFilePath);
 		}
 		
+	}
+	
+	/**
+	 * All stock stock should in the form of "290","1", etc. i.e. no zeros in the front. "0290" will be formatted into "290"
+	 * @param code
+	 * @return
+	 */
+	private static String formatStockCode(String code) {
+		char[] c = code.toCharArray();
+		int ind = 0;
+		for(int i = 0; i < c.length; i++) {
+			if(c[i] != '0') {
+				ind = i;
+				break;
+			}
+				
+		}
+		return code.substring(ind);
 	}
 
 }

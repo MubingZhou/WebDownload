@@ -17,6 +17,7 @@ import org.apache.log4j.LogManager;
 import backtesting.backtesting.Order;
 import backtesting.backtesting.OrderType;
 import backtesting.portfolio.Portfolio;
+import strategy.db_southboundFlowPortfolio.PortfolioScreening;
 
 @SuppressWarnings("unused")
 public class Test {
@@ -29,10 +30,10 @@ public class Test {
 		// TODO Auto-generated method stub
 		try {
 			
-			Map<String, String> m = new HashMap();
-			m.put("1", "a");
+			String s = "1.csv";
 			
-			System.out.println(m.get("2"));
+			System.out.println(s.substring(0, s.length() - 4));
+			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
