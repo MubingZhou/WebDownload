@@ -7,6 +7,63 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
+
+@XmlAccessorType(XmlAccessType.FIELD)  
+//XML文件中的根标识  
+@XmlRootElement(name = "StockSingleDate")  
+//控制JAXB 绑定类中属性和字段的排序  
+@XmlType(propOrder = {   
+   "cal", 
+   
+   "SB_1M_trailingFlow",   
+   "SB_today_holding",
+   "SB_today_holdingValue",
+   "SB_1MBefore_holding",
+   "SB_1MBefore_holdingValue",   
+   
+   "Vol_1M_avg",   
+   "Vol_3M_avg",
+   "SB_over_vol",
+   "Turnover_3M_avg",
+   "SB_over_turnover",
+   
+   "stockCode",
+   
+   "osShares_today",
+   "osShares_1MBefore",
+   "osShares_freefloat_today",
+   "osShares_freefloat_1MBefore",
+   
+   "osValue_today",
+   "osValue_1MBefore",
+   "osValue_freefloat_today",
+   "osValue_freefloat_1MBefore",
+   
+   "SB_over_os_shares",
+   "SB_over_os_shares_freefloat",
+   "SB_over_os_value_freefloat",
+   
+   "sorting_indicator",
+   
+   "suspended",
+
+   "db_SB_over_ff",
+   "db_SB_over_turnover",
+   
+   "dummy1",
+   "dummy2",
+   "dummy3",
+   "dummy4",
+   
+   "filter1",
+   "filter2",
+   "filter3",
+   "filter4",
+})  
 public class StockSingleDate {
 	public Calendar cal = Calendar.getInstance();
 	
@@ -47,6 +104,11 @@ public class StockSingleDate {
 	public Double dummy2 = 0.0;
 	public Double dummy3 = 0.0;
 	public Double dummy4 = 0.0;
+	
+	public Double filter1 = 1.0;
+	public Double filter2 = 1.0;
+	public Double filter3 = 1.0;
+	public Double filter4 = 1.0;
 	
 	public Double db_SB_over_ff = 0.0;
 	public Double db_SB_over_turnover = 0.0;

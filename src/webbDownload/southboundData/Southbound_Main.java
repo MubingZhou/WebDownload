@@ -7,7 +7,7 @@ public class Southbound_Main {
 		String szPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\sz";
 		String outputPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 		
-		DataDownloader.dataDownloader();
+		//DataDownloader.dataDownloader();
 		
 		//DataCombiner.dataCombiner(shPath, szPath, outputPath);
 

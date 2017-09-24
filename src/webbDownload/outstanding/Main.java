@@ -13,7 +13,7 @@ public class Main {
 			ArrayList<String> arr = new ArrayList<String>();
 			arr.add("8328");
 			
-			DataDownloader.dataDownloader(arr);
+			DataDownloader.dataDownloader();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

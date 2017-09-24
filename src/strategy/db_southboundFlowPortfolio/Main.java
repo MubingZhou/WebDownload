@@ -42,7 +42,8 @@ public class Main {
 			 * 0 - downloading data
 			 * 1 - full backtesting
 			 * 2 - drawdown analysis
-			 * 3 - calculate avg volume & turnover
+			 * 3 - reshape & calculate avg volume & turnover
+			 * 4 - reshape stock outstanding shares info
 			 */
 			
 			if(mode == 0) {
@@ -89,7 +90,7 @@ public class Main {
 					rebalDateArr .add("20170703");
 					rebalDateArr .add("20170801");
 					rebalDateArr .add("20170901");
-					rebalDateArr .add("20170912");
+					rebalDateArr .add("20170921");
 				}else if(rebalDate == 1) {
 					rebalDateArr .add("20160715");
 					rebalDateArr .add("20160815");
@@ -140,102 +141,219 @@ public class Main {
 				
 				
 				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
+				int idea = 2;
 				
-				/*
-				 * idea1：在每个rebalancing date，计算每只股票前lastNdays天每一天的ranking，加总之后求均值，再根据这个均值的ranking来选股票
-				 */
-				int lastNdays = 20;
-				Calendar rebalStart = Calendar.getInstance();
-				rebalStart.setTime(sdf_yyyyMMdd.parse(rebalDateArr.get(0)));
-				int rebalStartInd = allTradingDate .indexOf(rebalStart);
+				int lastNdays = 20;     // for idea1 only
 				
-				Calendar rebalEnd = Calendar.getInstance();
-				rebalEnd.setTime(sdf_yyyyMMdd.parse(rebalDateArr.get(rebalDateArr.size() - 1)));
-				int rebalEndInd = allTradingDate.indexOf(rebalEnd);
+				int lookbackDays2 = 20; // for idea2 only
+				int minDays2 = 15;		// for idea2 only
 				
-				if(rebalEndInd  == -1 || rebalStartInd == -1) {
-					logger.error("Rebalancing start date or end date is not a trading date! Cease running");
-					return;
+				if(idea == 1 || idea == 2) {
+					/*
+					 * =================================================================
+					 * idea1：在每个rebalancing date，计算每只股票前lastNdays天每一天的ranking，加总之后求均值，再根据这个均值的ranking来选股票
+					 */
+					/*
+					 * ===============================================================
+					 * idea2: 给每只股票每天设一个filter1，如果当天的southbound的share是增加的，则这个filter1设为1；如果过去30天中的filter1大于0的天数大于15，则另一个filter2设为1
+					 * 在rebalancing时，只考虑filter2大于0的情况
+					 */
+					
+					Calendar rebalStart = Calendar.getInstance();
+					rebalStart.setTime(sdf_yyyyMMdd.parse(rebalDateArr.get(0)));
+					int rebalStartInd = allTradingDate .indexOf(rebalStart);
+					
+					Calendar rebalEnd = Calendar.getInstance();
+					rebalEnd.setTime(sdf_yyyyMMdd.parse(rebalDateArr.get(rebalDateArr.size() - 1)));
+					int rebalEndInd = allTradingDate.indexOf(rebalEnd);
+					
+					if(rebalEndInd  == -1 || rebalStartInd == -1) {
+						logger.error("Rebalancing start date or end date is not a trading date! Cease running");
+						return;
+					}
+					
+					int rebalCount = 0;
+					ArrayList<ArrayList<StockSingleDate>> allPortfolioScreeningData = new ArrayList<ArrayList<StockSingleDate>>(); 
+					
+					// *************** 每天都进行screening ******************
+					int dayCalStart = 0;
+					switch(idea) {
+					case 1:
+						dayCalStart = lastNdays + 1;
+						break;
+					case 2:
+						dayCalStart = lookbackDays2 + 1;
+						break;
+					default:
+						break;
+					}
+					for(int i = rebalStartInd-dayCalStart; i <= rebalEndInd; i++) {   
+						String todayDate = sdf_yyyyMMdd.format(allTradingDate.get(i).getTime());
+						logger.info("\tScreening date = " + todayDate);
+						
+						ArrayList<StockSingleDate> todaySel = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd"); //对每只股票进行赋值
+						logger.debug("\t\ttodaySel .size() = " + todaySel .size());
+						allPortfolioScreeningData.add(todaySel );
+						
+						int todayInd = allPortfolioScreeningData.size() - 1;
+						// ===================== idea == 2 ===================
+						if(idea == 2 && todayInd > 0) {  //比较昨天south bound的数据，update filter
+							
+							ArrayList<StockSingleDate> lastDateSel = allPortfolioScreeningData.get(todayInd - 1);
+							// 将昨天的数据转换为map
+							Map<String, StockSingleDate> lastDateSel_map = new HashMap()	;
+							for(int k = 0; k < lastDateSel .size(); k++) {
+								StockSingleDate thisStock = lastDateSel.get(k);
+								lastDateSel_map.put(thisStock.stockCode, thisStock);
+							}
+							
+							//计算今天每只股票的southbound的增加值
+							for(int k = 0; k < todaySel.size(); k++) {
+								StockSingleDate thisStock = todaySel.get(k);
+								StockSingleDate thisStock_yest = lastDateSel_map.get(thisStock.stockCode);
+								
+								if(thisStock_yest == null) { // 找不到昨天的数据
+									thisStock.dummy4 = 1.0;  // 用dummy4来存储当天southbound的share的变动
+								}else {
+									Double sb_yesterday = thisStock_yest.SB_today_holding;
+									Double sb_today = thisStock.SB_today_holding;
+									
+									if(sb_today > sb_yesterday) {
+										thisStock.dummy4 = 1.0;
+									}else {
+										thisStock.dummy4 = -1.0;
+									}
+								}
+								todaySel.set(k, thisStock);
+							}
+							
+							allPortfolioScreeningData.set(todayInd, todaySel);
+						}
+						// ======= idea2 END ==========
+						
+						// *********** rebalancing date *************
+						if(todayDate.equals(rebalDateArr.get(rebalCount))) { 
+							logger.info("\t\tToday is a rebalancing date!");
+							ArrayList<StockSingleDate> stocksToBuy = new ArrayList<StockSingleDate> ();
+							
+							// ================= idea == 1 =================
+							if(idea  == 1) {
+								Map<String, StockSingleDate> rebalStock_map = new HashMap();  // 想要在rebal那天将每只股票的rank都列出来
+								for(int j = 0; j < todaySel .size(); j++) { // 先将rebalStock的框架搭出来
+									StockSingleDate stock = todaySel.get(j);
+									stock.dummy3 = stock.sorting_indicator;
+									stock.dummy4 = 1.0;
+									rebalStock_map.put(stock.stockCode, stock);
+								}
+								
+								for(int j = 1; j < lastNdays; j++) { // 寻找最近20天的数据，不用循环j=0的情况了
+									ArrayList<StockSingleDate> rebal_thisDateSel = allPortfolioScreeningData.get(allPortfolioScreeningData.size() - 1 - j) ;
+									//String rebal_thisDate = sdf_yyMMdd.format(allTradingDate.get(i-j).getTime());
+									for(int k = 0; k < rebal_thisDateSel.size(); k++) {
+										StockSingleDate thisStock = rebal_thisDateSel.get(k);
+										StockSingleDate findStock =rebalStock_map.get(thisStock.stockCode);
+										if(findStock != null) { // 只考虑能找到的情况
+											findStock.dummy3 = findStock.dummy3 + thisStock.sorting_indicator; // sorting_indicator是每只股票在当天的综合排名，dummy3来存储20天内这个排名的总值  
+											findStock.dummy4 = findStock.dummy4 + 1;  // dummy4 来存储有多少天是有效的
+											rebalStock_map.put(thisStock.stockCode, findStock);
+										}
+									}
+								}
+								
+								// 将每只股票最近20天的ranking加总，然后求平均值，再排序
+								ArrayList<StockSingleDate> todaySel2 = new ArrayList<StockSingleDate>();
+								todaySel2.addAll(rebalStock_map.values());
+								logger.debug("\t\trebalStock_map.values().size() = " + rebalStock_map.values().size());
+								logger.debug("\t\ttodaySel2.size() = " + todaySel2 .size());
+								for(int j = 0; j < todaySel2 .size(); j++) {
+									StockSingleDate thisStock = todaySel2.get(j);
+									thisStock .sorting_indicator = thisStock.dummy3 / thisStock.dummy4;
+								}
+								Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
+								
+								stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, true);
+							}  // ============= idea == 1 ---- END ===============
+							
+							// ============== idea2 =================
+							if(idea == 2) {
+								//int todayInd = allPortfolioScreeningData.size() - 1;
+								//ArrayList<StockSingleDate> todaySel = allPortfolioScreeningData.get(todayInd);
+								
+								for(int j = 0; j < lookbackDays2; j++) { // 回看过去20天
+									ArrayList<StockSingleDate> thisDateSel = allPortfolioScreeningData.get(todayInd - j);
+									
+									Map<String, StockSingleDate> thisDateSel_map = new HashMap()	;
+									for(int k = 0; k < thisDateSel.size(); k++) {
+										StockSingleDate thisStock = thisDateSel.get(k);
+										thisDateSel_map.put(thisStock.stockCode, thisStock);
+									}
+									
+									for(int k = 0; k < todaySel.size(); k++	) {   // 对今天的每只股票，查看过去某一天其southbound是否增加，如果增加，则filter2增加100
+										StockSingleDate thisStock = todaySel.get(k);
+										StockSingleDate findStock = thisDateSel_map.get(thisStock.stockCode);
+										
+										if(findStock == null) {
+											thisStock.filter2 = thisStock.filter2 + 100; 
+										}else {
+											if(findStock.dummy4 == 1.0)
+												thisStock.filter2 = thisStock.filter2 + 100; 
+										}
+										
+										todaySel.set(k, thisStock);
+									}
+								} // 至此，todaySel中的filter2应该已经记录了每只股票在过去某个时间段内，southbound是增加的天数。
+								
+								// 判断每只股票的符合条件的天数是否满足最小天数要求
+								for(int k = 0; k < todaySel.size(); k++	) {
+									StockSingleDate thisStock = todaySel.get(k);
+									
+									if(thisStock.filter2 / (lookbackDays2 * 100) >= ((double) minDays2 / lookbackDays2)) {
+										thisStock.filter3 = 2.0;
+									}else {
+										thisStock.filter3 = -2.0;
+									}
+								}
+								allPortfolioScreeningData.set(todayInd, todaySel);
+								
+								stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel, true); // todaySel早就已经是排序好的
+							}
+							// ============== idea2 END =================
+							
+							ArrayList<String> stocksToBuy_str = new ArrayList<String>();
+							for(int j = 0; j < stocksToBuy.size(); j++) {
+								stocksToBuy_str.add(stocksToBuy.get(j).stockCode);
+							}
+							data.add(stocksToBuy_str);
+							
+							rebalCount ++;
+						} // rebalancing 结束
+					}
+					
+					/*
+					 * idea1结束
+					 * ===============================================================
+					 */
 				}
 				
-				int rebalCount = 0;
-				ArrayList<ArrayList<StockSingleDate>> allPortfolioScreeningData = new ArrayList<ArrayList<StockSingleDate>>(); 
-				for(int i = rebalStartInd-lastNdays; i <= rebalEndInd; i++) {
-					String todayDate = sdf_yyyyMMdd.format(allTradingDate.get(i).getTime());
-					logger.info("\tScreening date = " + todayDate);
-					
-					ArrayList<StockSingleDate> todaySel = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd"); //对每只股票进行赋值
-					logger.debug("\t\ttodaySel .size() = " + todaySel .size());
-					allPortfolioScreeningData.add(todaySel );
-					
-					if(todayDate.equals(rebalDateArr.get(rebalCount))) { // rebalancing date
-						logger.info("\t\tToday is a rebalancing date!");
-						Map<String, StockSingleDate> rebalStock_map = new HashMap();  // 想要在rebal那天将每只股票的rank都列出来
-						for(int j = 0; j < todaySel .size(); j++) { // 先将rebalStock的框架搭出来
-							StockSingleDate stock = todaySel.get(j);
-							stock.dummy3 = stock.sorting_indicator;
-							stock.dummy4 = 1.0;
-							rebalStock_map.put(stock.stockCode, stock);
-						}
+				
+				if(idea == 0) /// 不用考虑rebalancing date之间的screening结果
+					for(int i = 0; i < rebalDateArr.size(); i++) {
+						String date = rebalDateArr.get(i);
+						SimpleDateFormat sdf3 = new SimpleDateFormat("yyyyMMdd");
+						Calendar benchCal = Calendar.getInstance();
+						benchCal.setTime(sdf3.parse(date));
+						benchCal = utils.Utils.getMostRecentDate(benchCal, allTradingDate);
+						date = sdf3.format(benchCal.getTime());
 						
-						for(int j = 1; j < lastNdays; j++) { // 寻找最近20天的数据，不用循环j=0的情况了
-							ArrayList<StockSingleDate> rebal_thisDateSel = allPortfolioScreeningData.get(allPortfolioScreeningData.size() - 1 - j) ;
-							//String rebal_thisDate = sdf_yyMMdd.format(allTradingDate.get(i-j).getTime());
-							for(int k = 0; k < rebal_thisDateSel.size(); k++) {
-								StockSingleDate thisStock = rebal_thisDateSel.get(k);
-								StockSingleDate findStock =rebalStock_map.get(thisStock.stockCode);
-								if(findStock != null) { // 只考虑能找到的情况
-									findStock.dummy3 = findStock.dummy3 + thisStock.sorting_indicator; // sorting_indicator是每只股票在当天的综合排名，dummy3来存储20天内这个排名的总值  
-									findStock.dummy4 = findStock.dummy4 + 1;  // dummy4 来存储有多少天是有效的
-									rebalStock_map.put(thisStock.stockCode, findStock);
-								}
-							}
-						}
-						
-						// 将每只股票最近20天的ranking加总，然后求平均值，再排序
-						ArrayList<StockSingleDate> todaySel2 = new ArrayList<StockSingleDate>();
-						todaySel2.addAll(rebalStock_map.values());
-						logger.debug("\t\trebalStock_map.values().size() = " + rebalStock_map.values().size());
-						logger.debug("\t\ttodaySel2.size() = " + todaySel2 .size());
-						for(int j = 0; j < todaySel2 .size(); j++) {
-							StockSingleDate thisStock = todaySel2.get(j);
-							thisStock .sorting_indicator = thisStock.dummy3 / thisStock.dummy4;
-						}
-						Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
-						
-						ArrayList<StockSingleDate> stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, true);
-						ArrayList<String> stocksToBuy_str = new ArrayList<String>();
-						for(int j = 0; j < stocksToBuy.size(); j++) {
-							stocksToBuy_str.add(stocksToBuy.get(j).stockCode);
+						ArrayList<StockSingleDate> stockList = PortfolioScreening.assignValue_singleDate(date, "yyyyMMdd");
+						ArrayList<StockSingleDate> stocksToBuy = PortfolioScreening.pickStocks_singleDate(stockList, true);
+						ArrayList<String> stocksToBuy_str = new ArrayList<String> ();
+						for(int j = 0; j < stocksToBuy .size(); j++) {
+							stocksToBuy_str .add(stocksToBuy.get(j).stockCode);
 						}
 						data.add(stocksToBuy_str);
 						
-						rebalCount ++;
-					} // rebalancing 结束
-				}
-				
-				/*
-				 * idea1结束
-				 */
-				
-				if(false) /// 不用考虑rebalancing date之间的screening结果
-				for(int i = 0; i < rebalDateArr.size(); i++) {
-					String date = rebalDateArr.get(i);
-					SimpleDateFormat sdf3 = new SimpleDateFormat("yyyyMMdd");
-					Calendar benchCal = Calendar.getInstance();
-					benchCal.setTime(sdf3.parse(date));
-					benchCal = utils.Utils.getMostRecentDate(benchCal, allTradingDate);
-					date = sdf3.format(benchCal.getTime());
-					
-					ArrayList<StockSingleDate> stockList = PortfolioScreening.assignValue_singleDate(date, "yyyyMMdd");
-					ArrayList<StockSingleDate> stocksToBuy = PortfolioScreening.pickStocks_singleDate(stockList, true);
-					ArrayList<String> stocksToBuy_str = new ArrayList<String> ();
-					for(int j = 0; j < stocksToBuy .size(); j++) {
-						stocksToBuy_str .add(stocksToBuy.get(j).stockCode);
-					}
-					data.add(stocksToBuy_str);
-					
-					rebalDateArr.set(i, date);
+						rebalDateArr.set(i, date);
 				}
 				
 				ArrayList<String> dateArr = new ArrayList<String>();
@@ -306,7 +424,14 @@ public class Main {
 						if(j > 0)
 							fw_stockPicks1.write(",");
 						
-						String stock = data.get(j).get(i);
+						ArrayList<String> todayStocks = data.get(j);
+						String stock = "";
+						if(todayStocks == null || todayStocks.size() == 0) {
+							continue;
+						}
+						if( i > (todayStocks.size() - 1))
+							continue;
+						stock = data.get(j).get(i);
 						fw_stockPicks1.write(stock);
 						
 						//======= transform "data" ====
@@ -349,6 +474,8 @@ public class Main {
 				
 				// save the portfolio
 				XMLUtil.convertToXml(pf, portFilePath + "\\portfolio.xml");
+				// save the every data
+				//XMLUtil.convertToXml(allPortfolioScreeningData, portFilePath + "\\allPortfolioScreeningData.xml");
 			}
 			
 			if(mode == 2) {
@@ -400,7 +527,7 @@ public class Main {
 					
 					int ind0 = 0;
 					int ind1 = 0;
-					ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
+					ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();  //先把这只股票所有天的数据存到这里
 					String line = "";
 					while((line = bf.readLine()) != null) {
 						if(ind0 == 0) {
@@ -458,6 +585,68 @@ public class Main {
 					fw.close();
 				}
 			
+			}
+			
+			if(mode == 4) {  // reshaping outstanding shares info
+				logger.info("============== reshaping outstanding shares info ===============");
+				
+				Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
+				Calendar startCal = Calendar.getInstance();
+				startCal.setTime(sdf_yyyyMMdd.parse("20141201"));
+				Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingDate);
+				
+				int start_ind = allTradingDate.indexOf(startCal2);
+				Calendar dataStartCal = allTradingDate.get(start_ind - 60);
+				startCal = (Calendar) startCal2.clone();
+				
+				// create these filewriters
+				for(int i = 0; i < allTradingDate.size(); i++) {
+					Calendar thisCal = allTradingDate.get(i);
+					if(!thisCal.before(startCal)) {
+						String thisCal_str = sdf_yyyyMMdd.format(thisCal.getTime());
+						
+						String path = "D:\\stock data\\southbound flow strategy - db\\stock outstanding shares\\";
+						FileWriter fw = new FileWriter(path + thisCal_str + ".csv");
+						fw.write("stock,outstanding shares\n");
+						
+						fwMap.put(thisCal_str, fw);
+					}
+				}
+				
+				// write data
+				String stockDirPath = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
+				File f = new File(stockDirPath );
+				String[] fileList = f.list();
+				for(int i = 0; i < fileList.length; i++) {
+					logger.debug("File = " + fileList[i]);
+					String stock = fileList[i].substring(0, fileList[i].length() - 4);
+					
+					BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockDirPath + fileList[i]);
+					String line = "";
+					int count1 = 0;
+					int trdDateCount = 0;
+					int trdDateInd = allTradingDate.size() - 1;
+					while((line = bf.readLine()) != null) {
+						if(count1 == 0) {
+							count1 ++;
+							continue;
+						}
+						ArrayList<String> dataArr = new ArrayList<String>(Arrays.asList(line.split(",")));
+						String thisOsShares = dataArr.get(1);
+						
+						Calendar thisCal = Calendar.getInstance();
+						thisCal.setTime(sdf_yyyy_MM_dd.parse(dataArr.get(0)));
+						
+						if(thisCal.after(allTradingDate.get(trdDateInd)))
+							continue;
+						
+						while(!allTradingDate.get(trdDateInd).before(thisCal)) {
+							
+						}
+					}
+					
+				}
+				
 			}
 			
 			

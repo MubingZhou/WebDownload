@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-
+import java.util.List;
 
 import utils.Utils;
 
@@ -17,6 +17,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
 			ArrayList<String> stockCodeList = WebDownload.getCGITopHoldingStocks("D:\\stock data\\all stock list.csv");
+			//List<String> stockCodeList = stockCodeList0.subList(100, stockCodeList0.size() );
 			
 			// to download all stocks
 			while(stockCodeList.size() > 0) {

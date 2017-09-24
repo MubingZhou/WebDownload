@@ -390,18 +390,21 @@ public class PortfolioScreening {
 				}
 			}
 			
-			// ============ pick out the eligible stocks ===========
+			// ============ apply filters ===========
 			int stockCounter = 0;
 			for(int i = 0; i < stockList.size(); i++) {
 				StockSingleDate s = stockList.get(i);
 				String stockCode = s.stockCode;
 				
 				// ========= test if suspended && volume is OK ==========
-				if(!s.suspended && s.Turnover_3M_avg > (7500000 * 7.8)) {
-					//stockListStr.add(s.stockCode);
-					stockPickedList.add(s);
-					stockCounter ++;
+				if(s.filter1 > 0 && s.filter2 > 0 && s.filter3 > 0 && s.filter4 > 0) {
+					if(!s.suspended && s.Turnover_3M_avg > (7500000 * 7.8)) {
+						//stockListStr.add(s.stockCode);
+						stockPickedList.add(s);
+						stockCounter ++;
+					}
 				}
+				
 				if(stockCounter >= topNStocks)
 					break;
 				
@@ -414,7 +417,7 @@ public class PortfolioScreening {
 				fw.write("stock,mkt cap (US mm),3M ADV (US mm),Score,"
 						+ "H-share discount,SB Holding (US mm),SB Holding to FF,"
 						+ "1M Change in SB holding (US mm),1M Change in SB holding/FF,rank1,1m SB Flow to Turnover,rank2,"
-						+ "suspend,turnover > 7.5m US?\n");
+						+ "suspend,turnover > 7.5m US?,total rank(idea1),filter1,filter2(idea2),filter3(idea2)\n");
 				
 				FileWriter fw2 = new FileWriter(outputPath + "\\screening " + date + " shares.csv");
 				fw2.write("stock,SB today (shares),SB 1M Before (shares),change,"
@@ -465,7 +468,9 @@ public class PortfolioScreening {
 					fw.write(s.stockCode + "," + String.valueOf(s.osValue_today / 7.8 / 1000000) + "," + String.valueOf(s.Turnover_3M_avg / 7.8 / 1000000) + "," + String.valueOf(s.dummy1 + s.dummy2) + ","
 							+ "" + "," + String.valueOf(s.SB_today_holdingValue / 7.8 / 1000000) + "," + String.valueOf(s.SB_today_holdingValue / ffValue) + "," 
 							+ String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / 7.8 / 1000000) + "," + String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / ffValue) + "," + String.valueOf(s.dummy1) + "," + String.valueOf((s.SB_today_holdingValue - s.SB_1MBefore_holdingValue) / s.Turnover_3M_avg / 20.0) + "," + s.dummy2 + ","
-							+ String.valueOf(s.suspended) + "," + String.valueOf(isVolLarge)
+							+ String.valueOf(s.suspended) + "," + String.valueOf(isVolLarge) + "," 
+							+ String.valueOf(s.sorting_indicator) + ","
+							+ String.valueOf(s.filter1) + "," + String.valueOf(s.filter2) + "," + String.valueOf(s.filter3) + ","
 							+ "\n");
 				
 		
