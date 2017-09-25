@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -57,7 +58,7 @@ public class Portfolio implements Serializable {
 	 * date2, [marketValue2, cashRemained2, stockHeld2]
 	 * ]
 	 */
-	public Map<Calendar, PortfolioOneDaySnapshot> histSnap = new HashMap();
+	public Map<Calendar, PortfolioOneDaySnapshot> histSnap = new HashMap();  // 这个PortfolioOneDaySnapshot会存储从开始到某个时间点所有购买过的股票，即使那只股票被平仓了，也会保留他的位置，只不过数量为0
 	public ArrayList<Trade> allTrades = new ArrayList<Trade>();
 	public ArrayList<Order> allOrders = new ArrayList<Order>();
 	
@@ -647,6 +648,76 @@ public class Portfolio implements Serializable {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	/**
+	 * 
+	 * @return the historical market value so far. 0th: Market value ArrayList<Double>; 1st: corresponding date ArrayList<Calendar>
+	 */
+	public ArrayList<Object> getMarketValue(Calendar dateStart, Calendar dateEnd){
+		ArrayList<Double> mv_val = new ArrayList<Double>();
+		ArrayList<Calendar> mv_cal = new ArrayList<Calendar> (); 
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		
+		try {
+			Set<Calendar> allDaysSet = histSnap.keySet();
+			ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>(allDaysSet);
+			//ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>();
+			Collections.sort(allDaysArr ); // ascending
+			
+			
+			for(int i = 0; i < allDaysArr.size(); i++) {
+				// 不知道为什么，有时候输入的dateStart的Calendar类型和系统自带的Calendar类型不一样，即使其时间都一样
+				Calendar c = allDaysArr.get(i);
+				
+				String t = sdf.format(c.getTime());
+				Calendar cc = (Calendar) dateStart.clone();
+				
+				cc.setTime(sdf.parse(t));
+				
+				allDaysArr.set(i, cc);
+				
+				// === get the market value ===
+				if(!cc.before(dateStart) && !cc.after(dateEnd)) {  // cc equals or later than dateStart && equals or before dateEnd
+					PortfolioOneDaySnapshot pos = histSnap.get(cc);
+					Double mvToday = pos.marketValue;
+					
+					mv_val.add(mvToday);
+					mv_cal.add(cc);
+				}
+			}
+			
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		ArrayList<Object> mv = new ArrayList<Object>();
+		mv.add(mv_val);
+		mv.add(mv_cal);
+		
+		return mv;
+	}
+	
+	/**
+	 * 
+	 * @return the historical market value so far. 0th: Market value ArrayList<Double>; 1st: corresponding date ArrayList<Calendar>
+	 */
+	public ArrayList<Object> getMarketValue(String dateStartStr, String dateEndStr, String dateFormat){
+		SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
+		ArrayList<Object> mv = new ArrayList<Object>();
+		try {
+			Calendar c1 = Calendar.getInstance();
+			Calendar c2 = Calendar.getInstance();
+			c1.setTime(sdf.parse(dateStartStr));
+			c2.setTime(sdf.parse(dateEndStr));
+			mv = getMarketValue(c1,c2 );
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return mv;
 	}
 	
 	enum MsgType{

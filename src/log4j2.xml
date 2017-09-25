@@ -3,7 +3,7 @@
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%msg%n"/>
-      <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"></ThresholdFilter></Console>
+      <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"></ThresholdFilter></Console>
     <File name="file" fileName="log/test.log" append="false">
     	<PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n"></PatternLayout>
     	<ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"></ThresholdFilter></File>
@@ -12,7 +12,7 @@
     	<SizeBasedTriggeringPolicy size="10MB"></SizeBasedTriggeringPolicy>
     	<ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"></ThresholdFilter></RollingFile></Appenders>
   <Loggers>
-    <Root level="info">
+    <Root level="trace">
       <AppenderRef ref="Console"></AppenderRef>
       <AppenderRef ref="RollingFile"></AppenderRef>
       <AppenderRef ref="file"></AppenderRef>

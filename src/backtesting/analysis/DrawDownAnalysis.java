@@ -9,18 +9,31 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
 import backtesting.portfolio.Portfolio;
 import backtesting.portfolio.PortfolioOneDaySnapshot;
 import backtesting.portfolio.Underlying;
+import math.MyMath;
 
 public class DrawDownAnalysis {
 	public static String analysisBetweenDates_outputPath = ""; // should include the file name, i.e. "D:\\test.csv"
 	
+	
+	private static Logger logger = Logger.getLogger(DrawDownAnalysis.class.getName());
+	
+	/**
+	 * calculate the pnl contribution for each stock within the time period. The output file is stored in DrawDownAnalysis.analysisBetweenDates_outputPath
+	 * @param p
+	 * @param date1
+	 * @param date2
+	 * @param dateFormat
+	 */
 	public static void pnlAnalysisBetweenDates(Portfolio p, String date1, String date2, String dateFormat) {
 		try {
-			System.out.println("========= Start Drawdown Analysis ===========");
+			logger.info("========= Start PnL Drawdown Analysis ===========");
 			//analysisBetweenDates_outputPath = utils.Utils.checkPath(analysisBetweenDates_outputPath);
-			String errMsgHead = "[DrawDownAnalysis - analysisBetweenDates] ";
+			String errMsgHead = "[DrawDownAnalysis - pnl Analysis Between Dates] ";
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat); 
 			
 			// ======= some pre dealings =======
@@ -45,16 +58,16 @@ public class DrawDownAnalysis {
 			int date2Ind = allDaysArr.indexOf(date2Cal);
 			
 			if(date1Ind == -1 || date2Ind == -1) {
-				System.out.println(errMsgHead + "No such period existed in the Portfolio!");
+				logger.error(errMsgHead + "No such period existed in the Portfolio!");
 				//System.out.println(sdf.format(date1Cal.getTime()) + " " + sdf.format(date2Cal.getTime()));
 				//System.out.println(allDaysArr.get(0).equals(date1Cal));
-				System.out.println(date1Ind + " " + date2Ind);
+				//logger.error(date1Ind + " " + date2Ind);
 				return;
 			}
 			
 			FileWriter fw = new FileWriter(analysisBetweenDates_outputPath);
-			System.out.println(analysisBetweenDates_outputPath);
-			System.out.println(sdf.format(date1Cal.getTime()) + " " + sdf.format(date2Cal.getTime()));
+			logger.info(errMsgHead + " output path=" + analysisBetweenDates_outputPath);
+			logger.info(sdf.format(date1Cal.getTime()) + " " + sdf.format(date2Cal.getTime()));
 			
 			//======== overview ========
 			PortfolioOneDaySnapshot startPortfolio = p.histSnap.get(date1Cal);
@@ -147,6 +160,206 @@ public class DrawDownAnalysis {
 			e.printStackTrace();
 		}
 		
-		System.out.println("========= End Drawdown Analysis ===========");
+		logger.info("========= End PnL Drawdown Analysis ===========");
+	}
+
+	/**
+	 * To calculate the maximum drawdown
+	 * @param p
+	 * @param date1
+	 * @param date2
+	 * @param dateFormat
+	 * @return ArrayList<Object>: 0th: max DD (Double); 1st: max DD start date (Calendar); 2nd: max DD end Date (Calendar); 3rd: max DD start portfolio value (Double); 4th: max DD end portfolio value (Double)
+	 */
+	public static ArrayList<Object> maxDrawdown(Portfolio p, String date1, String date2, String dateFormat){
+		ArrayList<Object> maxDD = new ArrayList<Object>();
+		
+		try {
+			logger.info("========= Start Caculating Max Drawdown ===========");
+			//analysisBetweenDates_outputPath = utils.Utils.checkPath(analysisBetweenDates_outputPath);
+			String errMsgHead = "[DrawDownAnalysis - calculating max DD] ";
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat); 
+			
+			// ======= some pre dealings =======
+			Set<Calendar> allDaysSet = p.histSnap.keySet();
+			ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>(allDaysSet);
+			//ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>();
+			Collections.sort(allDaysArr ); // ascending
+			
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			
+			Calendar date1Cal = (Calendar) allDaysArr.get(0).clone();
+			date1Cal .setTime(sdf.parse(date1));
+			Calendar date1Cal_temp = utils.Utils.getMostRecentDate(date1Cal, allTradingDate);
+			date1Cal.setTime(sdf.parse(sdf.format(date1Cal_temp.getTime())));  // seems that the calendar system extracted from the file is different than that of our system
+
+			Calendar date2Cal = (Calendar) allDaysArr.get(0).clone();
+			date2Cal .setTime(sdf.parse(date2));
+			Calendar date2Cal_temp = utils.Utils.getMostRecentDate(date2Cal, allTradingDate);
+			date2Cal.setTime(sdf.parse(sdf.format(date2Cal_temp.getTime())));
+			
+			int date1Ind = allDaysArr.indexOf(date1Cal);
+			int date2Ind = allDaysArr.indexOf(date2Cal);
+			
+			if(date1Ind == -1 || date2Ind == -1) {
+				logger.error(errMsgHead + "No such period existed in the Portfolio!");
+				//System.out.println(sdf.format(date1Cal.getTime()) + " " + sdf.format(date2Cal.getTime()));
+				//System.out.println(allDaysArr.get(0).equals(date1Cal));
+				//logger.error(date1Ind + " " + date2Ind);
+				return null;
+			}
+			
+			// ========= get the market value ===========
+			ArrayList<Double> marketValue = new ArrayList<Double> ();
+			for(int i = date1Ind; i < date2Ind; i++) {
+				PortfolioOneDaySnapshot todayP = p.histSnap.get(allDaysArr.get(i));
+				Double todayMarketValue = todayP.marketValue;
+				marketValue.add(todayMarketValue);
+			}
+			
+			// ========== calculate DD ===========
+			ArrayList<Double> maxDD_temp = maxDrawdown(marketValue, errMsgHead);
+			if(maxDD_temp == null || maxDD_temp.size() == 0) {
+				logger.error(errMsgHead + " maxDD null!");
+				return null;
+			}
+			maxDD.add(maxDD_temp.get(0));
+			maxDD.add(allDaysArr.get(maxDD_temp.get(1).intValue() + date1Ind));
+			maxDD.add(allDaysArr.get(maxDD_temp.get(2).intValue() + date1Ind));
+			maxDD.add(maxDD_temp.get(3));
+			maxDD.add(maxDD_temp.get(4));
+			
+			logger.debug("Finally, maxDD=" + maxDD.get(0) + " start=" + sdf.format(((Calendar) maxDD.get(1)).getTime())
+					+ " end=" + sdf.format(((Calendar) maxDD.get(2)).getTime()) + " startV=" + maxDD.get(3) + " endV=" + maxDD.get(4)); 
+			logger.info("========= End Caculating Max Drawdown ===========");
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return maxDD;
+	}
+	
+	private static ArrayList<Double> maxDrawdown(ArrayList<Double> portfolioValue, String errMsgHead){
+		if(portfolioValue == null || portfolioValue.size() == 0) {
+			logger.error(errMsgHead + " portfolioValue has no values!");
+			return null;
+		}
+		
+		ArrayList<Double> maxDDArr = new ArrayList<Double>();
+		maxDDArr.add(-1.0);
+		maxDDArr.add(-1.0);
+		maxDDArr.add(-1.0);
+		maxDDArr.add(-1.0);
+		maxDDArr.add(-1.0);
+		
+		if(portfolioValue.size() == 1	) {
+			maxDDArr.set(0, 0.0);
+			maxDDArr.set(1, 0.0);
+			maxDDArr.set(2, 0.0);
+			maxDDArr.set(3,portfolioValue.get(0));
+			maxDDArr.set(4,portfolioValue.get(0));
+			
+			logger.info(errMsgHead + " portfolioValue has only one value!");
+			return maxDDArr;
+		}
+		
+		Double maxDD = 0.0;
+		int maxDDStartInd = 0;
+		int maxDDEndInd = 0;
+		try {
+			Double maxPortfolioValue = portfolioValue.get(0);
+			int lastMaxPValueInd = 0;
+			for(int i = 1; i < portfolioValue.size(); i++) {
+				Double thisPValue = portfolioValue.get(i);
+				logger.trace("i = " + i + " thisPValue = " + thisPValue + " lastMaxPValueInd=" + lastMaxPValueInd + " maxDDStartInd=" + maxDDStartInd + " maxDDEndInd=" + maxDDEndInd);
+				
+				if(thisPValue > maxPortfolioValue ) {
+					maxPortfolioValue = thisPValue;
+					lastMaxPValueInd = i;
+				}else {
+					Double thisDD = (thisPValue - maxPortfolioValue) / maxPortfolioValue;
+					if(thisDD < maxDD) {  // current drawdown exceeds historical high; note that maxDD is a negative number
+						maxDD = thisDD;
+						maxDDEndInd = i;
+						maxDDStartInd = lastMaxPValueInd;
+					}
+					
+				}
+				
+				logger.trace("\t" + " lastMaxPValueInd=" + lastMaxPValueInd + " maxDDStartInd=" + maxDDStartInd + " maxDDEndInd=" + maxDDEndInd);
+			}
+			
+			logger.trace("maxDD=" + maxDD + " lastMaxPValueInd=" + lastMaxPValueInd + " maxDDStartInd=" + maxDDStartInd + " maxDDEndInd=" + maxDDEndInd);
+		
+			maxDDArr.set(0, maxDD);
+			maxDDArr.set(1, (double) maxDDStartInd); 
+			maxDDArr.set(2, (double) maxDDEndInd); 
+			maxDDArr.set(3, portfolioValue.get(maxDDStartInd));
+			maxDDArr.set(4, portfolioValue.get(maxDDEndInd));
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return maxDDArr;
+	}
+	
+	/**
+	 * to calculate the max DD given a series of portfolio value.
+	 * @param ArrayList<Double> portfolioValue
+	 * @return returns ArrayList<Double>. 0th value: max DD value (Double); 1st value: max DD period starts (Integer); 2nd value: max DD period ends (Integer);
+	 */
+	public static ArrayList<Double> maxDrawdown(ArrayList<Double> portfolioValue){
+		return maxDrawdown(portfolioValue, "[Calculate Max DD]");
+	}
+
+	/**
+	 * get the Sharpe Ratio. rf  - risk free rate
+	 * @param portfolioValue
+	 * @param rf
+	 * @param errMsgHead
+	 * @return
+	 */
+	private static Double sharpeRatio(ArrayList<Double> portfolioValue, Double rf, String errMsgHead) {
+		Double s = -100.0;
+		
+		if(portfolioValue == null || portfolioValue.size() == 0) {
+			logger.error(errMsgHead + " portfolioValue has no values!");
+			return null;
+		}
+		
+		// get the average excessive return 
+		ArrayList<Double> er = new ArrayList<Double>(); 
+		Double avgEr = 0.0;  // avg excessive return
+		Double cumEr = 0.0; // cumulative excessive return
+		for(int i = 1; i < portfolioValue.size(); i++) {
+			Double todayValue = portfolioValue.get(i);
+			Double lastValue = portfolioValue.get(i - 1);
+			
+			Double todayEr = todayValue / lastValue  - 1 - rf;
+			er.add(todayEr);
+			cumEr = cumEr + todayEr	;
+			
+			
+		}
+		avgEr = cumEr / (portfolioValue.size() - 1);
+		
+		// calculate std
+		Double cumSQ = 0.0;
+		Double std = MyMath.std(er);
+		
+		s = avgEr / std * Math.sqrt(252);
+		
+		return s;
+	}
+	
+	/**
+	 * get the Sharpe Ratio. rf  - risk free rate
+	 * @param portfolioValue
+	 * @param rf
+	 * @param errMsgHead
+	 * @return
+	 */
+	public static Double sharpeRatio(ArrayList<Double> portfolioValue, Double rf) {
+		return sharpeRatio(portfolioValue, rf, "[Calculating Sharpe Ratio]");
 	}
 }

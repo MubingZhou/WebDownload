@@ -37,7 +37,7 @@ public class Main {
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			
 			
-			int mode = 1;
+			int mode = 2;
 			/*
 			 * 0 - downloading data
 			 * 1 - full backtesting
@@ -65,11 +65,11 @@ public class Main {
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
-				String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
-				File f = new File(mvFilePath);
+				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - filter";
+				//String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
+				File f = new File(portFilePath);
 				f.mkdir();
-				PortfolioScreening.outputPath = mvFilePath;
+				PortfolioScreening.outputPath = portFilePath;
 				
 				ArrayList<String> rebalDateArr = new ArrayList<String>();
 				
@@ -375,7 +375,7 @@ public class Main {
 				
 				// ==== output market value & portfolio ======
 				FileWriter fw = new FileWriter(portFilePath + "\\portfolio.csv");
-				FileWriter fw2 = new FileWriter(mvFilePath + "\\market value.csv");
+				FileWriter fw2 = new FileWriter(portFilePath + "\\market value.csv");
 				for(Calendar date : keysArr) {
 					String dateStr = sdf.format(date.getTime());
 					PortfolioOneDaySnapshot snapData = histSnap.get(date);
@@ -479,15 +479,22 @@ public class Main {
 			}
 			
 			if(mode == 2) {
-				String portFilePathRoot =  "D:\\stock data\\southbound flow strategy - db\\20170915 131922\\";
+				String portFilePathRoot =  "D:\\stock data\\southbound flow strategy - db\\20170925 075008 - filter\\";
 				String portFilePath = portFilePathRoot + "portfolio.xml";
 				Portfolio pf = (Portfolio) XMLUtil.convertXmlFileToObject(Portfolio.class,portFilePath);
 				
-				String startDate = "20170420";
-				String endDate = "20170720";
+				String startDate = "20160704";
+				String endDate = "20160810";
 				String dateFormat = "yyyyMMdd";
-				DrawDownAnalysis.analysisBetweenDates_outputPath = portFilePathRoot + "drawdown_analysis " + startDate + " - " + endDate + ".csv";
-				DrawDownAnalysis.pnlAnalysisBetweenDates(pf,startDate ,endDate ,dateFormat );
+				
+				//DrawDownAnalysis.analysisBetweenDates_outputPath = portFilePathRoot + "drawdown_analysis " + startDate + " - " + endDate + ".csv";
+				//DrawDownAnalysis.pnlAnalysisBetweenDates(pf,startDate ,endDate ,dateFormat );
+				
+				//DrawDownAnalysis.maxDrawdown(pf, startDate, endDate, dateFormat);
+				ArrayList<Object> mvArr = pf.getMarketValue("20160101", "20171231", "yyyyMMdd");
+				ArrayList<Double> mv = (ArrayList<Double>) mvArr.get(0);
+				Double s = DrawDownAnalysis.sharpeRatio(mv, 0.0);
+				System.out.println("Sharpe = " + s);
 			}
 			
 			if(mode == 3) {  // calculating stock volume and save
