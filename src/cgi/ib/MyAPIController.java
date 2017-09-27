@@ -1,5 +1,6 @@
 package cgi.ib;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,10 +23,12 @@ import com.ib.controller.ApiController;
 import com.ib.controller.Bar;
 import com.ib.controller.Position;
 
-public class MyIBAPIController extends ApiController{
+public class MyAPIController extends ApiController{
+	ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
+	
 	
 	// ---------------------------------------- Constructor and Connection handling ----------------------------------------
-	public MyIBAPIController( IConnectionHandler handler, ILogger inLogger, ILogger outLogger) {
+	public MyAPIController( IConnectionHandler handler, ILogger inLogger, ILogger outLogger) {
 		super(handler, inLogger, outLogger);
 	}
 	
@@ -52,10 +55,13 @@ public class MyIBAPIController extends ApiController{
 	}
 	@Override public void error(int id, int errorCode, String errorMsg) {
 		super.error(id, errorCode, errorMsg);
+		System.out.println("MyAPIConnection: " + errorMsg);
 	}
 
 	@Override public void connectionClosed() {
 		super.connectionClosed();
+		
+		System.out.println("[MyAPIController] Closed!!");
 	}
 	
 	// ---------------------------------------- Account and portfolio updates ----------------------------------------

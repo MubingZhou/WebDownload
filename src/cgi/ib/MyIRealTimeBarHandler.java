@@ -16,7 +16,7 @@ public class MyIRealTimeBarHandler implements IRealTimeBarHandler{
 	public Contract contract;
 	public FileWriter fileWriter;
 	
-	private Logger logger = Logger.getLogger(this.getClass().getName());
+	private static Logger logger = Logger.getLogger(MyITopMktDataHandler.class.getName());
 	
 	public MyIRealTimeBarHandler(String stockCode) {
 		super();

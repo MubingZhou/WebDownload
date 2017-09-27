@@ -14,6 +14,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
+import org.apache.log4j.Logger;
+
 import backtesting.backtesting.Order;
 import backtesting.backtesting.OrderStatus;
 import backtesting.backtesting.OrderType;
@@ -38,6 +40,8 @@ import backtesting.backtesting.TradeType;
 })  
 
 public class Portfolio implements Serializable {
+	private static Logger logger = Logger.getLogger(Portfolio.class.getName());
+	
 	private static final long serialVersionUID = 1L;
 	
 	// configuration
@@ -666,25 +670,35 @@ public class Portfolio implements Serializable {
 			//ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>();
 			Collections.sort(allDaysArr ); // ascending
 			
+			// 不知道为什么，有时候输入的dateStart的Calendar类型和系统自带的Calendar类型不一样，即使其时间都一样
+			String t1 = sdf.format(dateStart.getTime());
+			String t2 = sdf.format(dateEnd.getTime());
+			
+			Calendar s1 = (Calendar) allDaysArr.get(0).clone();
+			Calendar s2 = (Calendar) allDaysArr.get(0).clone();
+			s1.setTime(sdf.parse(t1));
+			s2.setTime(sdf.parse(t2));
+			
+			Calendar dateStartCopy = (Calendar) s1.clone();
+			Calendar dateEndCopy = (Calendar) s2.clone();
 			
 			for(int i = 0; i < allDaysArr.size(); i++) {
-				// 不知道为什么，有时候输入的dateStart的Calendar类型和系统自带的Calendar类型不一样，即使其时间都一样
 				Calendar c = allDaysArr.get(i);
 				
 				String t = sdf.format(c.getTime());
-				Calendar cc = (Calendar) dateStart.clone();
 				
-				cc.setTime(sdf.parse(t));
-				
-				allDaysArr.set(i, cc);
-				
+				logger.trace("[get market value] date=" + t);
 				// === get the market value ===
-				if(!cc.before(dateStart) && !cc.after(dateEnd)) {  // cc equals or later than dateStart && equals or before dateEnd
-					PortfolioOneDaySnapshot pos = histSnap.get(cc);
+				if(!c.before(dateStartCopy) && !c.after(dateEndCopy)) {  // cc equals or later than dateStart && equals or before dateEnd
+					PortfolioOneDaySnapshot pos = histSnap.get(c);
 					Double mvToday = pos.marketValue;
 					
+					//将c转换成和dateStart格式一样的
+					c = (Calendar) dateStart.clone();
+					c.setTime(sdf.parse(t));
+					
 					mv_val.add(mvToday);
-					mv_cal.add(cc);
+					mv_cal.add(c);
 				}
 			}
 			

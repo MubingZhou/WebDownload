@@ -495,6 +495,8 @@ public class Main {
 				ArrayList<Double> mv = (ArrayList<Double>) mvArr.get(0);
 				Double s = DrawDownAnalysis.sharpeRatio(mv, 0.0);
 				System.out.println("Sharpe = " + s);
+				
+				DrawDownAnalysis.comprehensiveAnalysis(pf, portFilePathRoot + "test.csv");
 			}
 			
 			if(mode == 3) {  // calculating stock volume and save

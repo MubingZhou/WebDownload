@@ -1,8 +1,10 @@
 package backtesting.analysis;
 
+import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,7 +20,7 @@ import math.MyMath;
 
 public class DrawDownAnalysis {
 	public static String analysisBetweenDates_outputPath = ""; // should include the file name, i.e. "D:\\test.csv"
-	
+	public static Double riskFreeRate = 0.0;
 	
 	private static Logger logger = Logger.getLogger(DrawDownAnalysis.class.getName());
 	
@@ -211,7 +213,7 @@ public class DrawDownAnalysis {
 			
 			// ========= get the market value ===========
 			ArrayList<Double> marketValue = new ArrayList<Double> ();
-			for(int i = date1Ind; i < date2Ind; i++) {
+			for(int i = date1Ind; i <= date2Ind; i++) {
 				PortfolioOneDaySnapshot todayP = p.histSnap.get(allDaysArr.get(i));
 				Double todayMarketValue = todayP.marketValue;
 				marketValue.add(todayMarketValue);
@@ -314,15 +316,15 @@ public class DrawDownAnalysis {
 
 	/**
 	 * get the Sharpe Ratio. rf  - risk free rate
-	 * @param portfolioValue
+	 * @param dailyPortfolioValue
 	 * @param rf
 	 * @param errMsgHead
 	 * @return
 	 */
-	private static Double sharpeRatio(ArrayList<Double> portfolioValue, Double rf, String errMsgHead) {
+	private static Double sharpeRatio(ArrayList<Double> dailyPortfolioValue, Double rf, String errMsgHead) {
 		Double s = -100.0;
 		
-		if(portfolioValue == null || portfolioValue.size() == 0) {
+		if(dailyPortfolioValue == null || dailyPortfolioValue.size() == 0) {
 			logger.error(errMsgHead + " portfolioValue has no values!");
 			return null;
 		}
@@ -331,9 +333,9 @@ public class DrawDownAnalysis {
 		ArrayList<Double> er = new ArrayList<Double>(); 
 		Double avgEr = 0.0;  // avg excessive return
 		Double cumEr = 0.0; // cumulative excessive return
-		for(int i = 1; i < portfolioValue.size(); i++) {
-			Double todayValue = portfolioValue.get(i);
-			Double lastValue = portfolioValue.get(i - 1);
+		for(int i = 1; i < dailyPortfolioValue.size(); i++) {
+			Double todayValue = dailyPortfolioValue.get(i);
+			Double lastValue = dailyPortfolioValue.get(i - 1);
 			
 			Double todayEr = todayValue / lastValue  - 1 - rf;
 			er.add(todayEr);
@@ -341,25 +343,180 @@ public class DrawDownAnalysis {
 			
 			
 		}
-		avgEr = cumEr / (portfolioValue.size() - 1);
+		avgEr = cumEr / (dailyPortfolioValue.size() - 1);
+		logger.trace("avg excessive return = " + avgEr);
 		
 		// calculate std
-		Double cumSQ = 0.0;
+		//Double cumSQ = 0.0;
 		Double std = MyMath.std(er);
 		
-		s = avgEr / std * Math.sqrt(252);
+		logger.trace("std = " + std);
+		
+		s = avgEr / std * Math.sqrt(er.size());
 		
 		return s;
 	}
 	
 	/**
 	 * get the Sharpe Ratio. rf  - risk free rate
-	 * @param portfolioValue
+	 * assuming portfolioValue contains DAILY portfolio value
+	 * @param dailyPortfolioValue
 	 * @param rf
-	 * @param errMsgHead
 	 * @return
 	 */
-	public static Double sharpeRatio(ArrayList<Double> portfolioValue, Double rf) {
-		return sharpeRatio(portfolioValue, rf, "[Calculating Sharpe Ratio]");
+	public static Double sharpeRatio(ArrayList<Double> dailyPortfolioValue, Double rf) {
+		return sharpeRatio(dailyPortfolioValue, rf, "[Calculating Sharpe Ratio]");
+	}
+	
+	public static void comprehensiveAnalysis(Portfolio p, String filePath) {
+		try {
+			logger.info("========= Start Caculating Max Drawdown ===========");
+			//analysisBetweenDates_outputPath = utils.Utils.checkPath(analysisBetweenDates_outputPath);
+			String errMsgHead = "[DrawDownAnalysis - calculating max DD] ";
+			//SimpleDateFormat sdf = new SimpleDateFormat(dateFormat); 
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
+			
+			// ======= some pre dealings =======
+			Set<Calendar> allDaysSet = p.histSnap.keySet();
+			ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>(allDaysSet);
+			//ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>();
+			Collections.sort(allDaysArr ); // ascending
+			
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			
+			/*
+			Calendar date1Cal = (Calendar) allDaysArr.get(0).clone();
+			date1Cal .setTime(sdf.parse(startDate));
+			Calendar date1Cal_temp = utils.Utils.getMostRecentDate(date1Cal, allTradingDate);
+			date1Cal.setTime(sdf.parse(sdf.format(date1Cal_temp.getTime())));  // seems that the calendar system extracted from the file is different than that of our system
+
+			Calendar date2Cal = (Calendar) allDaysArr.get(0).clone();
+			date2Cal .setTime(sdf.parse(endDate));
+			Calendar date2Cal_temp = utils.Utils.getMostRecentDate(date2Cal, allTradingDate);
+			date2Cal.setTime(sdf.parse(sdf.format(date2Cal_temp.getTime())));
+			
+			int date1Ind = allDaysArr.indexOf(date1Cal);
+			int date2Ind = allDaysArr.indexOf(date2Cal);
+			
+			if(date1Ind == -1 || date2Ind == -1) {
+				logger.error(errMsgHead + "No such period existed in the Portfolio!");
+				return ;
+			}*/
+			
+			int date1Ind = 0;
+			int date2Ind = allDaysArr.size() - 1;
+			Calendar date1Cal = (Calendar) allDaysArr.get(0).clone();
+			Calendar date2Cal  = (Calendar) allDaysArr.get(allDaysArr.size() - 1).clone();
+			logger.debug("date1Cal = " + sdf.format(date1Cal.getTime()));
+			logger.debug("date2Cal = " + sdf.format(date2Cal.getTime()));
+			// ========= get the market value ===========
+			ArrayList<Double> marketValue = new ArrayList<Double> ();
+			for(int i = date1Ind; i <= date2Ind; i++) {
+				PortfolioOneDaySnapshot todayP = p.histSnap.get(allDaysArr.get(i));
+				Double todayMarketValue = todayP.marketValue;
+				marketValue.add(todayMarketValue);
+			}
+			
+			// =========== get return & volatility & Sharpe ratio ========
+			int numOfTradingDays = date2Ind - date1Ind + 1;
+			Double beginMV = marketValue.get(0);
+			Double endMV = marketValue.get(marketValue.size() - 1);
+			
+			Double simpleReturn = (endMV - beginMV) / beginMV;
+			Double annualizedReturn = Math.log(endMV / beginMV) / (numOfTradingDays  / 252);
+			
+			ArrayList<Double> returnArr = new ArrayList<Double>();
+			Double cumR = 0.0;
+			for(int i = 1; i < marketValue.size(); i++) {
+				Double todayMV = marketValue.get(i);
+				Double lastMV = marketValue.get(i - 1);
+				
+				Double r = (todayMV - lastMV) / lastMV;
+				returnArr.add(r);
+				
+				cumR += r;
+				
+				logger.debug("date=" + sdf.format(allDaysArr.get(i).getTime()) +  " i=" + i);
+			}
+			Double avgReturn = cumR / returnArr.size();
+			
+			Double std = MyMath.std(returnArr);
+			
+			Double sharpe = (avgReturn - riskFreeRate) / std * Math.sqrt(returnArr.size());
+			
+			//========== get beta with respect to HSI or HSCEI ===========
+			String HSI_path = "D:\\stock data\\HSI.csv";
+			String HSCEI_path = "D:\\stock data\\HSCEI.csv";
+			
+			String dateFormat2 = "dd/MM/yyyy";
+			SimpleDateFormat sdf2 = new SimpleDateFormat(dateFormat2);
+			
+			BufferedReader bf1 = utils.Utils.readFile_returnBufferedReader(HSI_path);
+			ArrayList<String> hsiDateStr = new ArrayList<String> (Arrays.asList(bf1.readLine().split(",")));
+			ArrayList<String> hsiPriceStr = new ArrayList<String> (Arrays.asList(bf1.readLine().split(",")));
+			bf1.close();
+			
+			BufferedReader bf2 = utils.Utils.readFile_returnBufferedReader(HSCEI_path);
+			ArrayList<String> hsceiDateStr = new ArrayList<String> (Arrays.asList(bf2.readLine().split(",")));
+			ArrayList<String> hsceiPriceStr = new ArrayList<String> (Arrays.asList(bf2.readLine().split(",")));
+			bf2.close();
+			
+			ArrayList<Double> hsiPrice = new ArrayList<Double>();
+			ArrayList<Double> hsceiPrice = new ArrayList<Double>();
+			ArrayList<Double> hsiReturn = new ArrayList<Double>();
+			ArrayList<Double> hsceiReturn = new ArrayList<Double>();
+			Double cumHSI_return = 0.0;
+			Double cumHSCEI_return = 0.0;
+			
+			int priceCount = -1;
+			for(int i = 0; i < hsiPriceStr.size(); i++) {
+				//Calendar c = (Calendar) date1Cal.clone();
+				Calendar c = (Calendar) allDaysArr.get(0).clone();
+				c.setTime(sdf2.parse(hsiDateStr.get(i)));
+				
+				if((!c.before(date1Cal)) && (!c.after(date2Cal))) {
+					Double hsiTodayPrice = Double.parseDouble(hsiPriceStr.get(i));
+					Double hsceiTodayPrice = Double.parseDouble(hsceiPriceStr.get(i));
+					
+					hsiPrice.add(hsiTodayPrice);
+					hsceiPrice.add(hsceiTodayPrice);
+					
+					priceCount++;
+					
+					if(priceCount >= 1) {
+						logger.trace("todaydate = " + hsiDateStr.get(i) + " " + sdf.format(c.getTime()) + " priceCount=" + priceCount);
+						Double hsiLastPrice = hsiPrice.get(priceCount - 1);
+						Double hsceiLastPrice = hsceiPrice.get(priceCount - 1);
+						Double hsiTodayReturn = (hsiTodayPrice - hsiLastPrice) / hsiLastPrice;
+						Double hsceiTodayReturn = (hsceiTodayPrice - hsceiLastPrice) / hsceiLastPrice;
+						
+						hsiReturn.add(hsiTodayReturn);
+						hsceiReturn.add(hsceiTodayReturn);
+						
+						cumHSI_return += hsiTodayReturn;
+						cumHSCEI_return += hsceiTodayReturn;
+					}
+					
+				}
+			}
+			Double avgHSIReturn = cumHSI_return / hsiReturn.size();
+			Double avgHSCEIReturn = cumHSCEI_return / hsceiReturn.size();
+			
+			// == beta with HSI & HSCEI ==
+			Double beta_hsi = MyMath.corr(hsiReturn, returnArr);
+			Double beta_hscei = MyMath.corr(hsceiReturn, returnArr);
+			
+			// ========= write files =======
+			FileWriter fw = new FileWriter(filePath);
+			fw.write("Total Return=," + simpleReturn + "\n");
+			fw.write("Annualized Return=," + annualizedReturn + "\n");
+			fw.write("Sharpe Ratio=," + sharpe + "\n");
+			fw.write("Beta (HSI) =," + beta_hsi + "\n");
+			fw.write("Beta (HSCEI) =," + beta_hscei + "\n");
+			fw.close();
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 }
