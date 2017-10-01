@@ -1,4 +1,4 @@
-package cgi.ib;
+package cgi.ib.avat;
 
 import java.io.FileWriter;
 import java.io.IOException;

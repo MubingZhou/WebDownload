@@ -1,7 +1,8 @@
-package cgi.ib;
+package cgi.ib.avat;
 
 import com.ib.controller.ApiController.IHistoricalDataHandler;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -18,24 +19,37 @@ public class MyIHistoricalDataHandler implements IHistoricalDataHandler{
 	public FileWriter fileWriter;
 	public int isEnd = 0;
 	
-	public MyIHistoricalDataHandler(String stockCode) {
+	//public String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	
+	public MyIHistoricalDataHandler(String stockCode, String downloadRooPath) {
 		super();
 		this.stockCode = stockCode;
 		
 		try {
+			if(!downloadRooPath.substring(downloadRooPath.length()-1, downloadRooPath.length()).equals("\\"))
+				downloadRooPath += "\\";
 			//fileWriter = new FileWriter("D:\\stock data\\IB\\historical data\\" + stockCode + ".csv", true); // append
-			fileWriter = new FileWriter("D:\\stock data\\IB\\historical data\\" + stockCode + ".csv", false); // not append
+			//fileWriter = new FileWriter("D:\\stock data\\IB\\historical data 20170928\\" + stockCode + ".csv", false); // not append
+			
+			File f = new File(downloadRooPath);
+			if(!f.exists())
+				f.mkdirs();
+			
+			fileWriter = new FileWriter(downloadRooPath + stockCode + ".csv", false); // not append
+			
+			//AVAT_ROOT_PATH = downloadRooPath;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
+
 	@Override
 	public void historicalData(Bar bar) {
 		try {
 			String toWrite = bar.formattedTime() + "," + bar.open() + "," + bar.high() + "," + bar.low() + "," + bar.close() + "," + bar.volume() + "\n";
-			logger.debug(stockCode + " - " + toWrite);
+			logger.trace(stockCode + " - " + toWrite);
 			fileWriter.write(toWrite);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

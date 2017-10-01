@@ -1,22 +1,32 @@
 package test_no_use;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+
+import com.ib.client.Contract;
+
 import org.apache.log4j.LogManager;
 
 import backtesting.backtesting.Order;
 import backtesting.backtesting.OrderType;
 import backtesting.portfolio.Portfolio;
+import cgi.ib.avat.AvatRecordSingleStock;
+import cgi.ib.avat.AvatUtils;
 import strategy.db_southboundFlowPortfolio.PortfolioScreening;
 
 @SuppressWarnings("unused")
@@ -29,44 +39,50 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
+			/*
+			ArrayList<AvatRecordSingleStock> list = new ArrayList<AvatRecordSingleStock>();
+			AvatRecordSingleStock a1 = new AvatRecordSingleStock("100", 12.5, 1.0, 10.0, 3.0, "dfs");
+			AvatRecordSingleStock a2 = new AvatRecordSingleStock("100", 12.5, 1.0, 8.0, 3.0, "dfs");
+			AvatRecordSingleStock a3 = new AvatRecordSingleStock("100", 12.5, 1.0, 11.0, 3.0, "dfs");
+			AvatRecordSingleStock a4 = new AvatRecordSingleStock("100", 12.5, 1.0, 1.0, 3.0, "dfs");
 			
-			// initializing avat
-			String dateFormat = "yyyyMMdd HH:mm:ss";
-			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			ArrayList<Date> timeArr = new ArrayList<Date>();
-			ArrayList<Double> volArr = new ArrayList<Double>();
-			ArrayList<Double> priceArr = new ArrayList<Double>();
+			list.add(a1);
+			list.add(a2);
+			list.add(a3);
+			list.add(a4);
 			
-			SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
-			String todayDate = sdf2.format(new Date());
+			Collections.sort(list, AvatRecordSingleStock.getComparator());
 			
-		
-			FileWriter fw_tmp = new FileWriter("D:\\test.csv");
+			System.out.println(list.get(0).avatRatio5D);*/
 			
-			Long _1min = (long) (1000 * 60);
-			// first one
-			Date start1 = sdf.parse(todayDate + " 09:31:00"	); 
-			fw_tmp.write(todayDate + " 09:31:00\n" );
-			timeArr.add(start1);
-			volArr.add(0.0);
-			priceArr.add(0.0);
+			ArrayList<Contract> conArr = new ArrayList<Contract> ();
+			ArrayList<String> stockList = new ArrayList<String>();
+			//ArrayList<String> industryList = new ArrayList<String>();
 			
-			Date break1 = sdf.parse(todayDate + " 12:00:01");
-			Date start2 = sdf.parse(todayDate + " 13:00:59");
-			Date break2 = sdf.parse(todayDate + " 16:10:01");
+			File alreadyExited = new File("D:\\stock data\\IB\\historical data");
+			String[] aListTemp = alreadyExited.list();
+			ArrayList<String> aList = new ArrayList<String>(Arrays.asList(aListTemp));  // excluding those already existed in historical data
+			aList = new ArrayList<String>();  
 			
-			Date nextTime = new Date(start1.getTime() + _1min);
-			while(nextTime.before(break2)) {
-				if(nextTime.before(break1) || nextTime.after(start2)) { // trading hours
-					timeArr.add(nextTime);
-					volArr.add(0.0);
-					priceArr.add(0.0);
-					fw_tmp.write(sdf.format(nextTime) + "\n");
-				}
-				nextTime = new Date(nextTime.getTime() + _1min);
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\IB\\stocklist.csv");
+			stockList.addAll(Arrays.asList(bf.readLine().split(",")));
+			for(int i = 0; i < stockList.size(); i ++) {
+				String symbol = stockList.get(i);
+				if(aList.indexOf(symbol + ".csv") != -1)
+					continue;
 				
+				Contract con1 = new Contract();
+				con1.symbol(stockList.get(i));
+				con1.exchange("SEHK");
+				con1.secType("STK");
+				con1.currency("HKD");
+				
+				conArr.add(con1);
 			}
-			fw_tmp.close();
+			//industryList.addAll(Arrays.asList(bf.readLine().split(",")));
+			bf.close();
+			
+			AvatUtils.preparePrevCrossSectionalAvat(new ArrayList<Contract>(conArr.subList(0, 3)));
 			
 		}catch(Exception e) {
 			e.printStackTrace();

@@ -1,4 +1,4 @@
-package cgi.ib;
+package cgi.ib.avat;
 
 import com.ib.client.EReaderSignal;
 

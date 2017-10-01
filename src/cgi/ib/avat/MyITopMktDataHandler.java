@@ -1,4 +1,4 @@
-package cgi.ib;
+package cgi.ib.avat;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,11 +22,18 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 	private String orderBookInfo = "";
 	private String rtInfo = "";
 	
+	public Double lastestVolume = 0.0;
+	public Double lastestPrice = 0.0;
+	public Double lastestVWAP = 0.0;
+	public Double lastestRTVolume = 0.0;   // should similar to lastestVolume
+	public Double lastestRTTurnover = 0.0; // = lastestRTVolume * lastestVWAP
+	
+	
 	private Date lastTimeStamp = new Date();
 	
 	public String stockCode;
 	public Contract contract;
-	public String fileWriterMainPath = "D:\\stock data\\IB\\realtime data test\\";
+	public String fileWriterMainPath = "D:\\stock data\\IB\\realtime data\\";
 	public FileWriter fileWriter_raw;
 	public FileWriter fileWriter_trade;  // records trade data
 	public FileWriter fileWriter_orderbook;  // records orderbook data (level 1)
@@ -111,6 +118,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 			break;
 		case LAST: // last price
 			tradeInfo =  info;
+			lastestPrice = price;
 			break;
 		case OPEN:
 			rtInfo = info;
@@ -125,10 +133,10 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 			rtInfo = info;
 			break;
 		default:
-			logger.info("Unknown tick price!");
+			logger.trace("Unknown tick price!");
 			break;
 		}
-		logger.info(info);
+		logger.trace("[" + stockCode + "]" + info);
 		
 		try {
 			fileWriter_raw.write(info + "\n");
@@ -173,13 +181,14 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 			break;
 		case VOLUME:
 			rtInfo = info;
+			lastestVolume = (double) size;
 			break;
 		default:
-			logger.info("Unknown tick size!");
+			logger.trace("Unknown tick size!");
 			break;
 		}
 		
-		logger.info(info);
+		logger.trace("[" + stockCode + "]" + info);
 		
 		try {
 			fileWriter_raw.write(info + "\n");
@@ -209,23 +218,29 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 		clearInfo();
 		
 		String sysTime = sdf.format(new Date());
-		info = sysTime + "," + tickType.name() + "," + timeStamp2Date(value, dateFormat);
 		switch(tickType) {
 		case LAST_TIMESTAMP:
+			info = sysTime + "," + tickType.name() + "," + timeStamp2Date(value, dateFormat);
 			tradeInfo =  info; 
 			break;
 		case RT_VOLUME:
+			info = sysTime + "," + tickType.name() + "," + value;
 			tradeInfo =  info;
+			String[] valueArr = value.split(";"	);
+			lastestRTVolume = Double.parseDouble(valueArr[3]);
+			lastestVWAP = Double.parseDouble(valueArr[4]);
+			lastestRTTurnover = lastestRTVolume * lastestVWAP;  
 			break;
 		case RT_TRD_VOLUME:
+			info = sysTime + "," + tickType.name() + "," + value;
 			tradeInfo =  info;
 			break;
 		default:
-			logger.info("Unknown tick string!");
+			logger.trace("Unknown tick string!");
 			break;
 		}
 		
-		logger.info(info);
+		logger.trace("[" + stockCode + "]" + info);
 		
 		try {
 			fileWriter_raw.write(info + "\n");
@@ -255,7 +270,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 		String sysTime = sdf.format(new Date());
 		String info = sysTime+ ",tickSnapshotEnd" ;
 		//info +=  " " + sdf.format(new Date());
-		logger.info(info);
+		logger.trace("[" + stockCode + "]" + info);
 		
 		try {
 			fileWriter_raw.write(info + "\n");
@@ -272,7 +287,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 		String sysTime = sdf.format(new Date());
 		String info = sysTime+ ",marketDataType," + String.valueOf(marketDataType);
 		//info +=  " " + sdf.format(new Date());
-		logger.info(info);
+		logger.trace("[" + stockCode + "]" + info);
 		
 		try {
 			fileWriter_raw.write(info + "\n");
@@ -292,7 +307,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 					+ " snapshotPermissions=" + String.valueOf(snapshotPermissions)
 					;
 		info +=  " " + sdf.format(new Date());
-		logger.info(info);
+		logger.trace("[" + stockCode + "]" + info);
 		
 		try {
 			fileWriter_raw.write(info + "\n");

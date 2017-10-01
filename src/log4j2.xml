@@ -17,7 +17,7 @@
       <AppenderRef ref="RollingFile"></AppenderRef>
       <AppenderRef ref="file"></AppenderRef>
     </Root>
-    <Logger name="test_no_use.Test" level="debug" additivity="false">
+    <Logger name="test_no_use.Test" level="trace" additivity="false">
     	<appender-ref ref="file"></appender-ref>
     	<appender-ref ref="Console"></appender-ref></Logger>
     <Logger name="sfcData.SI_CompareWithSouthBound" level="error"

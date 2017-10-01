@@ -707,6 +707,10 @@ public class Utils {
 			return allTradingDate;
 		}
 		
+		public static ArrayList<Calendar> getAllTradingDate(){
+			return getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+		}
+		
 		/**
 		 * Get the most recent date before thisCal, for example, if thisCal = 20170801, calArr = {20170701,20170820,20170920}
 		 * this function will return 20170701
