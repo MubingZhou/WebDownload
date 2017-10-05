@@ -13,12 +13,15 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
+import com.ib.client.Order;
+import com.ib.client.OrderType;
 import com.ib.controller.ApiController;
 
 public class AVAT {
 	// -------- main variables -------------
 	public static ArrayList<Contract> conArr = new ArrayList<Contract>();
-	public static ApiController myController;
+	public static Map<String, Contract> conMap = new HashMap<String, Contract>();
+	public static MyAPIController myController;
 	public static String AVAT_ROOT_PATH = "";
 	public static ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
 	public static int numOfTopMktDataStock = 0;
@@ -30,6 +33,7 @@ public class AVAT {
 	public static Map<String, ArrayList<String>> avatIndustry_byIndustry = new HashMap<String, ArrayList<String>> ();
 	public static ArrayList<String> avatIndexMembers = new ArrayList<String> ();
 	public static ArrayList<Date> avatTimePath = new ArrayList<Date> ();
+	public static Map<String, Double> avatLotSize = new HashMap<String, Double> ();
 	
 	// --------- other variables ---------
 	private static Logger logger = Logger.getLogger(AVAT.class.getName());
@@ -40,12 +44,16 @@ public class AVAT {
 	public static SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 	private static String errMsgHead = "[AVAT - error] ";
 	
-	public static void setting(ApiController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
+	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
 		conArr = (ArrayList<Contract>) conArr0.clone();
 		AVAT_ROOT_PATH = AVAT_ROOT_PATH0;
 		
 		numOfTopMktDataStock = conArr.size();
+		for(Contract con : conArr) {  // construct conMap
+			String stock = con.symbol();
+			conMap.put(stock, con);
+		}
 	}
 	
 	public static void start() {
@@ -65,10 +73,10 @@ public class AVAT {
 		prepare();  // 在正式prepare之前，需要先更新昨天的auction数据和收盘数据
 		logger.info("preparation done");
 		
-		//request();
+		request();
 		logger.info("request done");
 		
-		//output();
+		output();
 		logger.info("output done");
 	}
 	
@@ -78,12 +86,7 @@ public class AVAT {
 		// ------- avat - prepare historical avat --------
 		AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
 		logger.info("prepare prev cross setional avat - done");
-		try {
-			Thread.sleep(1000 * 1000000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 		// ------- avat - historical avat ---------
 		avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
 		logger.info("get prev cross setional avat - done");
@@ -108,8 +111,15 @@ public class AVAT {
 		
 		// -------- avat get today's auction --------
 		//Map<String, Double> todayAuction = AvatUtils.getTodayAuction();
+		
+		// ------ avat lot size --------
+		avatLotSize = AvatUtils.getLotSize();
+		logger.info("get lot size - done");
 	}
 	
+	/**
+	 * 请求实时数据
+	 */
 	private static void request() {
 		for(int i = 0; i < numOfTopMktDataStock; i++) {
 			Contract con = conArr.get(i);
@@ -155,10 +165,13 @@ public class AVAT {
 				for(int i = 0; i < topMktDataHandlerArr.size(); i++) { // 每一个handler负责一只股票
 					MyITopMktDataHandler myTop = topMktDataHandlerArr.get(i);
 					
-					Double trdRtVolume = myTop.lastestTrdRTVolume;
+					Double trdRtVolume = myTop.latestTrdRTVolume;
 					String stock = myTop.stockCode;
-					Double price = myTop.lastestPrice;
-					Double trdRtTurnover = myTop.lastestTrdRTTurnover;
+					Double price = myTop.latestPrice;
+					Double trdRtTurnover = myTop.latestTrdRTTurnover;
+					Double latestBestBid = myTop.latestBestBid;
+					Double latestBestAsk = myTop.latestBestAsk;
+					
 					logger.debug("------- stock = " + stock);
 					
 					// find the nearest date
@@ -223,6 +236,8 @@ public class AVAT {
 					
 					AvatRecordSingleStock at = new AvatRecordSingleStock(now.getTime(), stock, price, prevCloseChgPct, ratio5D, ratio20D, industry);
 					at.turnover = trdRtTurnover;
+					at.latestBestAsk = latestBestAsk;
+					at.latestBestBid = latestBestBid;
 					avatRecord.add(at);
 					
 					logger.debug("------- next ");
@@ -327,7 +342,65 @@ public class AVAT {
 	}
 	
 	private static void placeOrder(ArrayList<AvatRecordSingleStock> avatRecord) {
-		
+		try {
+			String errMsgHead  = "[trading strategy] ";
+			Double fixedBuyAmount = 300000.0;  // fix buying amount for each stock, HKD
+			boolean transmitToIB = false;
+			
+			for(AvatRecordSingleStock singleRec : avatRecord) {
+				String startTimeStr = todayDate + " 09:50:00";
+				Date startTime = sdf.parse(startTimeStr);
+				String endTimeStr = todayDate + " 10:10:00";
+				Date endTime = sdf.parse(endTimeStr);
+				
+				Date thisTime = new Date(singleRec.timeStamp);
+				if(!(thisTime.after(startTime) && thisTime.before(endTime))) {
+					logger.info(errMsgHead + "time out of range!");
+					return;
+				}
+				
+				// -------- in the correct time period --------
+				
+				
+				
+				// ---------- 构建order --------
+				Double avatRatio5D = singleRec.avatRatio5D;
+				Double avatRatio20D = singleRec.avatRatio20D;
+				String stockCode = singleRec.stockCode;
+				Double prevClose = avatPrevClose.get(stockCode);
+				Double priceChg = (singleRec.currentPrice - prevClose) / prevClose;
+				
+				// satisfy the buy conditions
+				if(avatRatio5D >= 3.0
+					&& (priceChg > 0 && priceChg <= 0.03)) {
+					Contract con = conMap.get(stockCode);
+					
+					Order order = new Order();
+					order.action("BUY");
+					order.orderType(OrderType.LMT);
+					
+					Double buyPrice = singleRec.latestBestBid;
+					order.lmtPrice(buyPrice);  // 以best bid作为买入价
+					
+					Double lotSize = avatLotSize.get(stockCode);
+					order.totalQuantity(lotSize * (int)(fixedBuyAmount / buyPrice) );
+					order.transmit(transmitToIB);  // false - 只在api平台有这个order
+					
+					MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
+					myController.placeOrModifyOrder(con, order, myOrderH);
+					
+					
+		            //order.OrderType = "LMT";
+		            //order.TotalQuantity = quantity;
+		            //order.LmtPrice = limitPrice;
+		            //order.CashQty = cashQty;
+				}
+				
+					
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }

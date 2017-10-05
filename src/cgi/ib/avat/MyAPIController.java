@@ -93,6 +93,9 @@ public class MyAPIController extends ApiController{
 	@Override public void error(int id, int errorCode, String errorMsg) {
 		super.error(id, errorCode, errorMsg);
 		
+		if(id == -1)
+			return;
+		
 		String errMsgHead = "[MyAPIConnection - error] ";
 		
 		logger.error(errMsgHead + errorMsg);
@@ -330,7 +333,7 @@ public class MyAPIController extends ApiController{
 
 
 	// ---------------------------------------- Trading and Option Exercise ----------------------------------------
-	public void placeOrModifyOrder(Contract contract, final Order order, final IOrderHandler handler) {
+	public void placeOrModifyOrder(Contract contract, final Order order, final MyIOrderHandler handler) {
 		super.placeOrModifyOrder(contract, order, handler);
 	}
 
@@ -416,6 +419,7 @@ public class MyAPIController extends ApiController{
 		reqIdMap.put(reqId, RequestType.HistoricalData);
 		
 		handler.isActive = 1;
+		handler.reqId = reqId;
     }
     
 

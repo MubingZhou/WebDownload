@@ -23,16 +23,18 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 	private String orderBookInfo = "";
 	private String rtInfo = "";
 	
-	public Double lastestVolume = 0.0;
-	public Double lastestPrice = 0.0;
-	public Double lastestVWAP = 0.0;
-	public Double lastestRTVolume = 0.0;   // should similar to lastestVolume
-	public Double lastestRTTurnover = 0.0; // = lastestRTVolume * lastestVWAP
-	public Double lastestTrdRTVolume = 0.0; // will not include unreportable volume (this num will be used to calculate avat because historical 1min bar data also contains no unreportable volume)
-	public Double lastestTrdVWAP = 0.0;
-	public Double lastestTrdRTTurnover = 0.0; 
+	public Double latestVolume = 0.0;
+	public Double latestPrice = 0.0;
+	public Double latestVWAP = 0.0;
+	public Double latestRTVolume = 0.0;   // should similar to latestVolume
+	public Double latestRTTurnover = 0.0; // = latestRTVolume * latestVWAP
+	public Double latestTrdRTVolume = 0.0; // will not include unreportable volume (this num will be used to calculate avat because historical 1min bar data also contains no unreportable volume)
+	public Double latestTrdVWAP = 0.0;
+	public Double latestTrdRTTurnover = 0.0; 
 	//public long lastVolumeTimeStamp = 0;   		// 以毫秒计数
 	//public long lastPriceTimeStamp = 0;   		// 以毫秒计数
+	public Double latestBestAsk = -1.0;
+	public Double latestBestBid = -1.0;
 	
 	public String stockCode;
 	public Contract contract;
@@ -68,47 +70,6 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 			fileWriter_orderbook = new FileWriter(fileWriterMainPath + stockCode + " orderbook.csv", true); // append
 			fileWriter_rt = new FileWriter(fileWriterMainPath + stockCode + " rt.csv", true); // append
 			//filerWriter_temp = new FileWriter(fileWriterMainPath + "temp data\\" + stockCode + ".csv", false); // not append
-			/*
-			// initializing avat
-			String dateFormat = "yyyyMMdd HH:mm:ss";
-			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			ArrayList<Date> timeArr = new ArrayList<Date>();
-			ArrayList<Double> volArr = new ArrayList<Double>();
-			ArrayList<Double> priceArr = new ArrayList<Double>();
-			
-			SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
-			String todayDate = sdf2.format(new Date());
-			
-			//FileWriter fw_tmp = new FileWriter("D:\\test.csv");
-			
-			Long _1min = (long) (1000 * 60);
-			// first one
-			Date start1 = sdf.parse(todayDate + " 09:31:00"	); 
-			//fw_tmp.write(todayDate + " 09:31:00\n" );
-			timeArr.add(start1);
-			volArr.add(0.0);
-			priceArr.add(0.0);
-			
-			Date break1 = sdf.parse(todayDate + " 12:00:01");
-			Date start2 = sdf.parse(todayDate + " 13:00:59");
-			Date break2 = sdf.parse(todayDate + " 16:10:01");
-			
-			Date nextTime = new Date(start1.getTime() + _1min);
-			while(nextTime.before(break2)) {
-				if(nextTime.before(break1) || nextTime.after(start2)) { // trading hours
-					timeArr.add(nextTime);
-					volArr.add(0.0);
-					priceArr.add(0.0);
-					//fw_tmp.write(sdf.format(nextTime) + "\n");
-				}
-				nextTime = new Date(nextTime.getTime() + _1min);
-				
-			}
-			//fw_tmp.close();
-			avat.add(timeArr);
-			avat.add(volArr);
-			avat.add(priceArr);
-			*/
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -126,13 +87,15 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 		switch(tickType) {
 		case BID:  // bid price
 			orderBookInfo = info;
+			latestBestBid = price;
 			break;
 		case ASK:  // ask price
 			orderBookInfo = info;
+			latestBestAsk = price;
 			break;
 		case LAST: // last price
 			tradeInfo =  info;
-			lastestPrice = price;
+			latestPrice = price;
 			break;
 		case OPEN:
 			rtInfo = info;
@@ -195,7 +158,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 			break;
 		case VOLUME:
 			rtInfo = info;
-			lastestVolume = (double) size;
+			latestVolume = (double) size;
 			break;
 		default:
 			logger.trace("Unknown tick size!");
@@ -241,17 +204,17 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 			info = sysTime + "," + tickType.name() + "," + value;
 			tradeInfo =  info;
 			String[] valueArr = value.split(";"	);
-			lastestRTVolume = Double.parseDouble(valueArr[3]);
-			lastestVWAP = Double.parseDouble(valueArr[4]);
-			lastestRTTurnover = lastestRTVolume * lastestVWAP;  
+			latestRTVolume = Double.parseDouble(valueArr[3]);
+			latestVWAP = Double.parseDouble(valueArr[4]);
+			latestRTTurnover = latestRTVolume * latestVWAP;  
 			break;
 		case RT_TRD_VOLUME:
 			info = sysTime + "," + tickType.name() + "," + value;
 			tradeInfo =  info;
 			String[] valueArr2 = value.split(";"	);
-			lastestTrdRTVolume = Double.parseDouble(valueArr2[3]);
-			lastestTrdVWAP = Double.parseDouble(valueArr2[4]);
-			lastestTrdRTTurnover = lastestTrdRTVolume * lastestTrdVWAP;  
+			latestTrdRTVolume = Double.parseDouble(valueArr2[3]);
+			latestTrdVWAP = Double.parseDouble(valueArr2[4]);
+			latestTrdRTTurnover = latestTrdRTVolume * latestTrdVWAP;  
 			break;
 		default:
 			logger.trace("Unknown tick string!");

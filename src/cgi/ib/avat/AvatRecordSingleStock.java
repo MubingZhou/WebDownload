@@ -19,7 +19,11 @@ public class AvatRecordSingleStock {
 	public int oldRank;
 	public String isIndexMember="";
 	public String isTurnoverOK="";
+	
 	public long timeStamp = 0l; // in miliseconds
+	public Double latestBestBid = -1.0;
+	public Double latestBestAsk = -1.0;
+	
 	
 	public AvatRecordSingleStock(long timeStamp, String stockCode, Double currentPrice, Double priceChg, Double avatRatio5D,
 			Double avatRatio20D, String industry) {

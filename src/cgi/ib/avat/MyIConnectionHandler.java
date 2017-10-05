@@ -36,7 +36,8 @@ public class MyIConnectionHandler implements IConnectionHandler{
 	@Override
 	public void message(int id, int errorCode, String errorMsg) {
 		// TODO Auto-generated method stub
-		logger.info("[MyIConnectionHandler - message] id=" + id + " errorCode=" + errorCode + " errorMsg=" + errorMsg);
+		if(id != -1)
+			logger.info("[MyIConnectionHandler - message] id=" + id + " errorCode=" + errorCode + " errorMsg=" + errorMsg);
 	}
 
 	@Override

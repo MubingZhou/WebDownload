@@ -206,6 +206,24 @@ public class AvatUtils {
 		return todayAuction;
 	}
 	
+	public static Map<String, Double> getLotSize(){
+		Map<String, Double> lotSize = new HashMap();
+		try {
+			BufferedReader bf_lz = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "avat para\\lot size.csv");
+			String line = "";
+			int count = 0;
+			while((line = bf_lz.readLine()) != null) {
+				
+				String[] lineArr = line.split(",");
+				lotSize.put(lineArr[0], Double.parseDouble(lineArr[1]));
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return lotSize;
+	}
+	
 	/**
 	 * 从过去20天的1min数据中得到历史横截面avat数据
 	 * @return

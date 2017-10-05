@@ -16,6 +16,8 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
+import com.ib.client.Order;
+import com.ib.client.OrderType;
 import com.ib.client.Types.BarSize;
 import com.ib.client.Types.DurationUnit;
 import com.ib.client.Types.WhatToShow;
@@ -38,10 +40,12 @@ public class Main {
 			AvatUtils.todayDate = todayDate;
 			
 			// ------------ MODE -----------
-			int mode = 1;
+			int mode = 100;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
+			 * 
+			 * 100 - testing
 			 */
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
@@ -109,272 +113,26 @@ public class Main {
 				
 				AVAT.start();
 			}
-			
-			if(false) {
+			if(mode == 100) {
+				Contract con = conArr.get(0);
 				
-				// ========== requesting top mkt data =========
-				int numOfTopMktDataStock = conArr.size();
-				// ------- avat - historical avat ---------
-				Map<String, Map<Date,ArrayList<Double>>> avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
+				Double buyPrice = 320.0;
+				Double fixedBuyAmount = 300000.0;
 				
-				// ------- avat - yesterday close ---------
-				Map<String, Double> avatPrevClose = AvatUtils.getPrevClose();
+				//Double buyQty = 
 				
-				// ------- avat - industry ---------
-				ArrayList<Object> data = AvatUtils.getIndustry();
-				Map<String, String> avatIndustry = (Map<String, String>) data.get(0);
-				Map<String, ArrayList<String>> avatIndustry_byIndustry = (Map<String, ArrayList<String>>) data.get(1);  // industry - stock list
+				Order order = new Order();
+				order.action("BUY");
+				order.orderType(OrderType.LMT);
+				order.lmtPrice(buyPrice);
+				order.totalQuantity(600.0);
+				//order.cashQty(300000.0);
+				order.transmit(true);
 				
-				// ------ avat index members ----------
-				ArrayList<String> avatIndexMembers = AvatUtils.getIndexMembers();
+				MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
+				myController.placeOrModifyOrder(con, order, myOrderH);
 				
-				// ------- avat time path by 1min ---------
-				ArrayList<Date> avatTimePath = AvatUtils.getTimePath();
-				
-				// -------- avat get today's auction --------
-				//Map<String, Double> todayAuction = AvatUtils.getTodayAuction();
-				
-				// ---------- requesting data -----------
-				ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
-				if(true) {
-					for(int i = 0; i < numOfTopMktDataStock; i++) {
-						Contract con = conArr.get(i);
-						MyITopMktDataHandler myTop = new MyITopMktDataHandler(con.symbol(), AVAT_ROOT_PATH, todayDate);
-						topMktDataHandlerArr.add(myTop);
-						myController.reqTopMktData(con, "233,375", false, false, myTop);
-						/*
-						 * Generic tick type:
-						 * 233 - RT volume
-						 * 375 - RT trade volume
-						 */
-						
-					}
-				}
-				Thread.sleep(1000 * 5);
-				
-				// ------- output data regularly --------
-				String avatRecordPath = AVAT_ROOT_PATH + "avat record\\";
-						
-				Date now = new Date();
-				Map<String,ArrayList<Double>> avatRatioNow = new HashMap();
-				ArrayList<AvatRecordSingleStock> avatRecord = new ArrayList<AvatRecordSingleStock>();
-				ArrayList<AvatRecordSingleStock> lastAvatRecord = new ArrayList<AvatRecordSingleStock>();
-				Map<String, Integer> lastRankingData = new HashMap();
-				
-				boolean isFirst = true;
-				while(now.before(avatTimePath.get(avatTimePath.size() - 1))) {
-					logger.info("now = " + sdf.format(now));
-					if(now.before(sdf.parse(todayDate + " 09:30:00"))) {
-						logger.info("Market not open!");
-						Thread.sleep(1000 * 60);
-						now = new Date();
-					}
-					logger.info("Generating avat!");
-					
-					avatRecord = new ArrayList<AvatRecordSingleStock>();
-						
-					logger.debug("-- topMktDataHandlerArr.size=" + topMktDataHandlerArr.size());
-					for(int i = 0; i < topMktDataHandlerArr.size(); i++) {
-						MyITopMktDataHandler myTop = topMktDataHandlerArr.get(i);
-						
-						Double volume = myTop.lastestVolume;
-						String stock = myTop.stockCode;
-						Double price = myTop.lastestPrice;
-						Double turnover = myTop.lastestRTTurnover;
-						logger.debug("------- stock = " + stock);
-						
-						// find the nearest date
-						Map<Date,ArrayList<Double>> avatHist_stock = avatHist.get(stock);
-						Set<Date> dateSet = avatHist_stock.keySet();
-						long diff = 1000 * 1000 * 1000;
-						Date minDate = new Date();
-						for(Date d : dateSet) {
-							if(d.before(now)) {
-								long thisDiff = now.getTime() - d.getTime();
-								if(thisDiff < diff) {
-									diff = thisDiff;
-									minDate = (Date) d.clone();
-								}
-							}
-						}
-						//logger.debug("------- get min date=" + sdf.format(minDate));
-						ArrayList<Double> avatHist_nearData = avatHist_stock.get(minDate);
-						
-						// get historical avat data
-						Double avat5D = avatHist_nearData.get(0);
-						Double avat20D = avatHist_nearData.get(1);
-						
-						// get current avat
-						Double ratio5D = volume / avat5D;
-						Double ratio20D = volume / avat20D;
-						
-						ArrayList<Double> temp = new ArrayList<Double>();
-						temp.add(ratio5D);
-						temp.add(ratio20D);
-						
-						avatRatioNow.put(stock, temp);
-						
-						//logger.debug("------- avat 5D = " + ratio5D);
-						
-						// get prev close
-						Double prevClose = avatPrevClose.get(stock);
-						//logger.debug("------- prevClose="+prevClose);
-						Double prevCloseChgPct = (price / prevClose - 1) * 100.0;
-						//logger.debug("------- 1222");
-						// get industry
-						String industry = avatIndustry.get(stock);
-						//logger.debug("------- 1223");
-						
-						AvatRecordSingleStock at = new AvatRecordSingleStock(now.getTime(), stock, price, prevCloseChgPct, ratio5D, ratio20D, industry);
-						at.turnover = turnover;
-						avatRecord.add(at);
-						
-						logger.debug("------- next ");
-					}  // end of for
-					
-					logger.info("-- sorting avat record");
-					// sorting
-					Collections.sort(avatRecord, AvatRecordSingleStock.getComparator());
-					
-					// calculate industry avg
-					logger.info("-- calculating industry avg");
-					ArrayList<String> industryList = new ArrayList<String> ();
-					ArrayList<Double> industryCum = new ArrayList<Double>();
-					ArrayList<Integer> industryNum = new ArrayList<Integer>();
-					for(int i = 0; i < avatRecord.size(); i++) {
-						AvatRecordSingleStock rec = avatRecord.get(i);
-						String thisIndustry = rec.industry;
-						Double thisRatio = rec.avatRatio5D;
-						
-						int ind = industryList.indexOf(thisIndustry);
-						if(ind == -1) {
-							industryList.add(thisIndustry);
-							industryCum.add(thisRatio);
-							industryNum.add(1);
-						}else {
-							industryCum.set(ind, industryCum.get(ind) + thisRatio);
-							industryNum.set(ind, industryNum.get(ind) + 1);
-						}
-					}
-					ArrayList<Double> industryAvg = new ArrayList<Double> ()	;
-					for(int i = 0;i < industryList.size(); i++) {
-						industryAvg.add(industryCum.get(i) / industryNum.get(i));
-					}
-					
-					// fill avatRecord & output
-					logger.info("-- fill avatRecord & output");
-					FileWriter fw = new FileWriter(avatRecordPath + sdf_100.format(now) + ".csv");
-					fw.write("Equity,Last_Price,Px Chg % vs T-1 Close,Vol / 5D AVAT"
-							+ ",Vol / 20D AVAT,Industry,Industry Average,Turnover,Rank Difference"
-							+ ",New Rank,Original Rank,Index Member?,Turn > Req.?\n");
-					for(int i = 0;i < avatRecord.size(); i++) {
-						AvatRecordSingleStock rec = avatRecord.get(i);
-						
-						// industry avg
-						rec.industryAvg = industryAvg.get(industryList.indexOf(rec.industry));
-						
-						// ranking
-						rec.newRank = i+1;
-						Integer lastRank = lastRankingData.get(rec.stockCode);
-						if(lastRank == null)
-							lastRank = 0;
-						rec.oldRank = lastRank;
-						rec.rankDiff = i+1 - lastRank;
-						
-						lastRankingData.put(rec.stockCode, i+1);  // update lastRankingData
-						
-						// index member
-						int isIndexMember = avatIndexMembers.indexOf(rec.stockCode);
-						if(isIndexMember == -1)
-							rec.isIndexMember = "N";
-						else
-							rec.isIndexMember = "Y";
-						
-						// output
-						fw.write(rec.toString() + "\n");
-					}
-					fw.close();
-					
-					// industry table
-					logger.info("-- industry table");
-					FileWriter fw2 = new FileWriter(avatRecordPath + sdf_100.format(now) + " industry.csv");
-					fw2.write("Industry,Industry Average\n");
-					ArrayList<Double> industryAvgCopy = (ArrayList<Double>) industryAvg.clone();
-					Collections.sort(industryAvgCopy, Collections.reverseOrder());  // 从高到低排列
-					for(int i = 0;i < industryAvgCopy.size(); i++) {
-						Double thisAvg = industryAvgCopy.get(i);
-						int ind1 = industryAvg.indexOf(thisAvg);
-						
-						String thisIndustry = industryList.get(ind1);
-						ArrayList<String> industryStockList = avatIndustry_byIndustry.get(thisIndustry);
-						
-						fw2.write(thisIndustry + "," + String.valueOf(thisAvg));
-						for(int j = 0; j < industryStockList.size(); j++) {
-							fw2.write("," + industryStockList.get(j));
-						}
-						fw2.write("\n");
-					}
-					fw2.close();
-					
-					logger.info("Generating avat ends!");
-					Thread.sleep(1000 * 60); // wait for 1 min
-					lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
-					isFirst = false;
-					now = new Date();
-				}  // end of while
-			}
-			
-			// ==== requesting real time bars ========
-			ArrayList<MyIRealTimeBarHandler> rtBarHandlerArr = new ArrayList<MyIRealTimeBarHandler>();
-			if(false) {
-				boolean rthOnly_realtime = true;
-				for(int i = 0; i < conArr.size(); i++) {
-					MyIRealTimeBarHandler myRt = new MyIRealTimeBarHandler(conArr.get(i).symbol());
-					rtBarHandlerArr.add(myRt);
-					myController.reqRealTimeBars(conArr.get(i), WhatToShow.TRADES, rthOnly_realtime, myRt);
-				}
-				
-			}
-			
-			// ========== requesting historical bar data ========
-			//System.out.println("here68423");
-			ArrayList<MyIHistoricalDataHandler> histHandlerArr = new ArrayList<MyIHistoricalDataHandler>();
-			if(false) {
-				int numOfRead = 2;
-				boolean rthOnly = true;
-				int counter  = 1;
-				for(int i = 0; i < conArr.size(); i++) {
-					logger.debug("i=" + i + " Downloading " + conArr.get(i).symbol());
-					
-					MyIHistoricalDataHandler myHist = new MyIHistoricalDataHandler(conArr.get(i).symbol(),"D:\\stock data\\IB\\historical data\\");
-					histHandlerArr.add(myHist);
-					myController.reqHistoricalData(conArr.get(i), "20170927 14:30:00", 30, DurationUnit.DAY, BarSize._1_day, WhatToShow.TRADES, rthOnly, false, myHist);
-					//myController.reqHistoricalData(contract, endDateTime, duration, durationUnit, barSize, whatToShow, rthOnly, keepUpToDate, handler);
-					
-					//MyIHistoricalTickHandler myHistTick = new MyIHistoricalTickHandler(conArr.get(i).symbol());
-					//myController.reqHistoricalTicks(conArr.get(i), null, "20170927 16:10:00", 1000, WhatToShow.TRADES.toString(), 1, true, myHistTick);
-					
-					// 每次只读取numOfRead的整数倍只股票的信息
-					int cum = 0;
-					if(i == (numOfRead * counter - 1)) {  // i 是45的整数倍
-						int startInd = numOfRead * (counter - 1);
-						
-						while(cum != numOfRead) { 
-							cum = 0;
-							for(int j = startInd; j <= i; j++) {
-								MyIHistoricalDataHandler thisHist = histHandlerArr.get(j);
-								int isEnd = thisHist.isEnd;
-								cum += isEnd;
-							}
-							
-							Thread.sleep(1000 * 3);
-							logger.debug("Ping Pong!");
-						}
-						logger.info("i = " + i + " Download END!");
-						counter ++;
-					}
-					
-				}
+				Thread.sleep(1000 * 10000000);
 			}
 			
 			//============== requesting historical tick data ===============
@@ -454,12 +212,6 @@ public class Main {
 				Thread.sleep(1000 * 1);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
-			}
-			
-			//========= pre-close actions ============
-			for(int i = 0; i < rtBarHandlerArr.size(); i++) {
-				MyIRealTimeBarHandler myRt = rtBarHandlerArr.get(i);
-				myRt.fileWriter.close();
 			}
 			
 			
