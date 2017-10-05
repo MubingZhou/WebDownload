@@ -39,50 +39,28 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			/*
-			ArrayList<AvatRecordSingleStock> list = new ArrayList<AvatRecordSingleStock>();
-			AvatRecordSingleStock a1 = new AvatRecordSingleStock("100", 12.5, 1.0, 10.0, 3.0, "dfs");
-			AvatRecordSingleStock a2 = new AvatRecordSingleStock("100", 12.5, 1.0, 8.0, 3.0, "dfs");
-			AvatRecordSingleStock a3 = new AvatRecordSingleStock("100", 12.5, 1.0, 11.0, 3.0, "dfs");
-			AvatRecordSingleStock a4 = new AvatRecordSingleStock("100", 12.5, 1.0, 1.0, 3.0, "dfs");
+			ArrayList<Object> data = AvatUtils.getIndustry();
+			Map<String, String> avatIndustry = (Map<String, String>) data.get(0);
+			Map<String, ArrayList<String>> avatIndustry_byIndustry = (Map<String, ArrayList<String>>) data.get(1);  // industry - stock list
 			
-			list.add(a1);
-			list.add(a2);
-			list.add(a3);
-			list.add(a4);
+			FileWriter fw1 = new FileWriter("D:\\test1.csv");
+			FileWriter fw2 = new FileWriter("D:\\test2.csv");
 			
-			Collections.sort(list, AvatRecordSingleStock.getComparator());
-			
-			System.out.println(list.get(0).avatRatio5D);*/
-			
-			ArrayList<Contract> conArr = new ArrayList<Contract> ();
-			ArrayList<String> stockList = new ArrayList<String>();
-			//ArrayList<String> industryList = new ArrayList<String>();
-			
-			File alreadyExited = new File("D:\\stock data\\IB\\historical data");
-			String[] aListTemp = alreadyExited.list();
-			ArrayList<String> aList = new ArrayList<String>(Arrays.asList(aListTemp));  // excluding those already existed in historical data
-			aList = new ArrayList<String>();  
-			
-			BufferedReader bf = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\IB\\stocklist.csv");
-			stockList.addAll(Arrays.asList(bf.readLine().split(",")));
-			for(int i = 0; i < stockList.size(); i ++) {
-				String symbol = stockList.get(i);
-				if(aList.indexOf(symbol + ".csv") != -1)
-					continue;
-				
-				Contract con1 = new Contract();
-				con1.symbol(stockList.get(i));
-				con1.exchange("SEHK");
-				con1.secType("STK");
-				con1.currency("HKD");
-				
-				conArr.add(con1);
+			for(String stock : avatIndustry.keySet()) {
+				fw1.write(stock + "," + avatIndustry.get(stock) + "\n");
 			}
-			//industryList.addAll(Arrays.asList(bf.readLine().split(",")));
-			bf.close();
+			fw1.close();
 			
-			AvatUtils.preparePrevCrossSectionalAvat(new ArrayList<Contract>(conArr.subList(0, 3)));
+			for(String industry : avatIndustry_byIndustry.keySet()) {
+				ArrayList<String> memb = avatIndustry_byIndustry.get(industry);
+				fw2.write(industry);
+				for(int i = 0; i < memb.size(); i++) {
+					String stock = memb.get(i);
+					fw2.write("," + stock);
+				}
+				fw2.write("\n");
+			}
+			fw2.close();
 			
 		}catch(Exception e) {
 			e.printStackTrace();

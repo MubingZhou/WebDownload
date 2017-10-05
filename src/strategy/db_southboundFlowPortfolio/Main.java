@@ -37,7 +37,7 @@ public class Main {
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			
 			
-			int mode = 2;
+			int mode = 1;
 			/*
 			 * 0 - downloading data
 			 * 1 - full backtesting
@@ -47,6 +47,7 @@ public class Main {
 			 */
 			
 			if(mode == 0) {
+				//需要的数据： southbound + outstanding shares数据
 				BufferedReader bf = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\all stock list.csv");
 				String[] stockList = {};
 				for(int i = 0; i< stockList.length; i++) {
@@ -58,7 +59,7 @@ public class Main {
 			
 			if(mode == 1) {
 				logger.info("============ Backtesting ============");
-				int topNStocks = 20;  // # of stocks to pick for every screening
+				int topNStocks = 21;  // # of stocks to pick for every screening
 				PortfolioScreening.topNStocks = topNStocks;
 				
 				String dateFormat = "yyyyMMdd";
@@ -75,7 +76,7 @@ public class Main {
 				
 				int rebalDate = 0;  
 				if(rebalDate == 0) { // please make sure that all rebalancing dates are trading date
-					rebalDateArr .add("20160704");
+					/*rebalDateArr .add("20160704");
 					rebalDateArr .add("20160801");
 					rebalDateArr .add("20160901");
 					rebalDateArr .add("20161003");
@@ -88,9 +89,9 @@ public class Main {
 					rebalDateArr .add("20170502");
 					rebalDateArr .add("20170601");
 					rebalDateArr .add("20170703");
-					rebalDateArr .add("20170801");
+					rebalDateArr .add("20170801");*/
 					rebalDateArr .add("20170901");
-					rebalDateArr .add("20170921");
+					rebalDateArr .add("20170929");
 				}else if(rebalDate == 1) {
 					rebalDateArr .add("20160715");
 					rebalDateArr .add("20160815");
@@ -145,8 +146,10 @@ public class Main {
 				
 				int lastNdays = 20;     // for idea1 only
 				
-				int lookbackDays2 = 20; // for idea2 only
+				int lookbackDays2 = 20; // for idea2 only  最近lookbackDays2天中至少要有minDays2满足条件
 				int minDays2 = 15;		// for idea2 only
+				int lookbackDays3 = 5; // for idea2 only	同时，最近lookbackDays3天中至少要有minDays3满足条件
+				int minDays3 = 4;		// for idea2 only
 				
 				if(idea == 1 || idea == 2) {
 					/*
@@ -293,10 +296,15 @@ public class Main {
 										StockSingleDate findStock = thisDateSel_map.get(thisStock.stockCode);
 										
 										if(findStock == null) {
-											thisStock.filter2 = thisStock.filter2 + 100; 
+											thisStock.filter2 = thisStock.filter2 + 100;
+											if(j < lookbackDays3)  // 最近5天的情况
+												thisStock.filter3 = thisStock.filter3 + 100;
 										}else {
-											if(findStock.dummy4 == 1.0)
+											if(findStock.dummy4 == 1.0) {
 												thisStock.filter2 = thisStock.filter2 + 100; 
+												if(j < lookbackDays3)  // 最近5天的情况
+													thisStock.filter3 = thisStock.filter3 + 100;
+											}
 										}
 										
 										todaySel.set(k, thisStock);
@@ -307,10 +315,11 @@ public class Main {
 								for(int k = 0; k < todaySel.size(); k++	) {
 									StockSingleDate thisStock = todaySel.get(k);
 									
-									if(thisStock.filter2 / (lookbackDays2 * 100) >= ((double) minDays2 / lookbackDays2)) {
-										thisStock.filter3 = 2.0;
+									if(thisStock.filter2 / (lookbackDays2 * 100) >= ((double) minDays2 / lookbackDays2)
+											&& thisStock.filter3 / (lookbackDays3 * 100) >= ((double) minDays3 / lookbackDays3)) {
+										thisStock.filter4 = 2.0;
 									}else {
-										thisStock.filter3 = -2.0;
+										thisStock.filter4 = -2.0;
 									}
 								}
 								allPortfolioScreeningData.set(todayInd, todaySel);

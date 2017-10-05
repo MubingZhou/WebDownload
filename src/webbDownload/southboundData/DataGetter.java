@@ -32,11 +32,14 @@ public static String SOUTHBOUND_DATAPATH = "D:\\stock data\\HK CCASS - WEBB SITE
 		//System.out.println("SOUTHBOUND_DATAPATH = " + filePath);
 		
 		// ======= deal with stock code ==========
-		String copy = stockCode;
-		for(int i = 0; i < 4 - stockCode.length(); i++){
-			copy = "0" + copy;
+		if(false) {
+			String copy = stockCode;
+			for(int i = 0; i < 4 - stockCode.length(); i++){
+				copy = "0" + copy;
+			}
+			stockCode = copy;
 		}
-		stockCode = copy;
+		
 		
 		if(stockCode.length() > 4)
 			stockCode = stockCode.substring(stockCode.length() - 4);

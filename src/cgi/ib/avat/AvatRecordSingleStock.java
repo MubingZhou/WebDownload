@@ -19,10 +19,13 @@ public class AvatRecordSingleStock {
 	public int oldRank;
 	public String isIndexMember="";
 	public String isTurnoverOK="";
+	public long timeStamp = 0l; // in miliseconds
 	
-	public AvatRecordSingleStock(String stockCode, Double currentPrice, Double priceChg, Double avatRatio5D,
+	public AvatRecordSingleStock(long timeStamp, String stockCode, Double currentPrice, Double priceChg, Double avatRatio5D,
 			Double avatRatio20D, String industry) {
 		super();
+		
+		this.timeStamp = timeStamp;
 		this.stockCode = stockCode;
 		this.currentPrice = currentPrice;
 		this.priceChg = priceChg;

@@ -1,5 +1,6 @@
 package cgi.ib.avat;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
@@ -27,34 +28,47 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 	public Double lastestVWAP = 0.0;
 	public Double lastestRTVolume = 0.0;   // should similar to lastestVolume
 	public Double lastestRTTurnover = 0.0; // = lastestRTVolume * lastestVWAP
-	
-	
-	private Date lastTimeStamp = new Date();
+	public Double lastestTrdRTVolume = 0.0; // will not include unreportable volume (this num will be used to calculate avat because historical 1min bar data also contains no unreportable volume)
+	public Double lastestTrdVWAP = 0.0;
+	public Double lastestTrdRTTurnover = 0.0; 
+	//public long lastVolumeTimeStamp = 0;   		// 以毫秒计数
+	//public long lastPriceTimeStamp = 0;   		// 以毫秒计数
 	
 	public String stockCode;
 	public Contract contract;
 	public String fileWriterMainPath = "D:\\stock data\\IB\\realtime data\\";
+	public String AVAT_ROOT_PATH = "";
 	public FileWriter fileWriter_raw;
 	public FileWriter fileWriter_trade;  // records trade data
 	public FileWriter fileWriter_orderbook;  // records orderbook data (level 1)
 	public FileWriter fileWriter_rt;  // records real time day OHLCV
+	public FileWriter filerWriter_temp; // write temp data: time & volume, time & price
+	public String todayDate = "";
 	
 	/*
 	 * avat - this arrayList contains 3 elements, each is also a list which contains Time/Volume/Price information
 	 * ArrayList<Object> -> {ArrayList<Date>, ArrayList<Double>, ArrayList<Double>}
 	 * Everyday time range: 9:31:00 - 12:00:00 & 13:00:01 - 16:10:00   time interval: 1 min
 	 */
-	public ArrayList<Object> avat = new ArrayList<Object> (); 
+	//public ArrayList<Object> avat = new ArrayList<Object> (); 
 	
-	public MyITopMktDataHandler(String stockCode) {
+	public MyITopMktDataHandler(String stockCode, String AVAT_ROOT_PATH, String todayDate) {
 		super();
 		this.stockCode = stockCode;
+		this.todayDate =todayDate;
+		fileWriterMainPath = AVAT_ROOT_PATH + "realtime data\\" + todayDate + "\\";
+		
 		try {
+			File f = new File(fileWriterMainPath);
+			if(!f.exists())
+				f.mkdir();
+			
 			fileWriter_raw = new FileWriter(fileWriterMainPath + stockCode + ".csv", true); // append
 			fileWriter_trade = new FileWriter(fileWriterMainPath + stockCode + " trade.csv", true); // append
 			fileWriter_orderbook = new FileWriter(fileWriterMainPath + stockCode + " orderbook.csv", true); // append
 			fileWriter_rt = new FileWriter(fileWriterMainPath + stockCode + " rt.csv", true); // append
-			
+			//filerWriter_temp = new FileWriter(fileWriterMainPath + "temp data\\" + stockCode + ".csv", false); // not append
+			/*
 			// initializing avat
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
@@ -94,7 +108,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 			avat.add(timeArr);
 			avat.add(volArr);
 			avat.add(priceArr);
-				
+			*/
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -234,6 +248,10 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 		case RT_TRD_VOLUME:
 			info = sysTime + "," + tickType.name() + "," + value;
 			tradeInfo =  info;
+			String[] valueArr2 = value.split(";"	);
+			lastestTrdRTVolume = Double.parseDouble(valueArr2[3]);
+			lastestTrdVWAP = Double.parseDouble(valueArr2[4]);
+			lastestTrdRTTurnover = lastestTrdRTVolume * lastestTrdVWAP;  
 			break;
 		default:
 			logger.trace("Unknown tick string!");
@@ -326,6 +344,12 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 		rtInfo = "";
 	}
 	
+	/**
+	 * For ib only. ib传回来的timestamp以秒计数，而系统自带的timestamp以毫秒计数
+	 * @param timeStamp
+	 * @param format
+	 * @return
+	 */
 	private String timeStamp2Date(String timeStamp, String format) {
 		Long timestampL = Long.parseLong(timeStamp) * 1000;
         String date = new SimpleDateFormat(format).format(new Date(timestampL));

@@ -1,6 +1,7 @@
 package cgi.ib.avat;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -20,16 +21,18 @@ import com.ib.client.Types.WhatToShow;
 
 public class AvatUtils {
 	private static Logger logger = Logger.getLogger(AvatUtils.class.getName());
+	public static String allTrdingDatePath = "D:\\stock data\\all trading date - hk.csv";
 	
 	public static String dateFormat = "yyyyMMdd HH:mm:ss";
 	public static SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
 	public static String dateFormat2 = "yyyyMMdd";
 	public static SimpleDateFormat sdf2 = new SimpleDateFormat (dateFormat2);
-	public static String todayDate = /*sdf2.format(new Date());*/ "20170929";
+	public static String todayDate /*= sdf2.format(new Date())*/;
 	public static String dateFormat3 = "HH:mm:ss";
 	public static SimpleDateFormat sdf3 = new SimpleDateFormat (dateFormat3);
 	
 	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	private static String avatHistPath = ""; // 用来存储过去20天的avat平均值的文件夹
 	
 	/**
 	 * 获得conArr中每只股票昨天的历史avat数据。这些历史数据，每只股票的数据存在一个文件，每行是每个时刻该股票过去5天在这个时刻的avat的平均值以及过去20天的平均值
@@ -41,7 +44,7 @@ public class AvatUtils {
 	public static Map<String, Map<Date,ArrayList<Double>>> getPrevCrossSectionalAvat(ArrayList<Contract> conArr) {
 		Map<String, Map<Date,ArrayList<Double>>> avatHist = new HashMap();
 		try {
-			String avatHistPath = AVAT_ROOT_PATH + "avat para\\";
+			//String avatHistPath = AVAT_ROOT_PATH + "avat para\\" + todayDate + "\\";
 			
 			for(int i = 0; i < conArr.size(); i++) {
 				String stock = conArr.get(i).symbol();
@@ -106,7 +109,7 @@ public class AvatUtils {
 		Map<String, String> avatIndustry = new HashMap();  // stock - industry
 		Map<String, ArrayList<String>> avatIndustry_byIndustry = new HashMap();  // industry - stock list
 		try {
-			String avatIndustryPath = AVAT_ROOT_PATH + "avat para\\prev close.csv";
+			String avatIndustryPath = AVAT_ROOT_PATH + "avat para\\industry.csv";
 			BufferedReader bf_avat_i = utils.Utils.readFile_returnBufferedReader(avatIndustryPath);
 			String line = "";
 			while((line = bf_avat_i.readLine()) != null) {
@@ -116,7 +119,7 @@ public class AvatUtils {
 				avatIndustry.put(stock , industry);
 				
 				// update avatIndustry_byIndustry
-				ArrayList<String> stockList_industry = avatIndustry_byIndustry.get(stock);
+				ArrayList<String> stockList_industry = avatIndustry_byIndustry.get(industry);
 				if(stockList_industry == null)
 					stockList_industry  = new ArrayList<String>();
 				stockList_industry  .add(stock);
@@ -408,10 +411,34 @@ public class AvatUtils {
 		return isOK;
 	}
 
-	public static boolean preparePrevCrossSectionalAvat2(ArrayList<Contract> conArr, String lastDateStr /*inclusive*/, String dateFormat) {
+	/**
+	 * 准备过去20天的横截面avat
+	 * @param conArr
+	 * @param lastDateStr  这一天往前20天的历史数据（不包括这一天）
+	 * @param dateFormat
+	 * @return
+	 */
+	public static boolean preparePrevCrossSectionalAvat2(ArrayList<Contract> conArr, String lastDateStr /*exclusive*/, String dateFormat) {
 		boolean isOK = true;
 		try {
 			int numOfTradingDays = 20;
+			avatHistPath = AVAT_ROOT_PATH + "avat para\\" + todayDate + "\\" ;  // 存放avat历史数据的文件夹
+			
+			// 先判断哪些已经download了
+			ArrayList<String> alreadyExists = new ArrayList<String> (); 
+			File fileList = new File(avatHistPath);
+			if(!fileList.exists())
+				fileList.mkdirs();
+			else {
+				String[] files = fileList.list();
+				for(int i = 0; i < files.length; i++) {
+					String file = files[i];
+					String suffix = file.length() >= 4? file.substring(file.length()-4, file.length()):"";
+					if(suffix.equals(".csv")) {
+						alreadyExists.add(file.substring(0,file.length() - 4));
+					}
+				}
+			}
 			
 			logger.trace("read auction data");
 			// ------------ read auction data ------------ 
@@ -422,12 +449,11 @@ public class AvatUtils {
 			int count = 0;
 			String line = "";
 			ArrayList<Date> auctionDateArr = new ArrayList<Date>();
-			LinkedHashMap<String, ArrayList<Double>> auctionData = new LinkedHashMap<String, ArrayList<Double>> ();  // auction data stored in this variable
+			LinkedHashMap<String, LinkedHashMap<Date, Double>> auctionData = new LinkedHashMap<String, LinkedHashMap<Date, Double>> ();  // auction data stored in this variable
 			while((line = bf.readLine()) != null) {
 				String[] lineArr = line.split(",");
-				
 				String stock = "";
-				ArrayList<Double> thisLineData = new ArrayList<Double>();
+				LinkedHashMap<Date, Double> thisLineData = new LinkedHashMap<Date, Double>();
 				//logger.trace("read auction - lineArr.length=" + lineArr.length );
 				for(int i = 0; i < lineArr.length; i++) {
 					if(count == 0 && i == 0) {
@@ -445,7 +471,7 @@ public class AvatUtils {
 					}
 					if(count > 0 && i > 0) {
 						Double thisData = Double.parseDouble(lineArr[i]);
-						thisLineData.add(thisData);
+						thisLineData.put(auctionDateArr.get(i-1), thisData);
 					}
 				}
 				auctionData.put(stock, thisLineData);
@@ -462,88 +488,127 @@ public class AvatUtils {
 			LinkedHashMap<String, LinkedHashMap<Date, Double>> cumHistAvat5D_byStock = new LinkedHashMap<String, LinkedHashMap<Date, Double>>();
 						
 			logger.trace("read 1min bar data");
-			// ------------  read 1min bar data ------------ 
+			// ------------  read 1min bar data ------------  (还没考虑auction data) 
 			String _1minBarRootPath = AVAT_ROOT_PATH + "\\historical 1min data\\";
 			
 			SimpleDateFormat sdf_temp = new SimpleDateFormat(dateFormat);
 			Date lastDate = sdf_temp.parse(lastDateStr);
 			
-			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingDate(allTrdingDatePath);
 			ArrayList<Date> allTradingDate = new ArrayList<Date> ();
-			Calendar lastDateCal = (Calendar) allTradingDate .get(0).clone();
+			Calendar lastDateCal = (Calendar) allTradingCal .get(0).clone();
 			lastDateCal.setTime((Date) lastDate.clone()); 
 			Calendar recentCal = utils.Utils.getMostRecentDate(lastDateCal, allTradingCal);
 			
 			int lastDateInd = allTradingCal.indexOf(recentCal);
-			lastDate = (Date) recentCal .getTime().clone();
+			lastDateInd = lastDateInd - 1;
+			//lastDate = (Date) recentCal .getTime().clone();
 			
 			for(int i = 0; i < conArr.size(); i++) {
 				String stock = conArr.get(i).symbol();
 				//String _1minBarPath = _1minBarRootPath + stock + ".csv";
+				if(alreadyExists.indexOf(stock) > -1) // 对于已经存在的股票就不用再进行处理
+					continue;
 	
 				LinkedHashMap<Date, Double> thisStockCumAvat20D = new LinkedHashMap<Date, Double>();
 				LinkedHashMap<Date, Double> thisStockCumAvat5D = new LinkedHashMap<Date, Double>();
+				LinkedHashMap<Date, Double> thisStockAuctionData = auctionData.get(stock);
 				
 				for(int j = 0; j < numOfTradingDays; j++) {
 					Calendar thisTrdCal = allTradingCal.get(lastDateInd - j);
 					String thisTrdDateStr = sdf2.format(thisTrdCal.getTime());
+					
+					logger.trace("stock=" + stock + " " + thisTrdDateStr);
 					
 					String _1minBarPath = _1minBarRootPath + thisTrdDateStr + "\\" + stock + ".csv";
 					
 					BufferedReader bf_ha = utils.Utils.readFile_returnBufferedReader(_1minBarPath);
 					line = "";
 					int timePathInd = 0;
+					Double todayAvat = thisStockAuctionData.get(sdf2.parse(thisTrdDateStr));
 					while((line = bf_ha.readLine()) != null) {
+						if(timePathInd == timePath.size())  // 不需要15：59之后的数据
+							break;
+						
 						String[] lineArr = line.split(",");
 						
-						Date readTime0 = sdf.parse(lineArr[0]);
+						Double thisTimeVol = Double.parseDouble(lineArr[5]);
+						if(thisTimeVol == null)
+							thisTimeVol = 0.0;
+						//todayAvat += vol;
+						
+						SimpleDateFormat sdf_temp2 =  new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss"); 
+						Date readTime0 = sdf_temp2.parse(lineArr[0]);
 						String readTime1Str = sdf3.format(readTime0); // change to hh:MM:ss
 						Date readTime1 = sdf3.parse(readTime1Str);
 						
 						String timePath1Str = sdf3.format(timePath.get(timePathInd)); // change to hh:MM:ss
 						Date timePath1 = sdf3.parse(timePath1Str);
 						
-						while(!readTime1.before(timePath1)) { // timePath1要去追 readTime1
-							Date timePath0 = timePath.get(timePathInd);
+						while(!timePath1.after(readTime1)){ // timePath1要去追 readTime1
+							if(timePath1.equals(readTime1))
+								todayAvat += thisTimeVol;
 							
-							// update 20D data
-							Double vol20D = thisStockCumAvat20D.get(timePath0);
-							if(vol20D == null)
-								vol20D = 0.0;
-							vol20D += Double.parseDouble(lineArr[5]);
-							thisStockCumAvat20D.put(timePath0, vol20D);
+							Date timePath0 = timePath.get(timePathInd);
+							logger.trace("readTime=" + sdf.format(readTime1) + " timePath1=" + sdf.format(timePath1) + " timePathInd=" + timePathInd);
+							
+							Double todayAvat20D = todayAvat.doubleValue();
+							Double todayAvat5D = todayAvat.doubleValue();
+							
+							Double avat20D_prevDay = 0.0;	// 上一天的值，比如现在是9：34，则这个值存储了昨天9：34的累计的avat
+							avat20D_prevDay = thisStockCumAvat20D.get(timePath.get(timePathInd));
+							if(avat20D_prevDay == null)
+								avat20D_prevDay = 0.0;
+							
+							Double todayCumAvat20D = todayAvat20D + avat20D_prevDay;
+							
+							thisStockCumAvat20D.put(timePath0, todayCumAvat20D);
+							logger.trace(" todayAvat20D=" + todayAvat20D + " vol20D_prevDay=" + avat20D_prevDay + " todayCumAvat20D=" + todayCumAvat20D);
 							
 							// update 5D data
 							if(j <= 4) {
-								Double vol5D = thisStockCumAvat5D.get(timePath0);
-								if(vol5D == null)
-									vol5D = 0.0;
-								vol5D += Double.parseDouble(lineArr[5]);
-								thisStockCumAvat5D.put(timePath0, vol5D);
+								Double vol5D_prevDay = 0.0;	// 上一天的值，比如现在是9：34，则这个值存储了昨天9：34的累计的avat
+								vol5D_prevDay = thisStockCumAvat5D.get(timePath.get(timePathInd));
+								if(vol5D_prevDay == null)
+									vol5D_prevDay = 0.0;
+								
+								Double todayCumAvat5D = todayAvat5D + vol5D_prevDay;
+								
+								thisStockCumAvat5D.put(timePath0, todayCumAvat5D);
+								//logger.trace(" todayAvat5D=" + todayAvat5D + " vol5D_prevDay=" + vol5D_prevDay + " todayCumAvat5D=" + todayCumAvat5D);
+								
 							}
 							timePathInd++;
 							
+							if(timePathInd == timePath.size())  // 不需要15：59之后的数据
+								break;
+							
 							timePath1Str = sdf3.format(timePath.get(timePathInd)); // change to hh:MM:ss
 							timePath1 = sdf3.parse(timePath1Str);
-						}
+						
+						} // timePath1要去追 readTime1
+						
 					} // end of while
-					
+					bf_ha.close();
 					
 				} // end of for - 每天循环
 				cumHistAvat20D_byStock.put(stock, thisStockCumAvat20D);
 				
 				// ----------- output ---------------
-				logger.trace("--- outoput data, stock=" + stock);
-				String avatPath = AVAT_ROOT_PATH + "avat para temp\\" + stock + ".csv";
+				logger.trace("--- outoput data, stock=" + stock + " thisStockCumAvat5D.size=" + thisStockCumAvat5D.size() + " thisStockCumAvat20D.size=" + thisStockCumAvat20D.size());
+				
+				String avatPath = avatHistPath + stock + ".csv";  // 虽然路径是以今日命名的，但是包含的历史数据不含今日的数据
 				FileWriter fw = new FileWriter (avatPath);
 				for(int j = 0; j < timePath.size(); j++) {
 					String timeS = sdf.format(timePath.get(j));
 					fw.write(timeS + "," 
-							+ String.valueOf(thisStockCumAvat5D.get(j) / 5.0) + ","
-							+ String.valueOf(thisStockCumAvat20D.get(j) / 20.0) + "\n");
+							+ String.valueOf(thisStockCumAvat5D.get(timePath.get(j)) / 5.0) + ","
+							+ String.valueOf(thisStockCumAvat20D.get(timePath.get(j)) / 20.0) + "\n");
 				}
 				fw.close();
 				
+				
+				//Thread.sleep(1000 * 100000);
 			} // 每只股票循环
 			
 		}catch(Exception e) {
@@ -562,10 +627,11 @@ public class AvatUtils {
 		boolean isOK = true;
 		try {
 			//String outputPath = ibRootPath + "historical ";
-			ArrayList<MyIHistoricalDataHandler> histHandlerArr = new ArrayList<MyIHistoricalDataHandler>();
-			int numOfRead = 5;
+			ArrayList<MyIHistoricalDataHandler> histHandlerArr = myController.histHandlerArr;
+			int numOfRead = 20;
 			boolean rthOnly = true;
 			int counter  = 1;
+			int counter2 = 0;
 			for(int i = 0; i < conArr.size(); i++) {
 				logger.debug("[historical bar] i=" + i + " Downloading " + conArr.get(i).symbol());
 				
@@ -583,12 +649,24 @@ public class AvatUtils {
 						for(int j = startInd; j <= i; j++) {
 							MyIHistoricalDataHandler thisHist = histHandlerArr.get(j);
 							int isEnd = thisHist.isEnd;
+							int isActive = thisHist.isActive;
+							if(isEnd == 1 && isActive == 1) {
+								myController.cancelHistoricalData(thisHist);
+								//thisHist.isActive = 0;
+							}
 							cum += isEnd;
 						}
 						
 						Thread.sleep(1000 * 2);
 						logger.debug("Ping Pong!");
+						
+						counter2 ++;
+						if(counter2 >= 30) { // if wait for too long, 强制断开
+							break;
+						}
 					}
+					
+					counter2 = 0;
 					logger.debug("i = " + i + " Download END!");
 					counter ++;
 				}
@@ -629,6 +707,7 @@ public class AvatUtils {
 			//logger.error();
 		}
 		
+		logger.info("historical 1min data: downloading completed");
 		return isOK;
 	}
 	
@@ -658,6 +737,7 @@ public class AvatUtils {
 			isOK = false;
 		}
 		
+		logger.info("historical 1min data (20 Day): downloading completed");
 		return isOK;
 	}
 	

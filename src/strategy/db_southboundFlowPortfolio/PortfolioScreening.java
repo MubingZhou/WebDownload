@@ -35,7 +35,7 @@ public class PortfolioScreening {
 		//ArrayList<StockSingleDate> stockPickedList = new ArrayList<StockSingleDate>();
 		ArrayList<String> stockListStr = new ArrayList<String> ();
 		SimpleDateFormat sdf_yyyyMMdd = new SimpleDateFormat("yyyyMMdd"); 
-		
+	
 		try {
 			// ==== convert the date to the most recent trading date before it =========
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);

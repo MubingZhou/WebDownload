@@ -18,6 +18,9 @@ public class MyIHistoricalDataHandler implements IHistoricalDataHandler{
 	public Contract contract;
 	public FileWriter fileWriter;
 	public int isEnd = 0;
+	public int isActive = 0;  // 如果在收到所有历史数据后，没有取消request的话，这个isActive仍然是1，
+	
+	public int reqId = -1;
 	
 	//public String AVAT_ROOT_PATH = "Z:\\AVAT\\";
 	
