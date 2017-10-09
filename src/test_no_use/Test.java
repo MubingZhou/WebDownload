@@ -1,5 +1,6 @@
 package test_no_use;
 
+import java.awt.Toolkit;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -15,6 +16,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 import org.apache.log4j.Logger;
 
@@ -34,33 +38,45 @@ public class Test {
 
 	 //static Logger logger = LogManager.getLogger(Test.class.getName());
 	 static Logger logger = Logger.getLogger(Test.class.getName());
-	 
+	 static int i = 0;
 			
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			ArrayList<Object> data = AvatUtils.getIndustry();
-			Map<String, String> avatIndustry = (Map<String, String>) data.get(0);
-			Map<String, ArrayList<String>> avatIndustry_byIndustry = (Map<String, ArrayList<String>>) data.get(1);  // industry - stock list
+			//JOptionPane.showMessageDialog(null, "标题【出错啦】", "年龄请输入数字", JOptionPane.ERROR_MESSAGE);
+			//JOptionPane.showInternalMessageDialog(frame, "information","information", JOptionPane.INFORMATION_MESSAGE); 
 			
-			FileWriter fw1 = new FileWriter("D:\\test1.csv");
-			FileWriter fw2 = new FileWriter("D:\\test2.csv");
+			Thread t = new Thread(new Runnable(){
+				   public void run(){
+				       // JOptionPane.showConfirmDialog(null, "运行中!", "test",JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);//你的提示消息   
+					   JFrame frame = new JFrame();
+					   frame.setLocation(0, 0);
+					   Toolkit tk = frame.getToolkit();
+					   java.awt.Dimension dm = tk.getScreenSize();  
+					   
+					   frame.setLocation(0,0);
+					   frame.setSize(300, 500);
+					   frame.setVisible(true);
+					   
+					   JOptionPane.showMessageDialog(frame, "标题\n【出错啦】", "年龄请输入数字", JOptionPane.PLAIN_MESSAGE);
+					   JOptionPane.showMessageDialog(frame, "标题\n【出错啦】12222", "年龄请输入数字", JOptionPane.PLAIN_MESSAGE);
+				        i=1;
+				       
+				   }
+				});
 			
-			for(String stock : avatIndustry.keySet()) {
-				fw1.write(stock + "," + avatIndustry.get(stock) + "\n");
+			if(true) {
+				t.start();
 			}
-			fw1.close();
+				
+			System.out.println("sfsdfsdfsfsd");
+			ArrayList<Double> att = new ArrayList<Double>();
+			att.add(1.0);
+			att.add(3.0);
+			att.add(2.0);
 			
-			for(String industry : avatIndustry_byIndustry.keySet()) {
-				ArrayList<String> memb = avatIndustry_byIndustry.get(industry);
-				fw2.write(industry);
-				for(int i = 0; i < memb.size(); i++) {
-					String stock = memb.get(i);
-					fw2.write("," + stock);
-				}
-				fw2.write("\n");
-			}
-			fw2.close();
+			Collections.sort(att, Collections.reverseOrder());
+			System.out.println(att.get(2));
 			
 		}catch(Exception e) {
 			e.printStackTrace();

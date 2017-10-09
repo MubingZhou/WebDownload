@@ -40,7 +40,7 @@ public class Main {
 			AvatUtils.todayDate = todayDate;
 			
 			// ------------ MODE -----------
-			int mode = 100;
+			int mode = 1;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
@@ -102,7 +102,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171004", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171006", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;

@@ -1,6 +1,10 @@
 package cgi.ib.avat;
 
+import java.awt.Toolkit;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -10,12 +14,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+
 import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
 import com.ib.client.Order;
 import com.ib.client.OrderType;
 import com.ib.controller.ApiController;
+
+import utils.XMLUtil;
 
 public class AVAT {
 	// -------- main variables -------------
@@ -43,6 +52,10 @@ public class AVAT {
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar>();
 	public static SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 	private static String errMsgHead = "[AVAT - error] ";
+	
+	private static Map<Double, String> msg_eligibleStocksMap = new HashMap<Double, String>();  // 用来存储每次运行完之后符号要求的股票，用于在对话框中显示，key是avat，value是stock code
+	private static String alertToShow = "";   // 将要显示在弹出框的内容
+	private static JFrame frame = new JFrame();
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
@@ -115,6 +128,11 @@ public class AVAT {
 		// ------ avat lot size --------
 		avatLotSize = AvatUtils.getLotSize();
 		logger.info("get lot size - done");
+		
+		// ------- 设置弹出窗口的容器 ----------
+	   frame.setLocation(0,0);
+	   frame.setSize(300, 700);
+	   frame.setVisible(true);
 	}
 	
 	/**
@@ -139,6 +157,10 @@ public class AVAT {
 	private static void output() {
 		try {
 			String avatRecordPath = AVAT_ROOT_PATH + "avat record\\" + todayDate + "\\";
+			File f_r = new File(avatRecordPath);
+			if(!f_r.exists())
+				f_r.mkdir();
+			String avatRecordXMLPath = AVAT_ROOT_PATH + "avat record\\" + todayDate + "\\overview.xml";
 			
 			Date now = new Date();
 			//Map<String,ArrayList<Double>> avatRatioNow = new HashMap();
@@ -160,7 +182,11 @@ public class AVAT {
 				logger.info("Generating avat!");
 				
 				avatRecord = new ArrayList<AvatRecordSingleStock>();
-					
+				
+				ArrayList<String> eligibleStocks = new ArrayList<String>(); // 看avat是否符合要求
+				ArrayList<Double> eligibleStocksValue = new ArrayList<Double>(); 
+				msg_eligibleStocksMap.clear();
+				
 				logger.debug("-- topMktDataHandlerArr.size=" + topMktDataHandlerArr.size());
 				for(int i = 0; i < topMktDataHandlerArr.size(); i++) { // 每一个handler负责一只股票
 					MyITopMktDataHandler myTop = topMktDataHandlerArr.get(i);
@@ -220,6 +246,11 @@ public class AVAT {
 					ArrayList<Double> temp = new ArrayList<Double>();
 					temp.add(ratio5D);
 					temp.add(ratio20D);
+					
+					if(ratio5D >= 3.0) {
+						//eligibleStocks.add(stock);
+						//msg_eligibleStocksMap.put(ratio5D, stock);
+					}
 					
 					//avatRatioNow.put(stock, temp);
 					
@@ -306,7 +337,58 @@ public class AVAT {
 				}
 				fw.close();
 				
-				// place orders
+				// ----------- place orders --------
+				
+				
+				// ----------- 弹出对话框 ---------------
+				BufferedReader bf_al = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "avat para\\isShowAlert.txt");
+				String line0 = bf_al.readLine();
+				bf_al.close();
+				if(line0.equals("1")) {  // 当avat ratio5D大于3的时候输出
+					String title = "AVAT results";
+					String nowTimeStr = sdf.format(now);
+					String blank = "    ";
+					
+					String avatLargerThan5 = "";
+					String avatLargerThan3 = "";
+					String rankDiffLargerThan20 = "";  // 排名上升超过20
+					String rankDiffLargerThan10 = "";  // 排名上升超过10
+					
+					DecimalFormat    df   = new DecimalFormat("######0.00");   
+					for(AvatRecordSingleStock rec: avatRecord) {
+						Double ratio5D = rec.avatRatio5D;
+						String stockCode = rec.stockCode;
+						int rankDiff = rec.rankDiff;
+						String industry = rec.industry;
+						
+						if(ratio5D >= 5) {
+							avatLargerThan5 += blank + stockCode + " : " + df.format(ratio5D) + " - " + industry + "\n";
+						}
+						if(ratio5D >=3 && ratio5D < 5) {
+							avatLargerThan3 += blank + stockCode + " : " + df.format(ratio5D)  + " - " + industry + "\n";
+						}
+						if(rankDiff <= -20) { // 上升超过20名
+							rankDiffLargerThan20 = blank + stockCode + " rank diff=" + (-rankDiff) + " avat=" + df.format(ratio5D)  + " - " + industry +  "\n";
+						}
+						if(rankDiff <= -10 && rankDiff > -20) { // 上升超过10名
+							rankDiffLargerThan10 = blank + stockCode + " rank diff=" + (-rankDiff) + " avat=" + df.format(ratio5D)  + " - " + industry +  "\n";
+						}
+					}
+					
+					alertToShow = nowTimeStr + "\n"
+								+ "AVAT >= 5\n" + avatLargerThan5
+								+ "AVAT >= 3 && AVAT < 5\n" + avatLargerThan3
+								+ "Ranking increase > 20\n" + rankDiffLargerThan20
+								+ "Ranking increase > 10\n" + rankDiffLargerThan10;
+					
+					Thread t = new Thread(new Runnable(){
+						   public void run(){
+							   JOptionPane.showMessageDialog(frame, alertToShow, "AVAT Results", JOptionPane.PLAIN_MESSAGE);
+						        
+						   }
+						});
+						t.start();
+				}
 				
 				
 				// industry table
@@ -331,6 +413,13 @@ public class AVAT {
 				fw2.close();
 				
 				logger.info("Generating avat ends!");
+				// ---------- 存储avat record --------
+				Map<String, AvatRecordSingleStock> recordMap = new HashMap<String, AvatRecordSingleStock>();
+				for(AvatRecordSingleStock rec : avatRecord) {
+					recordMap.put(rec.stockCode, rec);
+				}
+				XMLUtil.convertToXml(recordMap, avatRecordXMLPath);
+				
 				Thread.sleep(1000 * 60); // wait for 1 min
 				lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
 				isFirst = false;

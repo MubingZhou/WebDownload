@@ -2,8 +2,35 @@ package cgi.ib.avat;
 
 import java.util.Calendar;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
+
 import backtesting.backtesting.Trade;
 
+@XmlAccessorType(XmlAccessType.FIELD)  
+//XML文件中的根标识  
+@XmlRootElement(name = "AvatRecordSingleStock")  
+//控制JAXB 绑定类中属性和字段的排序  
+@XmlType(propOrder = {   
+     "stockCode",
+     "currentPrice",
+     "priceChg",
+     "avatRatio5D",
+     "avatRatio20D",
+     "industry",
+     "industryAvg",
+     "turnover",
+     "rankDiff",
+     "newRank",
+     "oldRank",
+     "isIndexMember",
+     "isTurnoverOK",
+     "timeStamp",
+     "latestBestBid",
+     "latestBestAsk"
+}) 
 public class AvatRecordSingleStock {
 	public String stockCode;
 	public Double currentPrice;
