@@ -335,6 +335,12 @@ public class MyAPIController extends ApiController{
 	// ---------------------------------------- Trading and Option Exercise ----------------------------------------
 	public void placeOrModifyOrder(Contract contract, final Order order, final MyIOrderHandler handler) {
 		super.placeOrModifyOrder(contract, order, handler);
+		
+		// recorder orderId
+		if(order.orderId() == 0)
+			handler.orderId = super.m_orderId;
+		else
+			handler.orderId = order.orderId();
 	}
 
 	public void cancelOrder(int orderId) {

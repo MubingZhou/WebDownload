@@ -33,6 +33,8 @@ public class TestXML {
 		//System.out.println(keysArr.get(0).getTime());
 		//System.out.println(ob1.get(0));
 		*/
+		
+		/*
 		Trade tr = new Trade();
 		tr.amount = 10.0;
 		tr.stock = "sdfs"	;
@@ -46,6 +48,12 @@ public class TestXML {
 		ArrayList<Calendar> allDays = new ArrayList<Calendar>(histSnap.keySet());
 		Collections.sort(allDays);
 		System.out.println(allDays.get(0).getTime());
+		*/
+		
+		Map<String, String> m = new HashMap();
+		m.put("1", "aaa");
+		m.put("2", "bbb");
+		XMLUtil.convertToXml(m,"D:\\text.xml");
 		
 		
 	}

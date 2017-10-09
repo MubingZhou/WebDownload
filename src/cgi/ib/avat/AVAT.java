@@ -43,6 +43,7 @@ public class AVAT {
 	public static ArrayList<String> avatIndexMembers = new ArrayList<String> ();
 	public static ArrayList<Date> avatTimePath = new ArrayList<Date> ();
 	public static Map<String, Double> avatLotSize = new HashMap<String, Double> ();
+	public static Map<String, Double> prevVolume = new HashMap<String, Double>(); // previous day's volume for every stock
 	
 	// --------- other variables ---------
 	private static Logger logger = Logger.getLogger(AVAT.class.getName());
@@ -56,6 +57,11 @@ public class AVAT {
 	private static Map<Double, String> msg_eligibleStocksMap = new HashMap<Double, String>();  // 用来存储每次运行完之后符号要求的股票，用于在对话框中显示，key是avat，value是stock code
 	private static String alertToShow = "";   // 将要显示在弹出框的内容
 	private static JFrame frame = new JFrame();
+	
+	// -------- orders ----------
+	private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
+	private static int isLotSizeMapToUpdate = 0;  // lot size map是否需要升级
+	
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
@@ -124,6 +130,9 @@ public class AVAT {
 		
 		// -------- avat get today's auction --------
 		//Map<String, Double> todayAuction = AvatUtils.getTodayAuction();
+		
+		// ------ avat - get previous day's volume --------
+		prevVolume = AvatUtils.getPreviousVolume(conArr);   // 这个volume不包好unreportable的volume
 		
 		// ------ avat lot size --------
 		avatLotSize = AvatUtils.getLotSize();
@@ -269,6 +278,9 @@ public class AVAT {
 					at.turnover = trdRtTurnover;
 					at.latestBestAsk = latestBestAsk;
 					at.latestBestBid = latestBestBid;
+					at.prevVolume = prevVolume.get(stock);
+					at.volume = trdRtVolume;
+					
 					avatRecord.add(at);
 					
 					logger.debug("------- next ");
@@ -414,11 +426,23 @@ public class AVAT {
 				
 				logger.info("Generating avat ends!");
 				// ---------- 存储avat record --------
+				/*
 				Map<String, AvatRecordSingleStock> recordMap = new HashMap<String, AvatRecordSingleStock>();
 				for(AvatRecordSingleStock rec : avatRecord) {
 					recordMap.put(rec.stockCode, rec);
 				}
 				XMLUtil.convertToXml(recordMap, avatRecordXMLPath);
+				*/
+				
+				// -------- update 一下 lot size map --------
+				if(isLotSizeMapToUpdate == 1) {
+					FileWriter f = new FileWriter(AVAT_ROOT_PATH + "avat para\\lot size.csv");
+					for(String key : avatLotSize.keySet()) {
+						f.write(key + "," + avatLotSize.get(key) + "\n");
+					}
+					f.close();
+				}
+				isLotSizeMapToUpdate = 0;
 				
 				Thread.sleep(1000 * 60); // wait for 1 min
 				lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
@@ -433,58 +457,104 @@ public class AVAT {
 	private static void placeOrder(ArrayList<AvatRecordSingleStock> avatRecord) {
 		try {
 			String errMsgHead  = "[trading strategy] ";
-			Double fixedBuyAmount = 300000.0;  // fix buying amount for each stock, HKD
+			Double fixedBuyAmount = 500000.0;  // fix buying amount for each stock, HKD
 			boolean transmitToIB = false;
 			
+			// 浏览各个AvatRecordSingleStock 
 			for(AvatRecordSingleStock singleRec : avatRecord) {
-				String startTimeStr = todayDate + " 09:50:00";
-				Date startTime = sdf.parse(startTimeStr);
-				String endTimeStr = todayDate + " 10:10:00";
-				Date endTime = sdf.parse(endTimeStr);
+				
+				/*
+				 * ------- 先看是否有买入信号 ---------
+				 * 买入条件：
+				 * 		1. 时间是11:00之前；并且
+				 * 		(2. 当前的avat5D ratio超过3，并且估价上涨，涨幅不超过3%；或者
+				 * 		3. 当时的volume超过了全天的volume)
+				 * 		4. 已经买过的股票不再买入
+				 */
+				String buyStartTimeStr = todayDate + " 09:30:00";
+				Date buyStartTime = sdf.parse(buyStartTimeStr);
+				String buyEndTimeStr = todayDate + " 11:00:00";
+				Date buyEndTime = sdf.parse(buyEndTimeStr);
+				
+				double avatThld = 3.0;  // avat threshold
 				
 				Date thisTime = new Date(singleRec.timeStamp);
-				if(!(thisTime.after(startTime) && thisTime.before(endTime))) {
-					logger.info(errMsgHead + "time out of range!");
-					return;
+				if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
+					int buyCond1 = 0;
+					int buyCond2 = 0;
+					int buyCond3 = 0;
+					
+					if(singleRec.avatRatio5D > avatThld)
+						buyCond1 = 1;
+					if(singleRec.volume >= singleRec.prevVolume)
+						buyCond2 = 1;
+					if(boughtRecords.indexOf(singleRec.stockCode) >= 0)
+						buyCond3 = 1;
+					
+					if((buyCond1 == 1 || buyCond2 == 1) && buyCond3 == 1) {  // buy signal
+						
+						// 新开一个线程来处理
+						Thread t = new Thread(new Runnable(){
+							   public void run(){
+								   	String stockCode = singleRec.stockCode;
+									
+									Contract con = conMap.get(stockCode);
+									
+									Order order = new Order();
+									order.action("BUY");
+									order.orderType(OrderType.LMT);
+									
+									Double buyPrice = singleRec.latestBestBid;
+									order.lmtPrice(buyPrice);  // 以best bid作为买入价
+									
+									Double lotSize = avatLotSize.get(stockCode);
+									Double orderQty = lotSize * (int)(fixedBuyAmount / lotSize / buyPrice) ;
+									order.totalQuantity(orderQty);
+									order.transmit(true);  // false - 只在api平台有这个order
+									
+									MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
+									myController.placeOrModifyOrder(con, order, myOrderH);
+									
+									while(true) {
+										if(myOrderH.isSubmitted == 1) {
+											logger.info("Order submitted! " + con.symbol() + " " + orderQty + " " + order.action() + " " + order.lmtPrice());
+											break;
+										}
+										
+										// 处理error
+										if(myOrderH.errorCode == 461) {
+											isLotSizeMapToUpdate=1;
+											Double newLotSize = myOrderH.newLostSize;  // 修改然后resubmit
+											orderQty = newLotSize * (int)(500000 / newLotSize / buyPrice);
+											order.totalQuantity(orderQty );
+											
+											myController.placeOrModifyOrder(con, order, myOrderH);
+											
+											logger.info("need new lot size = " + newLotSize + " resubmit order!");
+											
+											// update avatLotSize
+											avatLotSize.put(stockCode, newLotSize);
+										}
+										
+										try {
+											Thread.sleep(500);
+										} catch (InterruptedException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										}
+									} // end of while
+							   }
+							});
+						t.start();
+					}
 				}
 				
-				// -------- in the correct time period --------
-				
-				
-				
-				// ---------- 构建order --------
-				Double avatRatio5D = singleRec.avatRatio5D;
-				Double avatRatio20D = singleRec.avatRatio20D;
-				String stockCode = singleRec.stockCode;
-				Double prevClose = avatPrevClose.get(stockCode);
-				Double priceChg = (singleRec.currentPrice - prevClose) / prevClose;
-				
-				// satisfy the buy conditions
-				if(avatRatio5D >= 3.0
-					&& (priceChg > 0 && priceChg <= 0.03)) {
-					Contract con = conMap.get(stockCode);
-					
-					Order order = new Order();
-					order.action("BUY");
-					order.orderType(OrderType.LMT);
-					
-					Double buyPrice = singleRec.latestBestBid;
-					order.lmtPrice(buyPrice);  // 以best bid作为买入价
-					
-					Double lotSize = avatLotSize.get(stockCode);
-					order.totalQuantity(lotSize * (int)(fixedBuyAmount / buyPrice) );
-					order.transmit(transmitToIB);  // false - 只在api平台有这个order
-					
-					MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
-					myController.placeOrModifyOrder(con, order, myOrderH);
-					
-					
-		            //order.OrderType = "LMT";
-		            //order.TotalQuantity = quantity;
-		            //order.LmtPrice = limitPrice;
-		            //order.CashQty = cashQty;
-				}
-				
+				/*
+				 * --------------- 卖出信号 ---------------
+				 * 卖出条件：
+				 * 		1. 获利超过3%，以最优bid价卖出 （止盈）
+				 * 		2. 持股到当日15：00仍未卖出，以买入成本价（需要考虑交易成本）卖出
+				 */
 					
 			}
 		}catch(Exception e) {

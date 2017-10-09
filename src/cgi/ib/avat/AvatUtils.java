@@ -34,6 +34,8 @@ public class AvatUtils {
 	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
 	private static String avatHistPath = ""; // 用来存储过去20天的avat平均值的文件夹
 	
+	private static LinkedHashMap<String, LinkedHashMap<Date, Double>> auctionData = new LinkedHashMap<String, LinkedHashMap<Date, Double>>();
+	
 	/**
 	 * 获得conArr中每只股票昨天的历史avat数据。这些历史数据，每只股票的数据存在一个文件，每行是每个时刻该股票过去5天在这个时刻的avat的平均值以及过去20天的平均值
 	 * Map<String, Map<Date,ArrayList<Double>>>
@@ -222,6 +224,111 @@ public class AvatUtils {
 		}
 		
 		return lotSize;
+	}
+	
+	/**
+	 * get previous day's volume
+	 * @param conArr
+	 * @return
+	 */
+	public static Map<String, Double> getPreviousVolume(ArrayList<Contract> conArr){
+		Map<String, Double> prevV = new HashMap<String, Double>();
+		try {
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate();
+			
+			Calendar thisCal = (Calendar) allTradingDate.get(0).clone();
+			thisCal.setTime(sdf2.parse(todayDate));
+			Calendar lastCal = allTradingDate.get(allTradingDate.indexOf(thisCal) - 1);
+			
+			Date lastDate = lastCal.getTime();
+			String lastCalStr = sdf2.format(lastCal.getTime());
+			
+			String hist_1min_path = AVAT_ROOT_PATH + "historical 1min data\\" + lastCalStr + "\\";
+			
+			if(auctionData == null || auctionData.size() == 0)
+				getAuctionData();
+			
+			//FileWriter f = new FileWriter("D:\\test.csv");
+			for(Contract con : conArr) {
+				String stock = con.symbol();
+				
+				String path = hist_1min_path + stock + ".csv";
+				
+				Double vol = 0.0;
+				
+				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(path);
+				String line = "";
+				while((line = bf.readLine()) != null ) {
+					String[] lineArr = line.split(",");
+					
+					Double thisVol = Double.parseDouble(lineArr[5]);
+					vol += thisVol;
+				}
+				bf.close();
+				
+				Double auction = auctionData.get(stock).get(lastDate);
+				
+				vol += auction;
+				
+				prevV.put(stock, vol);
+				
+				//f.write(stock+ "," + vol + "\n");
+			}
+			//f.close();
+			
+		}catch(Exception e)	{
+			e.printStackTrace();
+		}
+		
+		return prevV;
+	}
+	
+	/**
+	 * 得到auction data
+	 */
+	private static void getAuctionData(){
+		try {
+			String auctionPath = AVAT_ROOT_PATH + "avat para\\auction.csv";
+			//logger.trace("read auction - auctionPath=" + auctionPath);
+			
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(auctionPath);
+			int count = 0;
+			String line = "";
+			ArrayList<Date> auctionDateArr = new ArrayList<Date>();
+			auctionData = new LinkedHashMap<String, LinkedHashMap<Date, Double>> ();  // auction data stored in this variable
+			while((line = bf.readLine()) != null) {
+				String[] lineArr = line.split(",");
+				String stock = "";
+				LinkedHashMap<Date, Double> thisLineData = new LinkedHashMap<Date, Double>();
+				//logger.trace("read auction - lineArr.length=" + lineArr.length );
+				for(int i = 0; i < lineArr.length; i++) {
+					if(count == 0 && i == 0) {
+						continue;
+					}
+					if(count == 0 && i > 0) {
+						String dateS = lineArr[i];
+						Date date = sdf2.parse(dateS);
+						auctionDateArr.add(date);
+						//logger.trace("read auction - dateS=" + dateS);
+					}
+					
+					if(count > 0 && i == 0) {
+						stock = lineArr[i];
+					}
+					if(count > 0 && i > 0) {
+						Double thisData = Double.parseDouble(lineArr[i]);
+						thisLineData.put(auctionDateArr.get(i-1), thisData);
+					}
+				}
+				auctionData.put(stock, thisLineData);
+				
+				count++;
+			}
+			bf.close();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	/**
@@ -460,43 +567,8 @@ public class AvatUtils {
 			
 			logger.trace("read auction data");
 			// ------------ read auction data ------------ 
-			String auctionPath = AVAT_ROOT_PATH + "avat para\\auction.csv";
-			//logger.trace("read auction - auctionPath=" + auctionPath);
-			
-			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(auctionPath);
-			int count = 0;
-			String line = "";
-			ArrayList<Date> auctionDateArr = new ArrayList<Date>();
-			LinkedHashMap<String, LinkedHashMap<Date, Double>> auctionData = new LinkedHashMap<String, LinkedHashMap<Date, Double>> ();  // auction data stored in this variable
-			while((line = bf.readLine()) != null) {
-				String[] lineArr = line.split(",");
-				String stock = "";
-				LinkedHashMap<Date, Double> thisLineData = new LinkedHashMap<Date, Double>();
-				//logger.trace("read auction - lineArr.length=" + lineArr.length );
-				for(int i = 0; i < lineArr.length; i++) {
-					if(count == 0 && i == 0) {
-						continue;
-					}
-					if(count == 0 && i > 0) {
-						String dateS = lineArr[i];
-						Date date = sdf2.parse(dateS);
-						auctionDateArr.add(date);
-						//logger.trace("read auction - dateS=" + dateS);
-					}
-					
-					if(count > 0 && i == 0) {
-						stock = lineArr[i];
-					}
-					if(count > 0 && i > 0) {
-						Double thisData = Double.parseDouble(lineArr[i]);
-						thisLineData.put(auctionDateArr.get(i-1), thisData);
-					}
-				}
-				auctionData.put(stock, thisLineData);
-				
-				count++;
-			}
-			bf.close();
+			if(auctionData == null || auctionData.size() == 0)
+				getAuctionData();
 			
 			// --------- initializing varaibles ----------
 			// 从9:30 - 15:59共330分钟
@@ -541,7 +613,7 @@ public class AvatUtils {
 					String _1minBarPath = _1minBarRootPath + thisTrdDateStr + "\\" + stock + ".csv";
 					
 					BufferedReader bf_ha = utils.Utils.readFile_returnBufferedReader(_1minBarPath);
-					line = "";
+					String line = "";
 					int timePathInd = 0;
 					Double todayAvat = thisStockAuctionData.get(sdf2.parse(thisTrdDateStr));
 					while((line = bf_ha.readLine()) != null) {

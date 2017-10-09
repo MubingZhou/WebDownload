@@ -32,7 +32,7 @@ public class Main {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date());todayDate="20171006";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date());//todayDate="20171006";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
@@ -40,7 +40,7 @@ public class Main {
 			AvatUtils.todayDate = todayDate;
 			
 			// ------------ MODE -----------
-			int mode = 1;
+			int mode = 100;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
@@ -49,7 +49,7 @@ public class Main {
 			 */
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
-			int port = 7496;
+			int port = 7497;
 			int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
 			
 			MyLogger inLogger = new MyLogger();
@@ -102,7 +102,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171006", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171009", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -116,23 +116,42 @@ public class Main {
 			if(mode == 100) {
 				Contract con = conArr.get(0);
 				
-				Double buyPrice = 320.0;
-				Double fixedBuyAmount = 300000.0;
+				String stockCode = con.symbol();
 				
-				//Double buyQty = 
 				
 				Order order = new Order();
 				order.action("BUY");
 				order.orderType(OrderType.LMT);
-				order.lmtPrice(buyPrice);
-				order.totalQuantity(600.0);
-				//order.cashQty(300000.0);
-				order.transmit(true);
+				
+				Double buyPrice =300.0;
+				order.lmtPrice(buyPrice);  // 以best bid作为买入价
+				
+				Double lotSize = 100.0;
+				order.totalQuantity(100 * (int)(500000 / 100 / buyPrice) );
+				order.transmit(true);  // false - 只在api平台有这个order
 				
 				MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
 				myController.placeOrModifyOrder(con, order, myOrderH);
 				
-				Thread.sleep(1000 * 10000000);
+				int isSubmitted = -1;
+				Double newLotSize = -1.0;
+				while(true) {
+					if(myOrderH.isSubmitted == 1) {
+						logger.info("Order submitted!");
+						isSubmitted = 1;
+						break;
+					}
+					
+					// 处理error
+					if(myOrderH.errorCode == 461) {
+						newLotSize = myOrderH.newLostSize;  // 修改然后resubmit
+						order.totalQuantity(newLotSize * (int)(500000 / newLotSize / buyPrice) );
+						myController.placeOrModifyOrder(con, order, myOrderH);
+						logger.info("need new lot size = " + newLotSize + " resubmit order!");
+					}
+					
+					Thread.sleep(500);
+				}
 			}
 			
 			//============== requesting historical tick data ===============
@@ -209,7 +228,7 @@ public class Main {
 			System.out.println("here11234");
 			// pause and disconnect
 			try {   
-				Thread.sleep(1000 * 1);
+				Thread.sleep(1000 * 10000000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

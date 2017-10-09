@@ -7,7 +7,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
-import backtesting.backtesting.Trade;
 
 @XmlAccessorType(XmlAccessType.FIELD)  
 //XML文件中的根标识  
@@ -22,6 +21,7 @@ import backtesting.backtesting.Trade;
      "industry",
      "industryAvg",
      "turnover",
+     "volume",
      "rankDiff",
      "newRank",
      "oldRank",
@@ -29,7 +29,8 @@ import backtesting.backtesting.Trade;
      "isTurnoverOK",
      "timeStamp",
      "latestBestBid",
-     "latestBestAsk"
+     "latestBestAsk",
+     "prevVolume"
 }) 
 public class AvatRecordSingleStock {
 	public String stockCode;
@@ -41,6 +42,7 @@ public class AvatRecordSingleStock {
 	public String industry;
 	public Double industryAvg;
 	public Double turnover = 0.0;
+	public Double volume = 0.0;
 	public int rankDiff;
 	public int newRank;
 	public int oldRank;
@@ -50,6 +52,8 @@ public class AvatRecordSingleStock {
 	public long timeStamp = 0l; // in miliseconds
 	public Double latestBestBid = -1.0;
 	public Double latestBestAsk = -1.0;
+	
+	public Double prevVolume = 0.0;  // trading volume of previous day 
 	
 	
 	public AvatRecordSingleStock(long timeStamp, String stockCode, Double currentPrice, Double priceChg, Double avatRatio5D,
