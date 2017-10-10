@@ -40,7 +40,7 @@ public class Main {
 			AvatUtils.todayDate = todayDate;
 			
 			// ------------ MODE -----------
-			int mode = 100;
+			int mode = 1;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
@@ -49,7 +49,7 @@ public class Main {
 			 */
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
-			int port = 7497;
+			int port = 7496;
 			int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
 			
 			MyLogger inLogger = new MyLogger();
@@ -152,6 +152,11 @@ public class Main {
 					
 					Thread.sleep(500);
 				}
+				
+				Thread.sleep(1000 * 5);
+				// monitor order
+				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
+				myController.takeTwsOrders(myLiveOrder);
 			}
 			
 			//============== requesting historical tick data ===============

@@ -211,9 +211,10 @@ public class MyAPIController extends ApiController{
 	}
 
 	// ---------------------------------------- Top Market Data handling ----------------------------------------
-    public void reqTopMktData(Contract contract, String genericTickList, boolean snapshot, boolean regulatorySnapshot, ITopMktDataHandler handler) {
+    public void reqTopMktData(Contract contract, String genericTickList, boolean snapshot, boolean regulatorySnapshot, MyITopMktDataHandler handler) {
 		super.reqTopMktData(contract, genericTickList, snapshot, regulatorySnapshot, handler);
 		//super.client().reqIds(numIds);
+		handler.contract = contract;
     }
 
     public void reqOptionMktData(Contract contract, String genericTickList, boolean snapshot, boolean regulatorySnapshot, IOptHandler handler) {
@@ -377,17 +378,6 @@ public class MyAPIController extends ApiController{
 		super.removeLiveOrderHandler(handler);
 	}
 
-	@Override public void openOrder(int orderId, Contract contract, Order order, OrderState orderState) {
-		super.openOrder(orderId, contract, order, orderState);
-	}
-
-	@Override public void openOrderEnd() {
-		super.openOrderEnd();
-	}
-
-	@Override public void orderStatus(int orderId, String status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
-		super.orderStatus(orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice);
-	}
 
 	// ---------------------------------------- Market Scanners ----------------------------------------
 	public void reqScannerParameters( IScannerHandler handler) {
@@ -402,17 +392,6 @@ public class MyAPIController extends ApiController{
 		super.cancelScannerSubscription(handler);
 	}
 
-	@Override public void scannerParameters(String xml) {
-		super.scannerParameters(xml);
-	}
-
-	@Override public void scannerData(int reqId, int rank, ContractDetails contractDetails, String distance, String benchmark, String projection, String legsStr) {
-		super.scannerData(reqId, rank, contractDetails, distance, benchmark, projection, legsStr);
-	}
-
-	@Override public void scannerDataEnd(int reqId) {
-		super.scannerDataEnd(reqId);
-	}
 
 
 	// ----------------------------------------- Historical data handling ----------------------------------------

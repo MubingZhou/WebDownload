@@ -7,6 +7,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
+import com.ib.client.Contract;
+
 
 @XmlAccessorType(XmlAccessType.FIELD)  
 //XML文件中的根标识  
@@ -14,6 +16,7 @@ import javax.xml.bind.annotation.XmlType;
 //控制JAXB 绑定类中属性和字段的排序  
 @XmlType(propOrder = {   
      "stockCode",
+     "contract",
      "currentPrice",
      "priceChg",
      "avatRatio5D",
@@ -34,6 +37,7 @@ import javax.xml.bind.annotation.XmlType;
 }) 
 public class AvatRecordSingleStock {
 	public String stockCode;
+	public Contract contract;
 	public Double currentPrice;
 	//public Double prevClose;
 	public Double priceChg;
@@ -56,12 +60,13 @@ public class AvatRecordSingleStock {
 	public Double prevVolume = 0.0;  // trading volume of previous day 
 	
 	
-	public AvatRecordSingleStock(long timeStamp, String stockCode, Double currentPrice, Double priceChg, Double avatRatio5D,
+	public AvatRecordSingleStock(long timeStamp, String stockCode, Contract con, Double currentPrice, Double priceChg, Double avatRatio5D,
 			Double avatRatio20D, String industry) {
 		super();
 		
 		this.timeStamp = timeStamp;
 		this.stockCode = stockCode;
+		this.contract = con.clone();
 		this.currentPrice = currentPrice;
 		this.priceChg = priceChg;
 		this.avatRatio5D = avatRatio5D;

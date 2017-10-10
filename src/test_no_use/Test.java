@@ -43,7 +43,21 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
+			Thread t = new Thread(new Runnable(){
+				public void run(){
+					System.out.println("123");
+					try {
+						Thread.sleep(1000 * 3);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					System.out.println("456");
+				}
+			});
+			t.start();
 			
+			System.out.println("789");
 			
 		}catch(Exception e) {
 			e.printStackTrace();

@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 import com.ib.client.Contract;
 import com.ib.client.Order;
 import com.ib.client.OrderType;
+import com.ib.client.Types.Action;
 import com.ib.controller.ApiController;
 
 import utils.XMLUtil;
@@ -61,7 +62,7 @@ public class AVAT {
 	// -------- orders ----------
 	private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
 	private static int isLotSizeMapToUpdate = 0;  // lot size map是否需要升级
-	
+	private static Map<String, HoldingRecord> holdingRecords = new HashMap<String, HoldingRecord>();
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
@@ -94,6 +95,15 @@ public class AVAT {
 		
 		request();
 		logger.info("request done");
+		
+		
+		Thread orderMonitorThd = new Thread(new Runnable(){
+			   public void run(){
+				   ordersMonitor();
+			   }
+		});
+		orderMonitorThd.start();
+		
 		
 		output();
 		logger.info("output done");
@@ -274,7 +284,7 @@ public class AVAT {
 					String industry = avatIndustry.get(stock);
 					//logger.debug("------- 1223");
 					
-					AvatRecordSingleStock at = new AvatRecordSingleStock(now.getTime(), stock, price, prevCloseChgPct, ratio5D, ratio20D, industry);
+					AvatRecordSingleStock at = new AvatRecordSingleStock(now.getTime(), stock, myTop.contract, price, prevCloseChgPct, ratio5D, ratio20D, industry);
 					at.turnover = trdRtTurnover;
 					at.latestBestAsk = latestBestAsk;
 					at.latestBestBid = latestBestBid;
@@ -454,7 +464,7 @@ public class AVAT {
 		}
 	}
 	
-	private static void placeOrder(ArrayList<AvatRecordSingleStock> avatRecord) {
+	private static void placeOrder(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
 		try {
 			String errMsgHead  = "[trading strategy] ";
 			Double fixedBuyAmount = 500000.0;  // fix buying amount for each stock, HKD
@@ -488,12 +498,13 @@ public class AVAT {
 						buyCond1 = 1;
 					if(singleRec.volume >= singleRec.prevVolume)
 						buyCond2 = 1;
-					if(boughtRecords.indexOf(singleRec.stockCode) >= 0)
+					
+					if(!holdingRecords.keySet().contains(singleRec.stockCode))  // 之前没买过
 						buyCond3 = 1;
 					
 					if((buyCond1 == 1 || buyCond2 == 1) && buyCond3 == 1) {  // buy signal
 						
-						// 新开一个线程来处理
+						// 新开一个线程来处理(还需要判断何时完全被filled)
 						Thread t = new Thread(new Runnable(){
 							   public void run(){
 								   	String stockCode = singleRec.stockCode;
@@ -515,9 +526,12 @@ public class AVAT {
 									MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
 									myController.placeOrModifyOrder(con, order, myOrderH);
 									
+									// --------- submit orders ---------
 									while(true) {
 										if(myOrderH.isSubmitted == 1) {
 											logger.info("Order submitted! " + con.symbol() + " " + orderQty + " " + order.action() + " " + order.lmtPrice());
+											HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
+											holdingRecords.put(con.symbol(), hld);  // 存储holding
 											break;
 										}
 										
@@ -543,11 +557,18 @@ public class AVAT {
 											e.printStackTrace();
 										}
 									} // end of while
+									
+									// -------- monitor orders (if filled) ----------
+									
 							   }
 							});
 						t.start();
+						
+						
+					}else {  // 其他时间段,如果有未filled的order，则全部cancel
+						
 					}
-				}
+				}  // 买入信号的if结束
 				
 				/*
 				 * --------------- 卖出信号 ---------------
@@ -555,8 +576,68 @@ public class AVAT {
 				 * 		1. 获利超过3%，以最优bid价卖出 （止盈）
 				 * 		2. 持股到当日15：00仍未卖出，以买入成本价（需要考虑交易成本）卖出
 				 */
+				boolean isSell = false;
+				Set<String> holdingStocks = holdingRecords.keySet();
+				if(holdingStocks .contains(singleRec.stockCode)) {  // 只有在已经买了这只股票之后才判断是否需要卖出
+					HoldingRecord thisHolding = holdingRecords.get(singleRec.stockCode);
+					
+					if(thisHolding.filledQty > 0 && thisHolding.filledQty < thisHolding.orderQty) { // partially filled, 先cancel剩余的qty，然后卖出filled的qty
+						
+					}
+					if(thisHolding.filledQty == thisHolding.orderQty) { //fully filled， 卖出filled的qty
+						
+					}
+					if(thisHolding.filledQty == 0) {  // not filled
+						
+					}
+					
+				}
 					
 			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void ordersMonitor() {
+		try {
+			while(true) {
+				Date thisNow = new Date();
+				String monitorStartStr = todayDate + " 11:00:00";
+				Date monitorStartDate = sdf.parse(monitorStartStr);
+				String dayEndStr = todayDate + " 16:10:00";
+				Date dayEndDate = sdf.parse(dayEndStr);
+				
+				if(thisNow.after(dayEndDate))
+					break;
+				
+				// -------  如果时间在11点之后，所有的open buy order都要cancel ---------
+				if(thisNow.after(monitorStartDate)) { 
+					MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
+					myController.takeTwsOrders(myLiveOrder);
+					
+					
+					while(true) {
+						if(myLiveOrder.isEnd) {  // order收集完全
+							for(Integer orderId : myLiveOrder.orderContract.keySet()) {
+								ArrayList<Object> thisOrderContract = myLiveOrder.orderContract.get(orderId);
+								ArrayList<Object> thisOrderStatus = myLiveOrder.orderStatus.get(orderId);
+								
+								Double remaining = (Double) thisOrderStatus.get(3);
+								Order order = (Order) thisOrderContract.get(1);
+								Action action = order.action();
+								
+								if(action.equals(Action.BUY) && remaining > 0.0) {  // open buy orders, need to cancel
+									myController.cancelOrder(order.orderId());
+								}
+							}
+							break;
+						}
+						Thread.sleep(500);
+					} // end of while
+				}
+				Thread.sleep(1000 * 30);  // wait for 30 sec
+			} // end of while
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
