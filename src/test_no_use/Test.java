@@ -45,14 +45,7 @@ public class Test {
 		try {
 			Thread t = new Thread(new Runnable(){
 				public void run(){
-					System.out.println("123");
-					try {
-						Thread.sleep(1000 * 3);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					System.out.println("456");
+					System.out.println(AvatUtils.getCorrectPrice_up(170.01));;
 				}
 			});
 			t.start();

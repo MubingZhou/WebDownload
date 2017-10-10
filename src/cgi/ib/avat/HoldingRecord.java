@@ -1,6 +1,7 @@
 package cgi.ib.avat;
 
 import com.ib.client.Contract;
+import com.ib.client.OrderStatus;
 
 public class HoldingRecord {
 	public String stockCode;
@@ -9,10 +10,14 @@ public class HoldingRecord {
 	public long orderTimeStamp = 0;
 	public Double orderPrice = 0.0;
 	public Double orderQty = 0.0;
+	public int orderId = -1;
 	
 	public long filledTimeStamp = 0;
-	public Double filledPrice = 0.0;
+	public Double avgFillPrice = 0.0;
+	public Double lastFillPrice = 0.0;
 	public Double filledQty = 0.0;
+	
+	public OrderStatus status;
 
 	public Double tradingCost = 0.0;
 	public boolean isFilled = false;  // 是否完全fill

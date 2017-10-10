@@ -30,7 +30,7 @@ public class MyIOrderHandler implements IOrderHandler {
 	// call backs...
 	@Override
 	public void orderState(OrderState orderState) {
-		logger.trace("[MyIOrderHandler - orderStatus] " + orderState.toString());
+		logger.trace("[MyIOrderHandler - orderState] " + orderState.getStatus() );
 		
 	}
 
@@ -38,7 +38,7 @@ public class MyIOrderHandler implements IOrderHandler {
 	public void orderStatus(OrderStatus status, double filled, double remaining, double avgFillPrice, long permId,
 			int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
 		logger.trace("[MyIOrderHandler - orderStatus] " + status.toString());
-		if(status.equals(OrderStatus.Submitted))
+		if(status.equals(OrderStatus.Submitted) || status.equals(OrderStatus.PreSubmitted))
 			isSubmitted = 1;
 		
 	}

@@ -35,6 +35,7 @@ public class AVAT {
 	public static String AVAT_ROOT_PATH = "";
 	public static ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
 	public static int numOfTopMktDataStock = 0;
+	public static double bilateralTrdCost = 0.003;
 	
 	// -------- auxiliar variables ----------
 	public static Map<String, Map<Date,ArrayList<Double>>> avatHist = new HashMap<String, Map<Date,ArrayList<Double>>> ();
@@ -60,9 +61,9 @@ public class AVAT {
 	private static JFrame frame = new JFrame();
 	
 	// -------- orders ----------
-	private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
+	//private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
 	private static int isLotSizeMapToUpdate = 0;  // lot size map是否需要升级
-	private static Map<String, HoldingRecord> holdingRecords = new HashMap<String, HoldingRecord>();
+	private static Map<String, HoldingRecord> holdingRecords = new HashMap<String, HoldingRecord>();  // String是stock code
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
@@ -464,11 +465,11 @@ public class AVAT {
 		}
 	}
 	
-	private static void placeOrder(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
+	private static void scanForOrders(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
 		try {
 			String errMsgHead  = "[trading strategy] ";
 			Double fixedBuyAmount = 500000.0;  // fix buying amount for each stock, HKD
-			boolean transmitToIB = false;
+			boolean transmitToIB = true;
 			
 			// 浏览各个AvatRecordSingleStock 
 			for(AvatRecordSingleStock singleRec : avatRecord) {
@@ -504,7 +505,7 @@ public class AVAT {
 					
 					if((buyCond1 == 1 || buyCond2 == 1) && buyCond3 == 1) {  // buy signal
 						
-						// 新开一个线程来处理(还需要判断何时完全被filled)
+						// 新开一个线程来处理
 						Thread t = new Thread(new Runnable(){
 							   public void run(){
 								   	String stockCode = singleRec.stockCode;
@@ -521,7 +522,7 @@ public class AVAT {
 									Double lotSize = avatLotSize.get(stockCode);
 									Double orderQty = lotSize * (int)(fixedBuyAmount / lotSize / buyPrice) ;
 									order.totalQuantity(orderQty);
-									order.transmit(true);  // false - 只在api平台有这个order
+									order.transmit(transmitToIB);  // false - 只在api平台有这个order
 									
 									MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
 									myController.placeOrModifyOrder(con, order, myOrderH);
@@ -531,6 +532,8 @@ public class AVAT {
 										if(myOrderH.isSubmitted == 1) {
 											logger.info("Order submitted! " + con.symbol() + " " + orderQty + " " + order.action() + " " + order.lmtPrice());
 											HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
+											hld.orderId = myOrderH.orderId;
+											
 											holdingRecords.put(con.symbol(), hld);  // 存储holding
 											break;
 										}
@@ -576,21 +579,55 @@ public class AVAT {
 				 * 		1. 获利超过3%，以最优bid价卖出 （止盈）
 				 * 		2. 持股到当日15：00仍未卖出，以买入成本价（需要考虑交易成本）卖出
 				 */
-				boolean isSell = false;
+				int sellCond1 = 0;
+				int sellCond2 = 0;
+				String sellThldTimeStr = todayDate + " 15:00:00";
+				Date sellThldTime = sdf.parse(sellThldTimeStr);
+				
 				Set<String> holdingStocks = holdingRecords.keySet();
 				if(holdingStocks .contains(singleRec.stockCode)) {  // 只有在已经买了这只股票之后才判断是否需要卖出
 					HoldingRecord thisHolding = holdingRecords.get(singleRec.stockCode);
 					
-					if(thisHolding.filledQty > 0 && thisHolding.filledQty < thisHolding.orderQty) { // partially filled, 先cancel剩余的qty，然后卖出filled的qty
+					if(thisHolding.filledQty > 0) {   // 如果有filled的qty，先看看是否符合卖出条件，如果是，则cancel剩余的qty（如有），然后卖出filled的qty
+						Double currentPrice = singleRec.currentPrice;
+						Double avgFillPrice = thisHolding.avgFillPrice;
 						
-					}
-					if(thisHolding.filledQty == thisHolding.orderQty) { //fully filled， 卖出filled的qty
+						if(currentPrice > avgFillPrice * 1.03) { // 止盈卖出(不考虑交易成本)
+							sellCond1 = 1;
+						}
+						if(now.after(sellThldTime)) {
+							sellCond2 = 1;
+						}
 						
+						if(sellCond1 == 1 || sellCond2 == 1) {
+							
+							if(thisHolding.filledQty < thisHolding.orderQty) {// partially filled, 先cancel剩余的qty，然后卖出filled的qty
+								int orderId = thisHolding.orderId;
+								myController.cancelOrder(orderId);
+							}
+							
+							Contract con = singleRec.contract;
+							
+							Order sellOrder = new Order();
+							sellOrder.action(Action.SELL);
+							Double sellPrice = 0.0;
+							if(sellCond1 == 1) {
+								sellPrice = singleRec.latestBestAsk;
+							}
+							if(sellCond2 == 1) {
+								sellPrice = AvatUtils.getCorrectPrice_down(thisHolding.orderPrice * (1+bilateralTrdCost));
+							}
+							sellOrder.lmtPrice(sellPrice);
+							sellOrder.totalQuantity(thisHolding.filledQty);
+							
+							sellOrder.transmit(transmitToIB);  // false - 只在api平台有这个order
+							
+							// 不用监视了吧
+							MyIOrderHandler myOrderH = new MyIOrderHandler (con, sellOrder); 
+							myController.placeOrModifyOrder(con, sellOrder, myOrderH);
+							
+						}					
 					}
-					if(thisHolding.filledQty == 0) {  // not filled
-						
-					}
-					
 				}
 					
 			}
@@ -599,7 +636,8 @@ public class AVAT {
 		}
 	}
 	
-	private static void ordersMonitor() {
+	
+	public static void ordersMonitor() {
 		try {
 			while(true) {
 				Date thisNow = new Date();
@@ -611,31 +649,53 @@ public class AVAT {
 				if(thisNow.after(dayEndDate))
 					break;
 				
-				// -------  如果时间在11点之后，所有的open buy order都要cancel ---------
-				if(thisNow.after(monitorStartDate)) { 
-					MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
-					myController.takeTwsOrders(myLiveOrder);
+				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
+				myController.takeTwsOrders(myLiveOrder);
+				
+				while(true) {
+					if(myLiveOrder.isEnd) {  // order收集完全
+						break;
+					}
+					Thread.sleep(200);
+				} // end of while
+				
+				for(Integer orderId : myLiveOrder.orderContract.keySet()) {
+					ArrayList<Object> thisOrderContract = myLiveOrder.orderContract.get(orderId);
+					ArrayList<Object> thisOrderStatus = myLiveOrder.orderStatus.get(orderId);
 					
+					Double filled = (Double) thisOrderStatus.get(2);
+					Double remaining = (Double) thisOrderStatus.get(3);
+					Double avgFillPrice  = (Double) thisOrderStatus.get(4);
+					Double lastFillPrice  = (Double) thisOrderStatus.get(7);
 					
-					while(true) {
-						if(myLiveOrder.isEnd) {  // order收集完全
-							for(Integer orderId : myLiveOrder.orderContract.keySet()) {
-								ArrayList<Object> thisOrderContract = myLiveOrder.orderContract.get(orderId);
-								ArrayList<Object> thisOrderStatus = myLiveOrder.orderStatus.get(orderId);
-								
-								Double remaining = (Double) thisOrderStatus.get(3);
-								Order order = (Order) thisOrderContract.get(1);
-								Action action = order.action();
-								
-								if(action.equals(Action.BUY) && remaining > 0.0) {  // open buy orders, need to cancel
-									myController.cancelOrder(order.orderId());
-								}
-							}
-							break;
+					Order order = (Order) thisOrderContract.get(0);
+					Action action = order.action();
+					
+					Contract contract = (Contract) thisOrderContract.get(1);
+					String stockCode = contract.symbol();
+					
+					// -------  如果时间在11点之后，所有的open buy order都要cancel ---------
+					if(thisNow.after(monitorStartDate)) { 
+						if(action.equals(Action.BUY) && remaining > 0.0) {  // open buy orders, need to cancel
+							myController.cancelOrder(order.orderId());
 						}
-						Thread.sleep(500);
-					} // end of while
-				}
+					}  // 11点判断结束
+					
+					// ------ update holdingRecords ----
+					HoldingRecord thisHldRecord = holdingRecords.get(stockCode);
+					thisHldRecord.filledQty = filled;
+					thisHldRecord.avgFillPrice = avgFillPrice;
+					thisHldRecord.lastFillPrice = lastFillPrice;
+					
+					holdingRecords.put(stockCode, thisHldRecord);
+				}	
+				
+				
+					
+				
+				
+				
+				
 				Thread.sleep(1000 * 30);  // wait for 30 sec
 			} // end of while
 		}catch(Exception e) {

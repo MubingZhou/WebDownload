@@ -831,6 +831,109 @@ public class AvatUtils {
 		return isOK;
 	}
 	
-	// ------------------- historical tick data ------------
+	/**
+	 * 【仅适用于港股】
+	 * 得到正确的股票价格，主要是tick size要对，比如对于股价在100-200之间的股票，tick size为0.1，如果股票价格是170.01，就不正确
+	 * 这个函数会返回170.1
+	 * @param p
+	 * @return
+	 */
+	public static Double getCorrectPrice_up(Double p) {
+		ArrayList<Double> arr = getCorrectPrice( p);
+		
+		double tickSize = arr.get(0);
+		double lowerBound = arr.get(1);
+		double upperBound = arr.get(2);
+		
+		int multiples = (int) (Math.floor((p-lowerBound)/tickSize) + 1);
+		
+		return lowerBound + multiples * tickSize;
+	}
+	
+	/**
+	 * 【仅适用于港股】
+	 * 得到正确的股票价格，主要是tick size要对，比如对于股价在100-200之间的股票，tick size为0.1，如果股票价格是170.01，就不正确
+	 * 这个函数会返回170
+	 * @param p
+	 * @return
+	 */
+	public static Double getCorrectPrice_down(Double p) {
+		ArrayList<Double> arr = getCorrectPrice( p);
+		
+		double tickSize = arr.get(0);
+		double lowerBound = arr.get(1);
+		double upperBound = arr.get(2);
+		
+		int multiples = (int) (Math.floor((p-lowerBound)/tickSize));
+		
+		return lowerBound + multiples * tickSize;
+	}
+	
+	private static ArrayList<Double> getCorrectPrice(Double p) {
+		double tickSize = 0.0;
+		double lowerBound = 0.0;
+		double upperBound = 0.0;
+		
+		if(p >= 0.01 && p <= 0.25) {
+			tickSize = 0.001;
+			lowerBound = 0.01;
+			upperBound = 0.25;
+		}
+		if(p > 0.25 && p <= 0.50) {
+			tickSize = 0.005;
+			lowerBound = 0.25;
+			upperBound = 0.50;
+		}
+		if(p > 0.50 && p <= 10.0) {
+			tickSize = 0.01;
+			lowerBound = 0.50;
+			upperBound = 0.10;
+		}if(p >10 && p <= 20) {
+			tickSize = 0.02;
+			lowerBound = 10;
+			upperBound = 20;
+		}
+		if(p > 20 && p <= 100.0) {
+			tickSize = 0.05;
+			lowerBound = 20;
+			upperBound = 100;
+		}if(p > 100.0 && p <= 200.0) {
+			tickSize = 0.1;
+			lowerBound = 100.0;
+			upperBound = 200.0;
+		}
+		if(p > 200 && p <= 500) {
+			tickSize = 0.2;
+			lowerBound = 200;
+			upperBound = 500;
+		}
+		if(p > 500 && p <= 1000) {
+			tickSize = 0.5;
+			lowerBound = 500;
+			upperBound = 1000;
+		}
+		if(p > 1000 && p <= 2000) {
+			tickSize = 1;
+			lowerBound = 1000;
+			upperBound = 2000;
+		}
+		if(p > 2000 && p <= 5000) {
+			tickSize = 2;
+			lowerBound = 2000;
+			upperBound = 5000;
+		}
+		if(p > 5000 && p <= 9995) {
+			tickSize = 5;
+			lowerBound = 5000;
+			upperBound = 9995;
+		}
+		
+		ArrayList<Double> arr = new ArrayList<Double>();
+		arr.add(tickSize);
+		arr.add(lowerBound);
+		arr.add(upperBound);
+		
+		return arr;
+	}
 
 }

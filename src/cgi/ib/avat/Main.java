@@ -26,7 +26,9 @@ import com.ib.controller.ApiController.IConnectionHandler;
 
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
-	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	//public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	public static String AVAT_ROOT_PATH = "D:\\stock data\\AVAT\\";
+	public static double bilateralTrdCost = 0.003;
 	
 	public static void main(String[] args) {
 		try {
@@ -38,9 +40,10 @@ public class Main {
 			
 			AVAT.todayDate = todayDate;
 			AvatUtils.todayDate = todayDate;
+			AVAT.bilateralTrdCost = bilateralTrdCost;
 			
 			// ------------ MODE -----------
-			int mode = 1;
+			int mode = 100;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
@@ -49,8 +52,9 @@ public class Main {
 			 */
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
-			int port = 7496;
-			int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
+			int port = 7497;
+			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
+			int clientId = 0;
 			
 			MyLogger inLogger = new MyLogger();
 			MyLogger outLogger = new MyLogger();
@@ -123,11 +127,11 @@ public class Main {
 				order.action("BUY");
 				order.orderType(OrderType.LMT);
 				
-				Double buyPrice =300.0;
+				Double buyPrice =300.2;
 				order.lmtPrice(buyPrice);  // 以best bid作为买入价
 				
 				Double lotSize = 100.0;
-				order.totalQuantity(100 * (int)(500000 / 100 / buyPrice) );
+				order.totalQuantity(100 * (int)(100000 / 100 / buyPrice) );
 				order.transmit(true);  // false - 只在api平台有这个order
 				
 				MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
@@ -145,7 +149,7 @@ public class Main {
 					// 处理error
 					if(myOrderH.errorCode == 461) {
 						newLotSize = myOrderH.newLostSize;  // 修改然后resubmit
-						order.totalQuantity(newLotSize * (int)(500000 / newLotSize / buyPrice) );
+						order.totalQuantity(newLotSize * (int)(100000 / newLotSize / buyPrice) );
 						myController.placeOrModifyOrder(con, order, myOrderH);
 						logger.info("need new lot size = " + newLotSize + " resubmit order!");
 					}
@@ -153,10 +157,23 @@ public class Main {
 					Thread.sleep(500);
 				}
 				
-				Thread.sleep(1000 * 5);
+				//Thread.sleep(1000 * 5);
+				
+				//myController.cancelOrder(myOrderH.orderId);
+				
+				//Thread.sleep(1000 * 20);
+				
 				// monitor order
 				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
 				myController.takeTwsOrders(myLiveOrder);
+				
+				while(true) {
+					if(myLiveOrder.isEnd) {  // order收集完全
+						break;
+					}
+					Thread.sleep(200);
+				} // end of while
+				logger.info(myLiveOrder.toString());
 			}
 			
 			//============== requesting historical tick data ===============
