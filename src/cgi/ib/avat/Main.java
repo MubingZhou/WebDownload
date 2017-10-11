@@ -27,8 +27,8 @@ import com.ib.controller.ApiController.IConnectionHandler;
 
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
-	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
-	//public static String AVAT_ROOT_PATH = "D:\\stock data\\AVAT\\";
+	//public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	public static String AVAT_ROOT_PATH = "D:\\stock data\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
 	
 	public static void main(String[] args) {
@@ -43,6 +43,7 @@ public class Main {
 			AvatUtils.todayDate = todayDate;
 			AVAT.bilateralTrdCost = bilateralTrdCost;
 			boolean transmitToIB = false;
+			AvatUtils.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
 			// ------------ MODE -----------
 			int mode = 1;
@@ -54,7 +55,7 @@ public class Main {
 			 */
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
-			int port = 7496;   	// 7497 - paper account
+			int port = 7497;   	// 7497 - paper account
 								// 7496 - real account
 			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
 			int clientId = 1;

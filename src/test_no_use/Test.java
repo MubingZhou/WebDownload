@@ -43,14 +43,9 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			Thread t = new Thread(new Runnable(){
-				public void run(){
-					System.out.println(AvatUtils.getCorrectPrice_up(170.01));;
-				}
-			});
-			t.start();
 			
-			System.out.println("789");
+			
+			System.out.println(Math.floorMod(9, 8));
 			
 		}catch(Exception e) {
 			e.printStackTrace();
