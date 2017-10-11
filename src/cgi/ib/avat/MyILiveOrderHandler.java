@@ -17,31 +17,34 @@ public class MyILiveOrderHandler implements ILiveOrderHandler{
 	
 	public boolean isEnd = false;
 	
-	public Map<Integer, ArrayList<Object>> orderContract = new HashMap<Integer, ArrayList<Object>>(); // 存储order和contract,其中key是orderId 
-	public Map<Integer, ArrayList<Object>> orderStatus = new HashMap<Integer, ArrayList<Object>>();
+	//public Map<Integer, ArrayList<Object>> orderContract = new HashMap<Integer, ArrayList<Object>>(); // 存储order和contract,其中key是orderId 
+	//public Map<Integer, ArrayList<Object>> orderStatus = new HashMap<Integer, ArrayList<Object>>();
+	
+	public ArrayList<ArrayList<Object>> orderContract = new ArrayList<ArrayList<Object>>();
+	public ArrayList<ArrayList<Object>> orderStatus = new ArrayList<ArrayList<Object>>();
 	
 	@Override
 	public void openOrder(Contract contract, Order order, OrderState orderState) {
-		logger.trace("[MyILiveOrderHandler - openOrder] con.symbol=" + contract.symbol() + " order.id=" + order.orderId());
+		logger.info("[MyILiveOrderHandler - openOrder] con.symbol=" + contract.symbol() + " order.id=" + order.orderId());
 		//logger.trace("[MyILiveOrderHandler - openOrder]");
 		
 		ArrayList<Object> a = new ArrayList<Object>();
 		a.add(order);
 		a.add(contract);
 		
-		orderContract.put(order.orderId(), a);
+		orderContract.add(a);
 	}
 
 	@Override
 	public void openOrderEnd() {
 		isEnd = true;
-		logger.trace("[MyILiveOrderHandler - openOrderEnd]");
+		logger.info("[MyILiveOrderHandler - openOrderEnd]");
 	}
 
 	@Override
 	public void orderStatus(int orderId, OrderStatus status, double filled, double remaining, double avgFillPrice,
 			long permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
-		logger.trace("[MyILiveOrderHandler - orderStatus] orderId=" + orderId + " status=" + status.toString() + " filled=" + filled + " remain=" + remaining);
+		logger.info("[MyILiveOrderHandler - orderStatus] orderId=" + orderId + " status=" + status.toString() + " filled=" + filled + " remain=" + remaining);
 		
 		ArrayList<Object> a = new ArrayList<Object>();
 		a.add(orderId);  	// 0
@@ -56,23 +59,23 @@ public class MyILiveOrderHandler implements ILiveOrderHandler{
 		a.add(whyHeld);		// 9
 		a.add(mktCapPrice); // 10
 		
-		orderStatus.put(orderId, a);
+		orderStatus.add(a);
 	}
 
 	@Override
 	public void handle(int orderId, int errorCode, String errorMsg) {
-		logger.trace("[MyILiveOrderHandler - handle] orderId=" + orderId + " errorCode=" + errorCode + " errMsg=" + errorMsg); 
+		logger.info("[MyILiveOrderHandler - handle] orderId=" + orderId + " errorCode=" + errorCode + " errMsg=" + errorMsg); 
 		
 	}
 	
 	public String toString() {
 		String s = "";
-		for(Integer orderId : orderContract.keySet()) {
-			ArrayList<Object> thisOrderContract = orderContract.get(orderId);
+		for(int i = 0; i < orderContract.size(); i++) {
+			ArrayList<Object> thisOrderContract = orderContract.get(i);
 			Order order = (Order) thisOrderContract .get(0);
 			Contract contract = (Contract) thisOrderContract .get(1);
 			
-			ArrayList<Object> thisOrderStatus = orderStatus.get(orderId);
+			ArrayList<Object> thisOrderStatus = orderStatus.get(i);
 			
 			s += "stock=" + contract.symbol() + " " 
 				+ "orderId=" + order.orderId() + " " 

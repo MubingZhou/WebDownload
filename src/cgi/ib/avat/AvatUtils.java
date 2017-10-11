@@ -731,7 +731,7 @@ public class AvatUtils {
 				
 				// 每次只读取numOfRead的整数倍只股票的信息
 				int cum = 0;
-				if(i == (numOfRead * counter - 1)) {  // i 是45的整数倍
+				if(i == (numOfRead * counter - 1)) {  // i 是numOfRead的整数倍
 					int startInd = numOfRead * (counter - 1);
 					
 					while(cum != numOfRead) { 
@@ -741,7 +741,7 @@ public class AvatUtils {
 							int isEnd = thisHist.isEnd;
 							int isActive = thisHist.isActive;
 							if(isEnd == 1 && isActive == 1) {
-								myController.cancelHistoricalData(thisHist);
+								//myController.cancelHistoricalData(thisHist);
 								//thisHist.isActive = 0;
 							}
 							cum += isEnd;

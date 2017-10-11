@@ -21,6 +21,7 @@ public class MyIOrderHandler implements IOrderHandler {
 	
 	public Double newLostSize = -1.0;  // error code = 461
 	
+	public boolean isTransmit = true;
 	
 	public MyIOrderHandler (Contract con, Order order) {
 		this.contract = con.clone();
@@ -38,9 +39,10 @@ public class MyIOrderHandler implements IOrderHandler {
 	public void orderStatus(OrderStatus status, double filled, double remaining, double avgFillPrice, long permId,
 			int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
 		logger.trace("[MyIOrderHandler - orderStatus] " + status.toString());
-		if(status.equals(OrderStatus.Submitted) || status.equals(OrderStatus.PreSubmitted))
+		if(isTransmit && (status.equals(OrderStatus.Submitted) || status.equals(OrderStatus.PreSubmitted)))
 			isSubmitted = 1;
-		
+		if(!isTransmit && status.equals(OrderStatus.PendingSubmit))
+			isSubmitted = 1;
 	}
 
 	@Override

@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
 import com.ib.client.Order;
+import com.ib.client.OrderStatus;
 import com.ib.client.OrderType;
 import com.ib.client.Types.Action;
 import com.ib.controller.ApiController;
@@ -56,14 +57,19 @@ public class AVAT {
 	public static SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 	private static String errMsgHead = "[AVAT - error] ";
 	
-	private static Map<Double, String> msg_eligibleStocksMap = new HashMap<Double, String>();  // 用来存储每次运行完之后符号要求的股票，用于在对话框中显示，key是avat，value是stock code
+	private static Map<Double, String> msg_eligibleStocksMap = new HashMap<Double, String>();  // 用来存储每次运行完之后符合要求的股票，用于在对话框中显示，key是avat，value是stock code
 	private static String alertToShow = "";   // 将要显示在弹出框的内容
 	private static JFrame frame = new JFrame();
 	
 	// -------- orders ----------
 	//private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
+	public static boolean isStartOrders = false; // 是否开始监视order并落单
 	private static int isLotSizeMapToUpdate = 0;  // lot size map是否需要升级
 	private static Map<String, HoldingRecord> holdingRecords = new HashMap<String, HoldingRecord>();  // String是stock code
+	private static String orderWriterPath ;
+	private static FileWriter orderWriter;
+	private static boolean transmitToIB = false;  // 是否transmit 到 IB
+	
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
@@ -78,36 +84,55 @@ public class AVAT {
 	}
 	
 	public static void start() {
-		if(myController == null) {
-			logger.error(errMsgHead + "ApiController null!");
-			return;
+		try {
+			if(myController == null) {
+				logger.error(errMsgHead + "ApiController null!");
+				return;
+			}
+			if(conArr == null || conArr.size() == 0) {
+				logger.error(errMsgHead + "contract array null or size zero!");
+				return;
+			}
+			if(AVAT_ROOT_PATH == null || AVAT_ROOT_PATH.length() == 0) {
+				logger.error(errMsgHead + "AVAT_ROOT_PATH null!");
+				return;
+			}
+			
+			prepare();  // 在正式prepare之前，需要先更新昨天的auction数据和收盘数据
+			logger.info("preparation done");
+			
+			requestForRtData();
+			logger.info("request done");
+			
+			if(isStartOrders) {
+				// 有关order的一些处理
+				Thread orderMonitorThd = new Thread(new Runnable(){
+					   public void run(){
+						   ordersMonitor();
+					   }
+				});
+				orderMonitorThd.start();
+				
+				// 初始化记录orders的filewriter
+				orderWriterPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\";
+				File f = new File(orderWriterPath);
+				if(!f.exists())
+					f.mkdir();
+				orderWriter = new FileWriter(orderWriterPath + "orders.csv",true); // append
+			}
+			
+			
+			scanForAvat();
+			logger.info("output done");
+			
+			
+			// before end actions
+			if(isStartOrders)
+				orderWriter.close();
+			
+		}catch(Exception e) {
+			e.printStackTrace();
 		}
-		if(conArr == null || conArr.size() == 0) {
-			logger.error(errMsgHead + "contract array null or size zero!");
-			return;
-		}
-		if(AVAT_ROOT_PATH == null || AVAT_ROOT_PATH.length() == 0) {
-			logger.error(errMsgHead + "AVAT_ROOT_PATH null!");
-			return;
-		}
-		
-		prepare();  // 在正式prepare之前，需要先更新昨天的auction数据和收盘数据
-		logger.info("preparation done");
-		
-		request();
-		logger.info("request done");
-		
-		
-		Thread orderMonitorThd = new Thread(new Runnable(){
-			   public void run(){
-				   ordersMonitor();
-			   }
-		});
-		orderMonitorThd.start();
-		
-		
-		output();
-		logger.info("output done");
 	}
 	
 	private static void prepare() {
@@ -116,6 +141,12 @@ public class AVAT {
 		// ------- avat - prepare historical avat --------
 		AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
 		logger.info("prepare prev cross setional avat - done");
+		try {
+			//Thread.sleep(1000 * 10000000);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		// ------- avat - historical avat ---------
 		avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
@@ -158,7 +189,7 @@ public class AVAT {
 	/**
 	 * 请求实时数据
 	 */
-	private static void request() {
+	private static void requestForRtData() {
 		for(int i = 0; i < numOfTopMktDataStock; i++) {
 			Contract con = conArr.get(i);
 			MyITopMktDataHandler myTop = new MyITopMktDataHandler(con.symbol(), AVAT_ROOT_PATH, todayDate);
@@ -174,7 +205,7 @@ public class AVAT {
 		}
 	}
 	
-	private static void output() {
+	private static void scanForAvat() {
 		try {
 			String avatRecordPath = AVAT_ROOT_PATH + "avat record\\" + todayDate + "\\";
 			File f_r = new File(avatRecordPath);
@@ -361,7 +392,8 @@ public class AVAT {
 				fw.close();
 				
 				// ----------- place orders --------
-				
+				if(isStartOrders)
+					scanForOrders(avatRecord,now);
 				
 				// ----------- 弹出对话框 ---------------
 				BufferedReader bf_al = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "avat para\\isShowAlert.txt");
@@ -414,7 +446,7 @@ public class AVAT {
 				}
 				
 				
-				// industry table
+				// -industry table
 				logger.info("-- industry table");
 				FileWriter fw2 = new FileWriter(avatRecordPath + sdf_100.format(now) + " industry.csv");
 				fw2.write("Industry,Industry Average\n");
@@ -468,108 +500,125 @@ public class AVAT {
 	private static void scanForOrders(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
 		try {
 			String errMsgHead  = "[trading strategy] ";
-			Double fixedBuyAmount = 500000.0;  // fix buying amount for each stock, HKD
-			boolean transmitToIB = true;
+			Double fixedBuyAmount = 100000.0;  // fix buying amount for each stock, HKD
+			Double buyPriceDiscount = 1.0;  // 为了testing，不让order被fill，可以将buyprice设小点
 			
-			// 浏览各个AvatRecordSingleStock 
+			// ------- 与买入有关的variables ----------
+			String buyStartTimeStr = todayDate + " 09:30:00";
+			Date buyStartTime = sdf.parse(buyStartTimeStr);
+			String buyEndTimeStr = todayDate + " 16:00:00";
+			Date buyEndTime = sdf.parse(buyEndTimeStr);
+			
+			double avatThld5D = 3.0;  // avat threshold
+			double avatThld20D = 2.0;  // avat threshold
+			double turnoverThld = 5000000.0;
+			
+			// ------- 与卖出有关的variables ----------
+			String sellThldTimeStr = todayDate + " 15:00:00";
+			Date sellThldTime = sdf.parse(sellThldTimeStr);
+			Set<String> holdingStocks = holdingRecords.keySet();
+			
+			// --------- 浏览各个AvatRecordSingleStock ----------- 
 			for(AvatRecordSingleStock singleRec : avatRecord) {
 				
 				/*
 				 * ------- 先看是否有买入信号 ---------
 				 * 买入条件：
 				 * 		1. 时间是11:00之前；并且
-				 * 		(2. 当前的avat5D ratio超过3，并且估价上涨，涨幅不超过3%；或者
-				 * 		3. 当时的volume超过了全天的volume)
+				 * 		(2.1 当前的avat5D ratio超过2，并且股价上涨，涨幅不超过3%；或者
+				 * 		2.2 avat20D ratio超过1，并且股价上涨，涨幅不超过3%
+				 * 		2.3. 当时的volume超过了昨天全天的volume)
+				 * 		3. turnover 大于3 million 
 				 * 		4. 已经买过的股票不再买入
 				 */
-				String buyStartTimeStr = todayDate + " 09:30:00";
-				Date buyStartTime = sdf.parse(buyStartTimeStr);
-				String buyEndTimeStr = todayDate + " 11:00:00";
-				Date buyEndTime = sdf.parse(buyEndTimeStr);
-				
-				double avatThld = 3.0;  // avat threshold
 				
 				Date thisTime = new Date(singleRec.timeStamp);
 				if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
-					int buyCond1 = 0;
-					int buyCond2 = 0;
+					int buyCond2_1 = 0;
+					int buyCond2_2 = 0;
+					int buyCond2_3 = 0;
 					int buyCond3 = 0;
+					int buyCond4 = 0;
 					
-					if(singleRec.avatRatio5D > avatThld)
-						buyCond1 = 1;
+					double priceChg = singleRec.currentPrice / avatPrevClose.get(singleRec.stockCode) - 1;
+					
+					if(singleRec.avatRatio5D > avatThld5D && (priceChg > 0 && priceChg <= 0.03))
+						buyCond2_1 = 1;
+					if(singleRec.avatRatio20D > avatThld20D && (priceChg > 0 && priceChg <= 0.03))
+						buyCond2_2 = 1;
 					if(singleRec.volume >= singleRec.prevVolume)
-						buyCond2 = 1;
-					
-					if(!holdingRecords.keySet().contains(singleRec.stockCode))  // 之前没买过
+						buyCond2_3 = 1;
+					if(singleRec.turnover >= turnoverThld)
 						buyCond3 = 1;
 					
-					if((buyCond1 == 1 || buyCond2 == 1) && buyCond3 == 1) {  // buy signal
+					//buyCond2_2 = 0;
+					buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
+					
+					if(!holdingRecords.keySet().contains(singleRec.stockCode))  // 之前没买过
+						buyCond4 = 1;
+					
+					// ----------- 处理 buy signal -------------
+					if((buyCond2_1 == 1 || buyCond2_2 == 1 || buyCond2_3 == 1) && buyCond3 == 1 && buyCond4 == 1) {  
+						//logger.info("[scan for orders] found stock! stock=" + );
+						// 新开一个线程来处理似乎不妥当，因为每个order的id必须大于之前order的id，所以如果很多线程并行的话，不能保证先提交给ib的order的id是最小的
 						
-						// 新开一个线程来处理
-						Thread t = new Thread(new Runnable(){
-							   public void run(){
-								   	String stockCode = singleRec.stockCode;
-									
-									Contract con = conMap.get(stockCode);
-									
-									Order order = new Order();
-									order.action("BUY");
-									order.orderType(OrderType.LMT);
-									
-									Double buyPrice = singleRec.latestBestBid;
-									order.lmtPrice(buyPrice);  // 以best bid作为买入价
-									
-									Double lotSize = avatLotSize.get(stockCode);
-									Double orderQty = lotSize * (int)(fixedBuyAmount / lotSize / buyPrice) ;
-									order.totalQuantity(orderQty);
-									order.transmit(transmitToIB);  // false - 只在api平台有这个order
-									
-									MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
-									myController.placeOrModifyOrder(con, order, myOrderH);
-									
-									// --------- submit orders ---------
-									while(true) {
-										if(myOrderH.isSubmitted == 1) {
-											logger.info("Order submitted! " + con.symbol() + " " + orderQty + " " + order.action() + " " + order.lmtPrice());
-											HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
-											hld.orderId = myOrderH.orderId;
-											
-											holdingRecords.put(con.symbol(), hld);  // 存储holding
-											break;
-										}
-										
-										// 处理error
-										if(myOrderH.errorCode == 461) {
-											isLotSizeMapToUpdate=1;
-											Double newLotSize = myOrderH.newLostSize;  // 修改然后resubmit
-											orderQty = newLotSize * (int)(500000 / newLotSize / buyPrice);
-											order.totalQuantity(orderQty );
-											
-											myController.placeOrModifyOrder(con, order, myOrderH);
-											
-											logger.info("need new lot size = " + newLotSize + " resubmit order!");
-											
-											// update avatLotSize
-											avatLotSize.put(stockCode, newLotSize);
-										}
-										
-										try {
-											Thread.sleep(500);
-										} catch (InterruptedException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										}
-									} // end of while
-									
-									// -------- monitor orders (if filled) ----------
-									
-							   }
-							});
-						t.start();
+						String stockCode = singleRec.stockCode;
 						
+						Contract con = conMap.get(stockCode);
 						
-					}else {  // 其他时间段,如果有未filled的order，则全部cancel
+						Order order = new Order();
+						order.action("BUY");
+						order.orderType(OrderType.LMT);
 						
+						Double buyPrice = singleRec.latestBestBid;
+						buyPrice = AvatUtils.getCorrectPrice_up(buyPrice * buyPriceDiscount);
+						order.lmtPrice(buyPrice);  // 以best bid作为买入价
+						
+						Double lotSize = avatLotSize.get(stockCode);
+						Double orderQty = lotSize * (int)(fixedBuyAmount / lotSize / buyPrice) ;
+						order.totalQuantity(orderQty);
+						order.transmit(transmitToIB);  // false - 只在api平台有这个order
+						
+						MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
+						myOrderH.isTransmit = transmitToIB;
+						myController.placeOrModifyOrder(con, order, myOrderH);
+						
+						// --------- submit orders ---------
+						while(true) {
+							if(myOrderH.isSubmitted == 1) {
+								logger.info("Order submitted! " + con.symbol() + " " + orderQty + " " + order.action() + " " + order.lmtPrice() + " scanTime" + sdf.format(now) + " realTime=" + sdf.format(new Date()));
+								HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
+								hld.orderId = myOrderH.orderId;
+								
+								holdingRecords.put(con.symbol(), hld);  // 存储holding
+								
+								orderWriter.write(hld.toString() + "\n");
+								orderWriter.flush();
+								
+								break;
+							}
+							
+							// 处理error
+							if(myOrderH.errorCode == 461) {
+								isLotSizeMapToUpdate=1;
+								Double newLotSize = myOrderH.newLostSize;  // 修改然后resubmit
+								orderQty = newLotSize * (int)(fixedBuyAmount / newLotSize / buyPrice);
+								order.totalQuantity(orderQty );
+								
+								myController.placeOrModifyOrder(con, order, myOrderH);
+								
+								logger.info("need new lot size = " + newLotSize + " resubmit order!");
+								
+								// update avatLotSize
+								avatLotSize.put(stockCode, newLotSize);
+								myOrderH.errorCode = -1;  // 处理完毕，reset errorcode
+							}
+							
+							if(!transmitToIB) // for simulation
+								myOrderH.isSubmitted = 1;
+							
+							Thread.sleep(30);
+						} // end of while	
 					}
 				}  // 买入信号的if结束
 				
@@ -581,10 +630,7 @@ public class AVAT {
 				 */
 				int sellCond1 = 0;
 				int sellCond2 = 0;
-				String sellThldTimeStr = todayDate + " 15:00:00";
-				Date sellThldTime = sdf.parse(sellThldTimeStr);
 				
-				Set<String> holdingStocks = holdingRecords.keySet();
 				if(holdingStocks .contains(singleRec.stockCode)) {  // 只有在已经买了这只股票之后才判断是否需要卖出
 					HoldingRecord thisHolding = holdingRecords.get(singleRec.stockCode);
 					
@@ -637,66 +683,89 @@ public class AVAT {
 	}
 	
 	
-	public static void ordersMonitor() {
+	/**
+	 * 监视所有Open orders，然后update holdingRecords
+	 */
+	private static void ordersMonitor() {
 		try {
+			int orderStatusInd = 0;
+			MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
+			myController.takeTwsOrders(myLiveOrder);
+			
 			while(true) {
 				Date thisNow = new Date();
-				String monitorStartStr = todayDate + " 11:00:00";
-				Date monitorStartDate = sdf.parse(monitorStartStr);
+				String cancelOrderStartStr = todayDate + " 11:00:00";
+				Date cancelOrderStartDate = sdf.parse(cancelOrderStartStr);
 				String dayEndStr = todayDate + " 16:10:00";
 				Date dayEndDate = sdf.parse(dayEndStr);
 				
 				if(thisNow.after(dayEndDate))
 					break;
 				
-				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
-				myController.takeTwsOrders(myLiveOrder);
-				
-				while(true) {
+				/*
+				boolean c = false;
+				while(c) {
 					if(myLiveOrder.isEnd) {  // order收集完全
+						myLiveOrder.isEnd = false;
 						break;
 					}
-					Thread.sleep(200);
+					Thread.sleep(100);
 				} // end of while
+				*/
 				
-				for(Integer orderId : myLiveOrder.orderContract.keySet()) {
-					ArrayList<Object> thisOrderContract = myLiveOrder.orderContract.get(orderId);
-					ArrayList<Object> thisOrderStatus = myLiveOrder.orderStatus.get(orderId);
+				logger.info("[Start scanning live orders...] " + sdf.format(new Date()));
+				
+				for(int i = orderStatusInd; i < myLiveOrder.orderContract.size(); i++) {
+					ArrayList<Object> thisOrderContract = myLiveOrder.orderContract.get(i);
+					ArrayList<Object> thisOrderStatus = myLiveOrder.orderStatus.get(i);
 					
+					OrderStatus status = (OrderStatus) thisOrderStatus.get(1);
 					Double filled = (Double) thisOrderStatus.get(2);
 					Double remaining = (Double) thisOrderStatus.get(3);
 					Double avgFillPrice  = (Double) thisOrderStatus.get(4);
 					Double lastFillPrice  = (Double) thisOrderStatus.get(7);
 					
 					Order order = (Order) thisOrderContract.get(0);
+					Double orderId = (double) order.orderId();
 					Action action = order.action();
 					
 					Contract contract = (Contract) thisOrderContract.get(1);
 					String stockCode = contract.symbol();
 					
+					logger.info("      [live order] orderId=" + orderId + " stock=" + stockCode + " remaining=" + remaining + " action=" + action.toString());
+					
 					// -------  如果时间在11点之后，所有的open buy order都要cancel ---------
-					if(thisNow.after(monitorStartDate)) { 
+					if(thisNow.after(cancelOrderStartDate)) { 
 						if(action.equals(Action.BUY) && remaining > 0.0) {  // open buy orders, need to cancel
 							myController.cancelOrder(order.orderId());
+							logger.info("      [live order] cancel order! OrderId=" + order.orderId());
 						}
 					}  // 11点判断结束
 					
 					// ------ update holdingRecords ----
 					HoldingRecord thisHldRecord = holdingRecords.get(stockCode);
-					thisHldRecord.filledQty = filled;
-					thisHldRecord.avgFillPrice = avgFillPrice;
-					thisHldRecord.lastFillPrice = lastFillPrice;
+				
+					if(status.equals(OrderStatus.Filled)) {  //只看filled的status
+						Double oldQty = thisHldRecord.filledQty;
+						Double oldAvgFillPrice = thisHldRecord.avgFillPrice;
+						Double oldLastFillPrice = thisHldRecord.lastFillPrice;
+						
+						thisHldRecord.filledQty += filled;
+						Double newAvgFillPrice  = (oldAvgFillPrice * oldQty + filled * avgFillPrice)/thisHldRecord.filledQty;
+						thisHldRecord.avgFillPrice = newAvgFillPrice;
+						thisHldRecord.lastFillPrice = lastFillPrice;
+						
+						
+						logger.info("      [live order] orderId=" + orderId + " new hlding rec: filledQty=" + thisHldRecord.filledQty 
+								+ " avgFillPrice=" + newAvgFillPrice + " lastFillPrice=" + lastFillPrice);
+						holdingRecords.put(stockCode, thisHldRecord);
+					}
 					
-					holdingRecords.put(stockCode, thisHldRecord);
+					orderStatusInd++;
 				}	
 				
-				
-					
-				
-				
-				
-				
-				Thread.sleep(1000 * 30);  // wait for 30 sec
+				myController.removeLiveOrderHandler(myLiveOrder);
+				Thread.sleep(1000 * 10);  // wait for 10 sec
 			} // end of while
 		}catch(Exception e) {
 			e.printStackTrace();

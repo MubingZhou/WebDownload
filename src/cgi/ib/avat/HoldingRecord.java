@@ -1,5 +1,8 @@
 package cgi.ib.avat;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import com.ib.client.Contract;
 import com.ib.client.OrderStatus;
 
@@ -17,7 +20,7 @@ public class HoldingRecord {
 	public Double lastFillPrice = 0.0;
 	public Double filledQty = 0.0;
 	
-	public OrderStatus status;
+	public OrderStatus status = OrderStatus .Submitted;
 
 	public Double tradingCost = 0.0;
 	public boolean isFilled = false;  // 是否完全fill
@@ -31,7 +34,12 @@ public class HoldingRecord {
 		this.orderQty = orderQty;
 	}
 	
-	public HoldingRecord() {
+	
+	public String toString() {
+		SimpleDateFormat sdf = new SimpleDateFormat ("yyyyMMdd HH:mm:ss"); 
+		String s = stockCode + "," + sdf.format(new Date(orderTimeStamp)) + ","
+				+ orderPrice + "," + orderQty + "," + orderId + "," + status.toString() ;
 		
+		return s;
 	}
 }
