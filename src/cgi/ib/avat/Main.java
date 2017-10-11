@@ -54,7 +54,7 @@ public class Main {
 			 */
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
-			int port = 7497;   	// 7497 - paper account
+			int port = 7496;   	// 7497 - paper account
 								// 7496 - real account
 			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
 			int clientId = 1;

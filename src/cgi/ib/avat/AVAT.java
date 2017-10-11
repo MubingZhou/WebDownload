@@ -220,13 +220,15 @@ public class AVAT {
 			Map<String, Integer> lastRankingData = new HashMap();
 			
 			boolean isFirst = true;
+			long scanPeriod = 1000 * 60;  //每次隔多久扫描一次
 			while(now.before(avatTimePath.get(avatTimePath.size() - 1))) {
 				// --------- 判断时间 -----------
 				logger.info("now = " + sdf.format(now));
 				if(now.before(sdf.parse(todayDate + " 09:30:00"))) {
 					logger.info("Market not open!");
-					Thread.sleep(1000 * 60);
+					Thread.sleep(scanPeriod);
 					now = new Date();
+					continue;
 				}
 				
 				//---------- 正式开始 -----------
@@ -487,7 +489,7 @@ public class AVAT {
 				}
 				isLotSizeMapToUpdate = 0;
 				
-				Thread.sleep(1000 * 60); // wait for 1 min
+				Thread.sleep(scanPeriod); // wait for 1 min
 				lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
 				isFirst = false;
 				now = new Date();
