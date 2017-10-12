@@ -27,23 +27,23 @@ import com.ib.controller.ApiController.IConnectionHandler;
 
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
-	//public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
-	public static String AVAT_ROOT_PATH = "D:\\stock data\\AVAT\\";
+	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	//public static String AVAT_ROOT_PATH = "D:\\stock data\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
 	
 	public static void main(String[] args) {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date());todayDate="20171011";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171011";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
 			AVAT.todayDate = todayDate;
 			AvatUtils.todayDate = todayDate;
 			AVAT.bilateralTrdCost = bilateralTrdCost;
-			boolean transmitToIB = false;
 			AvatUtils.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
+			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
 			// ------------ MODE -----------
 			int mode = 1;
@@ -53,6 +53,8 @@ public class Main {
 			 * 
 			 * 100 - testing
 			 */
+			
+			logger.info("today date=" + todayDate);
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
 			int port = 7497;   	// 7497 - paper account
@@ -110,7 +112,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171010", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171011", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -137,15 +139,14 @@ public class Main {
 				order.action("BUY");
 				order.orderType(OrderType.LMT);
 				
-				Double buyPrice =28479.0;
+				Double buyPrice =28200.0;
 				order.lmtPrice(buyPrice);  // 以best bid作为买入价
 				
 				Double lotSize = 1.0;
 				Double totalQuatity = 1.0;
 				order.totalQuantity(totalQuatity);
 				//order.totalQuantity(100 * (int)(100000 / 100 / buyPrice) );
-				
-				
+				boolean transmitToIB = true;
 				order.transmit(transmitToIB);  // false - 只在api平台有这个order
 				
 				MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
@@ -153,7 +154,7 @@ public class Main {
 				
 				int isSubmitted = -1;
 				Double newLotSize = -1.0;
-				boolean c = true;
+				boolean c = false;
 				while(c) {
 					if(myOrderH.isSubmitted == 1) {
 						logger.info("Order submitted!");
@@ -186,23 +187,35 @@ public class Main {
 				
 				//myController.cancelOrder(myOrderH.orderId);
 				
-				// monitor order
-				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
-				myController.takeTwsOrders(myLiveOrder);
+				Thread orderMonitorThd = new Thread(new Runnable(){
+					   public void run(){
+						   //ordersMonitor();
+						   AVAT.executionMonitor();
+					   }
+				});
+				orderMonitorThd.start();
 				
-				// monitor executions
-				MyITradeReportHandler myTradeReport = new MyITradeReportHandler();
-				ExecutionFilter filter = new ExecutionFilter();
-				filter.secType("FUT");
-				myController.reqExecutions(filter, myTradeReport);
-				
-				while(true) {
-					if(myLiveOrder.isEnd) {  // order收集完全
-						break;
-					}
-					Thread.sleep(200);
-				} // end of while
-				logger.info(myLiveOrder.toString());
+				if(false) {
+					// monitor order
+					String liveOrderRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\live order records.csv";
+					MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler(liveOrderRecPath);
+					myController.takeTwsOrders(myLiveOrder);
+					
+					// monitor executions
+					String exeRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\execution records.csv";
+					MyITradeReportHandler myTradeReport = new MyITradeReportHandler(exeRecPath);
+					ExecutionFilter filter = new ExecutionFilter();
+					filter.secType("FUT");
+					myController.reqExecutions(filter, myTradeReport);
+					
+					while(true) {
+						if(myLiveOrder.isEnd) {  // order收集完全
+							break;
+						}
+						Thread.sleep(200);
+					} // end of while
+					logger.info(myLiveOrder.toString());
+				}
 			}
 			
 			//============== requesting historical tick data ===============

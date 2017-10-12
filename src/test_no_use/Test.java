@@ -45,7 +45,7 @@ public class Test {
 		try {
 			
 			
-			System.out.println(Math.floorMod(9, 8));
+			FileWriter fw = new FileWriter("Z:\\AVAT\\orders\\20171012\\executions records.csv");
 			
 		}catch(Exception e) {
 			e.printStackTrace();

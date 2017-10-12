@@ -1,6 +1,7 @@
 package cgi.ib.avat;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import com.ib.client.Contract;
@@ -19,6 +20,7 @@ public class HoldingRecord {
 	public Double avgFillPrice = 0.0;
 	public Double lastFillPrice = 0.0;
 	public Double filledQty = 0.0;
+	public ArrayList<String> executionIdArr = new ArrayList<String>();
 	
 	public OrderStatus status = OrderStatus .Submitted;
 

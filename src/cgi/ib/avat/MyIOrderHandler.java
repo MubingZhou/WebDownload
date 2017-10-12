@@ -31,14 +31,14 @@ public class MyIOrderHandler implements IOrderHandler {
 	// call backs...
 	@Override
 	public void orderState(OrderState orderState) {
-		logger.trace("[MyIOrderHandler - orderState] " + orderState.getStatus() );
+		logger.trace("[MyIOrderHandler - orderState - " + this.contract.symbol() + "] " + orderState.getStatus() );
 		
 	}
 
 	@Override
 	public void orderStatus(OrderStatus status, double filled, double remaining, double avgFillPrice, long permId,
 			int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
-		logger.trace("[MyIOrderHandler - orderStatus] " + status.toString());
+		logger.info("[MyIOrderHandler - orderStatus - " + this.contract.symbol() + "] " + status.toString());
 		if(isTransmit && (status.equals(OrderStatus.Submitted) || status.equals(OrderStatus.PreSubmitted)))
 			isSubmitted = 1;
 		if(!isTransmit && status.equals(OrderStatus.PendingSubmit))
@@ -47,7 +47,7 @@ public class MyIOrderHandler implements IOrderHandler {
 
 	@Override
 	public void handle(int errorCode, String errorMsg) {
-		logger.trace("[MyIOrderHandler - handle] errCode=" + errorCode + " errMsg=" + errorMsg);
+		logger.info("[MyIOrderHandler - handle - " + this.contract.symbol() + "] errCode=" + errorCode + " errMsg=" + errorMsg);
 		this.errorCode = errorCode;
 		
 		if(errorCode == 461) {  

@@ -20,6 +20,8 @@ import javax.swing.JOptionPane;
 import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
+import com.ib.client.Execution;
+import com.ib.client.ExecutionFilter;
 import com.ib.client.Order;
 import com.ib.client.OrderStatus;
 import com.ib.client.OrderType;
@@ -63,7 +65,7 @@ public class AVAT {
 	
 	// -------- orders ----------
 	//private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
-	public static boolean isStartOrders = false; // 是否开始监视order并落单
+	public static boolean isStartOrders = true; // 是否开始监视order并落单
 	private static int isLotSizeMapToUpdate = 0;  // lot size map是否需要升级
 	private static Map<String, HoldingRecord> holdingRecords = new HashMap<String, HoldingRecord>();  // String是stock code
 	private static String orderWriterPath ;
@@ -108,7 +110,8 @@ public class AVAT {
 				// 有关order的一些处理
 				Thread orderMonitorThd = new Thread(new Runnable(){
 					   public void run(){
-						   ordersMonitor();
+						   //ordersMonitor();
+						   executionMonitor();
 					   }
 				});
 				orderMonitorThd.start();
@@ -251,7 +254,7 @@ public class AVAT {
 					Double latestBestBid = myTop.latestBestBid;
 					Double latestBestAsk = myTop.latestBestAsk;
 					
-					logger.debug("------- stock = " + stock);
+					logger.trace("------- stock = " + stock);
 					
 					// find the nearest date
 					Map<Date,ArrayList<Double>> avatHist_stock = avatHist.get(stock);
@@ -327,7 +330,7 @@ public class AVAT {
 					
 					avatRecord.add(at);
 					
-					logger.debug("------- next ");
+					logger.trace("------- next ");
 				}  // end of for
 				
 				logger.info("-- sorting avat record");
@@ -501,6 +504,8 @@ public class AVAT {
 	
 	private static void scanForOrders(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
 		try {
+			logger.info("---------- scanForOrders ---------");
+			
 			String errMsgHead  = "[trading strategy] ";
 			Double fixedBuyAmount = 100000.0;  // fix buying amount for each stock, HKD
 			Double buyPriceDiscount = 1.0;  // 为了testing，不让order被fill，可以将buyprice设小点
@@ -516,7 +521,7 @@ public class AVAT {
 			double turnoverThld = 5000000.0;
 			
 			// ------- 与卖出有关的variables ----------
-			String sellThldTimeStr = todayDate + " 15:00:00";
+			String sellThldTimeStr = todayDate + " 16:10:00";
 			Date sellThldTime = sdf.parse(sellThldTimeStr);
 			Set<String> holdingStocks = holdingRecords.keySet();
 			
@@ -554,7 +559,7 @@ public class AVAT {
 						buyCond3 = 1;
 					
 					//buyCond2_2 = 0;
-					buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
+					//buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
 					
 					if(!holdingRecords.keySet().contains(singleRec.stockCode))  // 之前没买过
 						buyCond4 = 1;
@@ -565,6 +570,7 @@ public class AVAT {
 						// 新开一个线程来处理似乎不妥当，因为每个order的id必须大于之前order的id，所以如果很多线程并行的话，不能保证先提交给ib的order的id是最小的
 						
 						String stockCode = singleRec.stockCode;
+						logger.debug("    stock=" + stockCode + " BUY ");
 						
 						Contract con = conMap.get(stockCode);
 						
@@ -586,9 +592,19 @@ public class AVAT {
 						myController.placeOrModifyOrder(con, order, myOrderH);
 						
 						// --------- submit orders ---------
-						while(true) {
+						boolean control= false;
+						if(!control) {
+							HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
+							hld.orderId = myOrderH.orderId;
+							
+							holdingRecords.put(con.symbol(), hld);  // 存储holding
+							
+							orderWriter.write(hld.toString() + "\n");
+							orderWriter.flush();
+						}
+						while(control) {
 							if(myOrderH.isSubmitted == 1) {
-								logger.info("Order submitted! " + con.symbol() + " " + orderQty + " " + order.action() + " " + order.lmtPrice() + " scanTime" + sdf.format(now) + " realTime=" + sdf.format(new Date()));
+								logger.info("Order submitted! stock=" + con.symbol() + " " + orderQty + " " + order.action() + " " + order.lmtPrice() + " scanTime" + sdf.format(now) + " realTime=" + sdf.format(new Date()));
 								HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
 								hld.orderId = myOrderH.orderId;
 								
@@ -679,6 +695,8 @@ public class AVAT {
 				}
 					
 			}
+			
+			logger.info("---------- scanForOrders ENDS ---------");
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -691,12 +709,15 @@ public class AVAT {
 	private static void ordersMonitor() {
 		try {
 			int orderStatusInd = 0;
-			MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
-			myController.takeTwsOrders(myLiveOrder);
+			String liveOrderRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\live order records.csv";
+			
 			
 			while(true) {
+				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler(liveOrderRecPath);
+				myController.reqLiveOrders(myLiveOrder);
+				
 				Date thisNow = new Date();
-				String cancelOrderStartStr = todayDate + " 11:00:00";
+				String cancelOrderStartStr = todayDate + " 14:00:00";
 				Date cancelOrderStartDate = sdf.parse(cancelOrderStartStr);
 				String dayEndStr = todayDate + " 16:10:00";
 				Date dayEndDate = sdf.parse(dayEndStr);
@@ -717,9 +738,9 @@ public class AVAT {
 				
 				logger.info("[Start scanning live orders...] " + sdf.format(new Date()));
 				
-				for(int i = orderStatusInd; i < myLiveOrder.orderContract.size(); i++) {
-					ArrayList<Object> thisOrderContract = myLiveOrder.orderContract.get(i);
-					ArrayList<Object> thisOrderStatus = myLiveOrder.orderStatus.get(i);
+				for(int i = orderStatusInd; i < myLiveOrder.openOrderArr.size(); i++) {
+					ArrayList<Object> thisOrderContract = myLiveOrder.openOrderArr.get(i);
+					ArrayList<Object> thisOrderStatus = myLiveOrder.orderStatusArr.get(i);
 					
 					OrderStatus status = (OrderStatus) thisOrderStatus.get(1);
 					Double filled = (Double) thisOrderStatus.get(2);
@@ -727,11 +748,11 @@ public class AVAT {
 					Double avgFillPrice  = (Double) thisOrderStatus.get(4);
 					Double lastFillPrice  = (Double) thisOrderStatus.get(7);
 					
-					Order order = (Order) thisOrderContract.get(0);
+					Order order = (Order) thisOrderContract.get(1);
 					Double orderId = (double) order.orderId();
 					Action action = order.action();
 					
-					Contract contract = (Contract) thisOrderContract.get(1);
+					Contract contract = (Contract) thisOrderContract.get(0);
 					String stockCode = contract.symbol();
 					
 					logger.info("      [live order] orderId=" + orderId + " stock=" + stockCode + " remaining=" + remaining + " action=" + action.toString());
@@ -767,8 +788,117 @@ public class AVAT {
 				}	
 				
 				myController.removeLiveOrderHandler(myLiveOrder);
-				Thread.sleep(1000 * 10);  // wait for 10 sec
+				Thread.sleep(1000 * 5);  // wait for 5 sec
 			} // end of while
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void executionMonitor() {
+		try {
+			long lastRequestTime = new Date().getTime() - 5000;
+			lastRequestTime=0;
+			
+			String executionsRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\executions records.csv";
+			
+			String cancelOrderStartStr = todayDate + " 16:31:30";
+			Date cancelOrderStartDate = sdf.parse(cancelOrderStartStr);
+			String dayEndStr = todayDate + " 23:10:00";
+			Date dayEndDate = sdf.parse(dayEndStr);
+			
+			MyITradeReportHandler myTradeReport = new MyITradeReportHandler(executionsRecPath);
+			while(true) {
+				// ---------- MyITradeReportHandler的一些setting -----------
+				ExecutionFilter filter = new ExecutionFilter();
+				filter.secType("FUT");
+				if(lastRequestTime != 0)
+					filter.time(sdf.format(new Date(lastRequestTime)));
+				myTradeReport.initialize();
+				myController.reqExecutions(filter, myTradeReport);
+				lastRequestTime = new Date().getTime();
+				myTradeReport.isCalledByMonitor = 0;
+				
+				Date thisNow = new Date();
+				
+				
+				if(thisNow.after(dayEndDate))
+					break;
+				
+				while(true) {
+					if(myTradeReport.isEnd == 1)
+						break;
+					Thread.sleep(10);
+				}
+				
+				// ---------- 读取MyITradeReportHandler返回的数据 ---------------
+				logger.info("[Start scanning execution details...] " + sdf.format(new Date()));
+				ArrayList<ArrayList<Object>> tradeReportArr = myTradeReport.tradeReportArr;
+				for(ArrayList<Object> tradeReport : tradeReportArr ) {
+					Contract contract = (Contract) tradeReport.get(1);
+					Execution execution = (Execution) tradeReport.get(2);
+					
+					String stockCode = contract.symbol();
+					Double filled = execution.shares();
+					Double avgFillPrice = execution.avgPrice(); // not include commission
+					String executionId = execution.execId();
+					
+					// ------ update holdingRecords ----
+					HoldingRecord thisHldRecord = holdingRecords.get(stockCode);
+				
+					if(thisHldRecord == null)
+						continue;
+					
+					Double oldQty = thisHldRecord.filledQty;
+					Double oldAvgFillPrice = thisHldRecord.avgFillPrice;
+					//Double oldLastFillPrice = thisHldRecord.lastFillPrice;
+					ArrayList<String> executionIdArr = thisHldRecord.executionIdArr;
+					
+					if(executionIdArr.contains(executionId)) // 不知道为什么，server有时候会重复发来之前的execution
+						continue;
+					
+					thisHldRecord.executionIdArr.add(executionId);
+					thisHldRecord.filledQty += filled;
+					Double newAvgFillPrice  = (oldAvgFillPrice * oldQty + filled * avgFillPrice)/thisHldRecord.filledQty;
+					thisHldRecord.avgFillPrice = newAvgFillPrice;
+					//thisHldRecord.lastFillPrice = lastFillPrice;
+					
+					
+					logger.info("      [execution details] new hlding rec: stock=" + stockCode + " filledQty=" + thisHldRecord.filledQty 
+							+ " avgFillPrice=" + newAvgFillPrice );
+					holdingRecords.put(stockCode, thisHldRecord);
+					
+				} // end of for
+				
+				// -------  如果时间在11点之后，所有的open buy order都要cancel ---------
+				if(thisNow.after(cancelOrderStartDate)) {
+					MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
+					myController.reqLiveOrders(myLiveOrder);
+					
+					while(true) {
+						if(myLiveOrder.isEnd) {
+							break;
+						}
+						Thread.sleep(10);
+					}
+					
+					for(ArrayList<Object> orderStatus : myLiveOrder.orderStatusArr) {
+						int orderId = (int) orderStatus.get(0);
+						
+						for(ArrayList<Object> openOrder : myLiveOrder.openOrderArr) {
+							Order order = (Order) openOrder.get(1);
+							if(order.orderId() == orderId) {
+								if(order.action().equals(Action.BUY))
+									myController.cancelOrder(orderId);
+								break;
+							}
+						}
+					}
+				}
+				
+				Thread.sleep(1000 * 5);  // wait for 5 sec
+			}
+			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}

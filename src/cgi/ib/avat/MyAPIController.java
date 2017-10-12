@@ -1,5 +1,6 @@
 package cgi.ib.avat;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.GregorianCalendar;
@@ -303,21 +304,12 @@ public class MyAPIController extends ApiController{
 
 
 	// ---------------------------------------- Trade reports ----------------------------------------
-    public void reqExecutions( ExecutionFilter filter, ITradeReportHandler handler) {
+    public void reqExecutions( ExecutionFilter filter, MyITradeReportHandler handler) {
 		super.reqExecutions(filter, handler);
+		handler.isCalledByMonitor = 1;
     }
 
-	@Override public void execDetails(int reqId, Contract contract, Execution execution) {
-		super.execDetails(reqId, contract, execution);
-	}
-
-	@Override public void execDetailsEnd(int reqId) {
-		super.execDetailsEnd(reqId);
-	}
-
-	@Override public void commissionReport(CommissionReport commissionReport) {
-		super.commissionReport(commissionReport);
-	}
+	
 
 	// ---------------------------------------- Advisor info ----------------------------------------
 	public void reqAdvisorData( FADataType type, IAdvisorHandler handler) {
@@ -362,20 +354,27 @@ public class MyAPIController extends ApiController{
 
 
 	// ---------------------------------------- Live order handling ----------------------------------------
-	public void reqLiveOrders( ILiveOrderHandler handler) {
+	public void reqLiveOrders( MyILiveOrderHandler handler) {
 		super.reqLiveOrders(handler);
 	}
 
-	public void takeTwsOrders( ILiveOrderHandler handler) {
+	public void takeTwsOrders( MyILiveOrderHandler handler) {
 		super.takeTwsOrders(handler);
 	}
 
-	public void takeFutureTwsOrders( ILiveOrderHandler handler) {
+	public void takeFutureTwsOrders( MyILiveOrderHandler handler) {
 		super.takeFutureTwsOrders(handler);
 	}
 
-	public void removeLiveOrderHandler(ILiveOrderHandler handler) {
+	public void removeLiveOrderHandler(MyILiveOrderHandler handler) {
 		super.removeLiveOrderHandler(handler);
+		try {
+			//handler.fw.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error("[MyAIPController - removeLiveOrderHandler] fileWriter can't closed!");
+		}
 	}
 
 
