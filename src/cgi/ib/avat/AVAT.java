@@ -68,6 +68,7 @@ public class AVAT {
 	public static boolean isStartOrders = true; // 是否开始监视order并落单
 	private static int isLotSizeMapToUpdate = 0;  // lot size map是否需要升级
 	private static Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap();  // String是stock code, Integer是order id（只存buy order）
+	private static String holdingRecordsPath = "";  // 存储 holdingRecords 的路径
 	private static String orderWriterPath ;
 	private static FileWriter orderWriter;
 	private static boolean transmitToIB = true;  // 是否transmit 到 IB
@@ -83,6 +84,28 @@ public class AVAT {
 			String stock = con.symbol();
 			conMap.put(stock, con);
 		}
+		
+		// 创建文件…
+		String avatRecordRootPath = AVAT_ROOT_PATH + "\\avat record\\";
+		String avatParaRootPath = AVAT_ROOT_PATH + "\\avat para\\";
+		String avatRtDataRootPath = AVAT_ROOT_PATH + "\\avat realtime data\\";
+		String avatOrdersRootPath = AVAT_ROOT_PATH + "\\ordres\\";
+		File f1 = new File(avatRecordRootPath);  if(!f1.exists()) f1.mkdirs();
+		File f2 = new File(avatParaRootPath ); if(!f2.exists()) f2.mkdirs();
+		File f3 = new File(avatRtDataRootPath); if(!f3.exists()) f3.mkdirs();
+		File f4 = new File(avatOrdersRootPath); if(!f4.exists()) f4.mkdirs();
+		
+		String avatRecordPath = avatRecordRootPath + todayDate + "\\";
+		String avatParaPath = avatParaRootPath + todayDate + "\\";
+		String avatRtDataPath = avatRtDataRootPath + todayDate + "\\";
+		String avatOrdersPath = avatOrdersRootPath + todayDate + "\\";
+		File f11 = new File(avatRecordPath);  if(!f11.exists()) f11.mkdirs();
+		File f12 = new File(avatParaPath ); if(!f12.exists()) f12.mkdirs();
+		File f13 = new File(avatRtDataPath); if(!f13.exists()) f13.mkdirs();
+		File f14 = new File(avatOrdersPath); if(!f14.exists()) f14.mkdirs();
+		
+		
+		holdingRecordsPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\holdingRecords.javaObj";
 	}
 	
 	public static void start() {
@@ -124,6 +147,10 @@ public class AVAT {
 				orderWriter = new FileWriter(orderWriterPath + "orders.csv",true); // append
 			}
 			
+			// get holdingRecords
+			File f = new File(holdingRecordsPath);
+			if(f.exists())
+				holdingRecords = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(holdingRecordsPath);
 			
 			scanForAvat();
 			logger.info("output done");
@@ -513,7 +540,10 @@ public class AVAT {
 			// ------- 与买入有关的variables ----------
 			String buyStartTimeStr = todayDate + " 09:30:00";  // 这个时间点之后才进行一切buy
 			Date buyStartTime = sdf.parse(buyStartTimeStr);
+
+			//String buyEndTimeStr = todayDate + " 11:00:00";
 			String buyEndTimeStr = todayDate + " 16:00:00";    // 这个时间点之后才停止一切buy
+
 			Date buyEndTime = sdf.parse(buyEndTimeStr);
 			String volumeCondEndTimeStr = todayDate + " 11:00:00";    // 这个时间点之后停止对于volume condition的判断 （buyCond2_3）
 			Date volumeCondEndTime = sdf.parse(volumeCondEndTimeStr);
@@ -585,6 +615,7 @@ public class AVAT {
 							}
 						}
 						
+						HoldingRecord newHld = null;
 						if(buyCond2_1 == 1 && thisHoldingBuyCond2_1 == 0) {  // 会在下面更新 thisHoldingRec.buyCond2_1
 							toBuyAmt += fixedBuyAmount;
 							buyTracer[0] = 1;
@@ -605,7 +636,6 @@ public class AVAT {
 						// 新开一个线程来处理似乎不妥当，因为每个order的id必须大于之前order的id，所以如果很多线程并行的话，不能保证先提交给ib的order的id是最小的
 						
 						String stockCode = singleRec.stockCode;
-						logger.debug("    stock=" + stockCode + " BUY ");
 						
 						Contract con = conMap.get(stockCode);
 						Double lotSize = avatLotSize.get(stockCode);
@@ -634,7 +664,8 @@ public class AVAT {
 						Double orderQty2 = lotSize * (int)(toBuyAmt/2 / lotSize / buyPrice2) ;
 						order2.totalQuantity(orderQty2);
 						order2.transmit(transmitToIB);  // false - 只在api平台有这个order
-						
+					
+
 						// --------- submit orders ---------
 						MyIOrderHandler myOrderH1 = new MyIOrderHandler (con, order1); 
 						myOrderH1.isTransmit = transmitToIB;
@@ -643,16 +674,39 @@ public class AVAT {
 						myOrderH2.isTransmit = transmitToIB;
 						myController.placeOrModifyOrder(con, order2, myOrderH2);
 						
+						while(myOrderH1.getOrderId() == -1) {Thread.sleep(5);}
+						while(myOrderH2.getOrderId() == -1) {Thread.sleep(5);}
+						
 						HoldingRecord hld1 = new HoldingRecord(myOrderH1, now.getTime());
 						HoldingRecord hld2 = new HoldingRecord(myOrderH2, now.getTime());
 						
-						while(myOrderH1.getOrderId() == -1) {}
-						while(myOrderH2.getOrderId() == -1) {}
-						
 						if(thisHoldingMap == null)
 							thisHoldingMap = new HashMap<Integer, HoldingRecord>();
+						
+						if(buyTracer[0] == 1) {
+							hld1.buyCond2_1 = 1;
+							hld2.buyCond2_1 = 1;
+						}
+						if(buyTracer[1] == 1) {
+							hld1.buyCond2_2 = 1;
+							hld2.buyCond2_2 = 1;
+						}
+						if(buyTracer[2] == 1) {
+							hld1.buyCond2_3 = 1;
+							hld2.buyCond2_3 = 1;
+						}
+							
 						thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
 						thisHoldingMap.put(myOrderH2.getOrderId(), hld2);
+						holdingRecords.put(stockCode, thisHoldingMap);
+						
+						utils.Utils.saveObject(holdingStocks, holdingRecordsPath);
+						
+						orderWriter.write(hld1.toString() + "\n");
+						orderWriter.write(hld2.toString() + "\n");
+						orderWriter.flush();
+						
+						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
 						
 						/*
 						boolean control= false;
@@ -957,6 +1011,7 @@ public class AVAT {
 					con.exchange("SEHK");
 					con.secType("STK");
 					con.currency("HKD");
+					Double lotSize = avatLotSize.get(stockCode);
 					
 					Map<Double, Double> thisExeSum = executionSummary.get(stockCode);
 					for(Double buyPrice : thisExeSum.keySet() ) {
@@ -965,9 +1020,18 @@ public class AVAT {
 						Order sellOrder = new Order();
 						sellOrder.action(Action.SELL);
 						sellOrder.lmtPrice(AvatUtils.getCorrectPrice_down(buyPrice * (1 + stopProfitLevel)));
-						sellOrder.totalQuantity(filledQty);  //
+						sellOrder.totalQuantity(lotSize * Math.floor(filledQty/lotSize));  //
+						sellOrder.transmit(true);
 						
-						myController.placeOrModifyOrder(con, sellOrder, new MyIOrderHandler(con, sellOrder));  // sell order 放了就放了，不用monitor 
+						
+						MyIOrderHandler sellOrderHandler = new MyIOrderHandler(con, sellOrder);
+						myController.placeOrModifyOrder(con, sellOrder, sellOrderHandler);  // sell order 放了就放了，不用monitor 
+					
+						while(sellOrderHandler.getOrderId() == -1) {Thread.sleep(5);}
+						HoldingRecord hld1 = new HoldingRecord(sellOrderHandler, new Date().getTime());
+						
+						orderWriter.write(hld1.toString() + "\n");
+						orderWriter.flush();
 					}
 				}
 				

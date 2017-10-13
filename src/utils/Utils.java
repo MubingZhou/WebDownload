@@ -9,6 +9,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
@@ -30,6 +32,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.apache.log4j.Logger;
+
+import test_no_use.AA;
 
 public class Utils {
 	// OUTPUT root path
@@ -828,6 +832,33 @@ public class Utils {
 			}
 			
 			return map;
-		}
+	}
+		
+	/**
+	 * 将一个变量存到指定路径，但是该变量需要implements Serializable
+	 * path必须带文件名（后缀名可以是任何名，比如test.javaobj
+	 * @param obj
+	 * @param path
+	 * @throws Exception
+	 */
+	public static void saveObject(Object obj, String path) throws Exception { 
+		FileOutputStream fos = new FileOutputStream(path);
+		ObjectOutputStream out = new ObjectOutputStream(fos);
+		
+		out.writeObject(obj);
+	}
+	
+	/**
+	 * 读取某变量
+	 * @param path
+	 * @return
+	 * @throws Exception
+	 */
+	public static Object readObject(String path) throws Exception{
+		FileInputStream fis = new FileInputStream(path);
+		ObjectInputStream in = new ObjectInputStream(fis);
+		return in.readObject();
+	}
+	
 	  
 }

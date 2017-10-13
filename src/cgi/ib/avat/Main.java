@@ -28,7 +28,7 @@ import com.ib.controller.ApiController.IConnectionHandler;
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
 	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
-	//public static String AVAT_ROOT_PATH = "D:\\stock data\\AVAT\\";
+	//public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
 	
 	public static void main(String[] args) {
@@ -46,12 +46,12 @@ public class Main {
 			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
 			// ------------ MODE -----------
-			int mode = 1;
+			int mode = 101;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
 			 * 
-			 * 100 - testing
+			 * 100 or larger - testing
 			 */
 			
 			logger.info("today date=" + todayDate);
@@ -62,6 +62,7 @@ public class Main {
 			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
 			int clientId = 1;
 			
+			//[start] 
 			MyLogger inLogger = new MyLogger();
 			MyLogger outLogger = new MyLogger();
 			
@@ -109,6 +110,7 @@ public class Main {
 			}
 			//industryList.addAll(Arrays.asList(bf.readLine().split(",")));
 			bf.close();
+			// [end] 
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
@@ -123,6 +125,7 @@ public class Main {
 				
 				AVAT.start();
 			}
+			
 			if(mode == 100) {
 				Contract con = new Contract();
 				con.localSymbol("HSIV7");
@@ -216,6 +219,12 @@ public class Main {
 					} // end of while
 					logger.info(myLiveOrder.toString());
 				}
+			}
+			if(mode == 101) {
+				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
+				myController.takeTwsOrders(myLiveOrder);
+				
+				
 			}
 			
 			//============== requesting historical tick data ===============
