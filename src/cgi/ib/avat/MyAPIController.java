@@ -331,9 +331,9 @@ public class MyAPIController extends ApiController{
 		
 		// recorder orderId
 		if(order.orderId() == 0)
-			handler.orderId = super.m_orderId;
+			handler.setOrderId(super.m_orderId);
 		else
-			handler.orderId = order.orderId();
+			handler.setOrderId(order.orderId());;
 	}
 
 	public void cancelOrder(int orderId) {

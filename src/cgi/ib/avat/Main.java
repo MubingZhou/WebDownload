@@ -112,7 +112,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171011", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171012", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -176,7 +176,7 @@ public class Main {
 					
 					Thread.sleep(1000);
 					c = false;
-					System.out.println("orderId=" + myOrderH.orderId);
+					System.out.println("orderId=" + myOrderH.getOrderId());
 				}
 				
 				Thread.sleep(100);

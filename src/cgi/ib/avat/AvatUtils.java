@@ -597,6 +597,7 @@ public class AvatUtils {
 			for(int i = 0; i < conArr.size(); i++) {
 				String stock = conArr.get(i).symbol();
 				//String _1minBarPath = _1minBarRootPath + stock + ".csv";
+				//logger.info("[Prepare avat]  stock=" + stock);
 				if(alreadyExists.indexOf(stock) > -1) // 对于已经存在的股票就不用再进行处理
 					continue;
 	
@@ -605,10 +606,11 @@ public class AvatUtils {
 				LinkedHashMap<Date, Double> thisStockAuctionData = auctionData.get(stock);
 				
 				for(int j = 0; j < numOfTradingDays; j++) {
+					//logger.info("   [prepare avat] j=" + j);
 					Calendar thisTrdCal = allTradingCal.get(lastDateInd - j);
 					String thisTrdDateStr = sdf2.format(thisTrdCal.getTime());
 					
-					logger.trace("stock=" + stock + " " + thisTrdDateStr);
+					//logger.trace("stock=" + stock + " " + thisTrdDateStr);
 					
 					String _1minBarPath = _1minBarRootPath + thisTrdDateStr + "\\" + stock + ".csv";
 					
@@ -616,10 +618,13 @@ public class AvatUtils {
 					String line = "";
 					int timePathInd = 0;
 					Double todayAvat = thisStockAuctionData.get(sdf2.parse(thisTrdDateStr));
+					int temp_count = 0;
 					while((line = bf_ha.readLine()) != null) {
+						temp_count++;
+						//logger.info("             [prepare avat] line=" + temp_count);
 						if(timePathInd == timePath.size())  // 不需要15：59之后的数据
 							break;
-						
+
 						String[] lineArr = line.split(",");
 						
 						Double thisTimeVol = Double.parseDouble(lineArr[5]);

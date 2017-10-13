@@ -11,7 +11,7 @@ import com.ib.controller.ApiController.IOrderHandler;
 public class MyIOrderHandler implements IOrderHandler {
 	private static Logger logger = Logger.getLogger(MyIOrderHandler.class.getName());
 	
-	public int orderId = -1;
+	private int orderId = -1;
 	public Contract contract;
 	public Order order;
 	
@@ -26,6 +26,14 @@ public class MyIOrderHandler implements IOrderHandler {
 	public MyIOrderHandler (Contract con, Order order) {
 		this.contract = con.clone();
 		this.order = order;
+	}
+	
+	public int getOrderId() {
+		return orderId;
+	}
+	public void setOrderId(int orderId) {
+		this.orderId = orderId;
+		order.orderId(orderId);
 	}
 	
 	// call backs...
