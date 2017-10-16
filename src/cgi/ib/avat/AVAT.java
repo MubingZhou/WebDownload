@@ -51,6 +51,7 @@ public class AVAT {
 	public static Map<String, Double> prevVolume = new HashMap<String, Double>(); // previous day's volume for every stock
 	
 	// --------- other variables ---------
+	public static String TRADING_DATE_PATH = "D:\\stock data\\all trading date - hk.csv";
 	private static Logger logger = Logger.getLogger(AVAT.class.getName());
 	public static String dateFormat = "yyyyMMdd HH:mm:ss";
 	public static SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
@@ -89,7 +90,7 @@ public class AVAT {
 		String avatRecordRootPath = AVAT_ROOT_PATH + "\\avat record\\";
 		String avatParaRootPath = AVAT_ROOT_PATH + "\\avat para\\";
 		String avatRtDataRootPath = AVAT_ROOT_PATH + "\\avat realtime data\\";
-		String avatOrdersRootPath = AVAT_ROOT_PATH + "\\ordres\\";
+		String avatOrdersRootPath = AVAT_ROOT_PATH + "\\orders\\";
 		File f1 = new File(avatRecordRootPath);  if(!f1.exists()) f1.mkdirs();
 		File f2 = new File(avatParaRootPath ); if(!f2.exists()) f2.mkdirs();
 		File f3 = new File(avatRtDataRootPath); if(!f3.exists()) f3.mkdirs();
@@ -166,7 +167,7 @@ public class AVAT {
 	}
 	
 	private static void prepare() {
-		allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+		allTradingDate = utils.Utils.getAllTradingDate(TRADING_DATE_PATH);
 		
 		// ------- avat - prepare historical avat --------
 		AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
