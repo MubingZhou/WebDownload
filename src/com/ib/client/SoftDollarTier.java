@@ -1,6 +1,8 @@
 package com.ib.client;
 
-public class SoftDollarTier {
+import java.io.Serializable;
+
+public class SoftDollarTier implements Serializable{
 
 	private String m_name, m_value, m_displayName;
 	

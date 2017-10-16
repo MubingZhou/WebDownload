@@ -3,6 +3,7 @@
 
 package com.ib.client;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +18,7 @@ import com.ib.client.Types.TimeInForce;
 import com.ib.client.Types.TriggerMethod;
 import com.ib.client.Types.VolatilityType;
 
-public class Order {
+public class Order implements Serializable{
     final public static int 	CUSTOMER = 0;
     final public static int 	FIRM = 1;
     final public static char    OPT_UNKNOWN='?';

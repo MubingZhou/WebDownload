@@ -28,15 +28,16 @@ import javax.swing.JOptionPane;
 import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
+import com.ib.client.Order;
 
 import org.apache.log4j.LogManager;
 
-import backtesting.backtesting.Order;
 import backtesting.backtesting.OrderType;
 import backtesting.portfolio.Portfolio;
 import cgi.ib.avat.AvatRecordSingleStock;
 import cgi.ib.avat.AvatUtils;
 import cgi.ib.avat.HoldingRecord;
+import cgi.ib.avat.MyIOrderHandler;
 import strategy.db_southboundFlowPortfolio.PortfolioScreening;
 
 @SuppressWarnings("unused")
@@ -54,24 +55,25 @@ public class Test {
 			FileOutputStream fos = new FileOutputStream(p);
 			ObjectOutputStream out = new ObjectOutputStream(fos);
 			
-			ArrayList<Double> arr = new ArrayList<Double> ();
-			arr.add(10.0);
-			arr.add(12.0);
-			AA aa = new AA();
-			Map<String, Double> map = new HashMap();
-			map.put("ass", 123.0);
 			
-			out.writeObject(map);
+			Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap();
+			Map<Integer, HoldingRecord> sHolding = new HashMap();
+			HoldingRecord h11 = new HoldingRecord(new MyIOrderHandler(new Contract(), new Order()), 0l);
+			HoldingRecord h12 = new HoldingRecord(new MyIOrderHandler(new Contract(), new Order()), 0l);
+			sHolding.put(1, h11);
+			sHolding.put(2, h12);
+			holdingRecords.put("test", sHolding);
+			holdingRecords.put("test2", sHolding);
+			
+			out.writeObject(holdingRecords);
 			
 			FileInputStream fis = new FileInputStream(p);
 			ObjectInputStream in = new ObjectInputStream(fis);
-			Map<String, Double> a = (Map<String, Double>) in.readObject();
+			Map<String, Map<Integer, HoldingRecord>>  a = (Map<String, Map<Integer, HoldingRecord>> ) in.readObject();
 			
-			System.out.print(a.get("ass"));
+			System.out.print(a.get("test2"));
 			
-			File fff = new File(p + "a");
-			if(!fff.exists())
-				System.out.print("adfsfds");
+			
 			
 		}catch(Exception e) {
 			e.printStackTrace();

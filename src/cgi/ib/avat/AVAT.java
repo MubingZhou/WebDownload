@@ -736,7 +736,7 @@ public class AVAT {
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
 						
-						//utils.Utils.saveObject(holdingStocks, holdingRecordsPath);  // 目前还有问题，HashMap不是serializable的
+						utils.Utils.saveObject(holdingStocks, holdingRecordsPath);  // 目前还有问题，HashMap不是serializable的
 						
 						/*
 						boolean control= false;

@@ -3,6 +3,7 @@
 
 package com.ib.client;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +11,7 @@ import com.ib.client.Types.Right;
 import com.ib.client.Types.SecIdType;
 import com.ib.client.Types.SecType;
 
-public class Contract implements Cloneable {
+public class Contract implements Cloneable,Serializable {
     private int     m_conid;
     private String  m_symbol;
     private String  m_secType;

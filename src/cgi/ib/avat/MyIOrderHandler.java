@@ -1,5 +1,7 @@
 package cgi.ib.avat;
 
+import java.io.Serializable;
+
 import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
@@ -8,7 +10,7 @@ import com.ib.client.OrderState;
 import com.ib.client.OrderStatus;
 import com.ib.controller.ApiController.IOrderHandler;
 
-public class MyIOrderHandler implements IOrderHandler {
+public class MyIOrderHandler implements IOrderHandler,Serializable {
 	private static Logger logger = Logger.getLogger(MyIOrderHandler.class.getName());
 	
 	private int orderId = -1;
