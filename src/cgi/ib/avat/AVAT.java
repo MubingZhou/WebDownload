@@ -89,7 +89,7 @@ public class AVAT {
 		// 创建文件…
 		String avatRecordRootPath = AVAT_ROOT_PATH + "\\avat record\\";
 		String avatParaRootPath = AVAT_ROOT_PATH + "\\avat para\\";
-		String avatRtDataRootPath = AVAT_ROOT_PATH + "\\avat realtime data\\";
+		String avatRtDataRootPath = AVAT_ROOT_PATH + "\\realtime data\\";
 		String avatOrdersRootPath = AVAT_ROOT_PATH + "\\orders\\";
 		File f1 = new File(avatRecordRootPath);  if(!f1.exists()) f1.mkdirs();
 		File f2 = new File(avatParaRootPath ); if(!f2.exists()) f2.mkdirs();
@@ -566,7 +566,7 @@ public class AVAT {
 				 * 买入条件：
 				 * 		1. 时间是11:00之前；并且
 				 * 		(2.1 当前的avat5D ratio超过2，并且股价上涨超过1.5%；或者
-				 * 		2.2 avat20D ratio超过1，并且股价上涨超过1.5%
+				 * 		2.2 avat20D ratio超过1，并且股价上涨超过1.5%；或者
 				 * 		2.3. 当时的volume超过了昨天全天的volume)
 				 * 		3. turnover 大于一个threshold 
 				 * 		4. 已经买过的股票如果三注码都加满，则不再买入；同一注码重复出现，不再重复下注
@@ -577,7 +577,8 @@ public class AVAT {
 				Date thisTime = new Date(singleRec.timeStamp);
 				if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
 					
-					boolean buy = false;
+					boolean isBuy = false;
+					boolean isShort = false;
 					
 					int buyCond2_1 = 0;
 					int buyCond2_2 = 0;
@@ -587,15 +588,33 @@ public class AVAT {
 					
 					double priceChg = singleRec.currentPrice / avatPrevClose.get(singleRec.stockCode) - 1;
 					
-					if(singleRec.avatRatio5D > avatThld5D && (priceChg >= 0.015))
-						buyCond2_1 = 1;
-					if(singleRec.avatRatio20D > avatThld20D && (priceChg >= 0.015))
-						buyCond2_2 = 1;
-					if(singleRec.volume >= singleRec.prevVolume && thisTime.before(volumeCondEndTime))
+					if(singleRec.avatRatio5D > avatThld5D) {   // 如果股价变动是负的，则short
+						if(priceChg >= 0.015) {
+							buyCond2_1 = 1;
+							isBuy = true;
+						}
+						if(priceChg <= -0.015) {
+							buyCond2_1 = 1;
+							isShort = true;
+						}	
+					}
+						
+					if(singleRec.avatRatio20D > avatThld20D ) {
+						if(priceChg >= 0.015) {
+							buyCond2_1 = 1;
+							isBuy = true;
+						}
+						if(priceChg <= -0.015) {
+							buyCond2_1 = 1;
+							isShort = true;
+						}	
+					}
+					if(singleRec.volume >= singleRec.prevVolume && thisTime.before(volumeCondEndTime) && priceChg > 0)
 						buyCond2_3 = 1;
 					if(singleRec.turnover >= turnoverThld)
 						buyCond3 = 1;
 					
+					isShort =  false; // 先不考虑short
 					//buyCond2_2 = 0;
 					//buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
 					
@@ -643,7 +662,11 @@ public class AVAT {
 						
 						// ----------  其中一半的qty放在best bid上，另一半放在best offer上 --------------
 						Order order1 = new Order();
-						order1.action("BUY");
+						order1.action(Action.BUY);
+						if(isBuy)
+							order1.action(Action.BUY);
+						if(isShort)
+							order1.action(Action.SELL);  // 就是short position
 						order1.orderType(OrderType.LMT);
 						
 						Double buyPrice1 = singleRec.latestBestBid;
@@ -655,7 +678,11 @@ public class AVAT {
 						order1.transmit(transmitToIB);  // false - 只在api平台有这个order
 						
 						Order order2 = new Order();
-						order2.action("BUY");
+						order1.action(Action.BUY);
+						if(isBuy)
+							order2.action(Action.BUY);
+						if(isShort)
+							order2.action(Action.SELL);  // 就是short position
 						order2.orderType(OrderType.LMT);
 						
 						Double buyPrice2 = singleRec.latestBestAsk;
@@ -701,13 +728,15 @@ public class AVAT {
 						thisHoldingMap.put(myOrderH2.getOrderId(), hld2);
 						holdingRecords.put(stockCode, thisHoldingMap);
 						
-						utils.Utils.saveObject(holdingStocks, holdingRecordsPath);
+						
 						
 						orderWriter.write(hld1.toString() + "\n");
 						orderWriter.write(hld2.toString() + "\n");
 						orderWriter.flush();
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
+						
+						//utils.Utils.saveObject(holdingStocks, holdingRecordsPath);  // 目前还有问题，HashMap不是serializable的
 						
 						/*
 						boolean control= false;
