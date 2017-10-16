@@ -56,22 +56,21 @@ public class Test {
 			ObjectOutputStream out = new ObjectOutputStream(fos);
 			
 			
-			Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap();
-			Map<Integer, HoldingRecord> sHolding = new HashMap();
-			HoldingRecord h11 = new HoldingRecord(new MyIOrderHandler(new Contract(), new Order()), 0l);
-			HoldingRecord h12 = new HoldingRecord(new MyIOrderHandler(new Contract(), new Order()), 0l);
-			sHolding.put(1, h11);
-			sHolding.put(2, h12);
-			holdingRecords.put("test", sHolding);
-			holdingRecords.put("test2", sHolding);
+			Map<String, Map<Date,ArrayList<Double>>> hh = new HashMap();
+			Map<Date,ArrayList<Double>> hhh = new HashMap();
+			ArrayList<Double> hhhh = new ArrayList<Double>();
+			hhhh.add(1.0);
+			hhhh.add(2.0);
+			hhh.put(new Date(), hhhh);
+			hh.put("test", hhh);
 			
-			out.writeObject(holdingRecords);
+			out.writeObject(hh);
 			
 			FileInputStream fis = new FileInputStream(p);
 			ObjectInputStream in = new ObjectInputStream(fis);
-			Map<String, Map<Integer, HoldingRecord>>  a = (Map<String, Map<Integer, HoldingRecord>> ) in.readObject();
+			Map<String, Map<Date,ArrayList<Double>>>  a = (Map<String, Map<Date,ArrayList<Double>>> ) in.readObject();
 			
-			System.out.print(a.get("test2"));
+			System.out.print(a.get("test"));
 			
 			
 			

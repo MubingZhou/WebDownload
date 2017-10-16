@@ -236,70 +236,75 @@ public class AvatUtils {
 		try {
 			//  看看之前是否已经完成了该项工作并进行了保存
 			String prevVPath = AVAT_ROOT_PATH + "avat para\\" + todayDate + "\\prev volume.csv";
-			boolean isNeedRedo = false;
+			ArrayList<String> alreadyExist = new ArrayList<String> ();
 			
-			// ------- 已经完成了，只需读取 ---------
+			// ------- 看文件是否存在 ---------
 			File f = new File(prevVPath);
-			if(!f.exists())
-				isNeedRedo = true;
-			
-			if(isNeedRedo) {
-				// ------- 没有完成这项工作，现在完成 --------
-				FileWriter fw = new FileWriter(prevVPath);
-				ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate();
-				
-				Calendar thisCal = (Calendar) allTradingDate.get(0).clone();
-				thisCal.setTime(sdf2.parse(todayDate));
-				Calendar lastCal = allTradingDate.get(allTradingDate.indexOf(thisCal) - 1);
-				
-				Date lastDate = lastCal.getTime();
-				String lastCalStr = sdf2.format(lastCal.getTime());
-				
-				String hist_1min_path = AVAT_ROOT_PATH + "historical 1min data\\" + lastCalStr + "\\";
-				
-				if(auctionData == null || auctionData.size() == 0)
-					getAuctionData();
-				
-				//FileWriter f = new FileWriter("D:\\test.csv");
-				for(Contract con : conArr) {
-					String stock = con.symbol();
-					
-					String path = hist_1min_path + stock + ".csv";
-					
-					Double vol = 0.0;
-					
-					BufferedReader bf = utils.Utils.readFile_returnBufferedReader(path);
-					String line = "";
-					while((line = bf.readLine()) != null ) {
-						String[] lineArr = line.split(",");
-						
-						Double thisVol = Double.parseDouble(lineArr[5]);
-						vol += thisVol;
-					}
-					bf.close();
-					
-					Double auction = auctionData.get(stock).get(lastDate);
-					
-					vol += auction;
-					
-					prevV.put(stock, vol);
-					fw.write(stock + "," + vol + "\n");
-				}
-				fw.close();
-			}else {
-				// --------- 之前已经完成了，只需读取 ---------
-				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(prevVPath);
+			if(f.exists()){
+				// --------- 读取已经存在的  ---------
+				BufferedReader bf0 = utils.Utils.readFile_returnBufferedReader(prevVPath);
 				String line ="";
-				while((line = bf.readLine()) != null) {
+				while((line = bf0.readLine()) != null) {
 					String[] lineArr = line.split(",");
 					String stock = lineArr[0];
 					String volS = lineArr[1];
 					Double vol = Double.parseDouble(volS);
 					
-					System.out.println(stock + "," + vol );
+					//System.out.println(stock + "," + vol );
 					prevV.put(stock, vol);
+					alreadyExist.add(stock);
 				}
 			}
+			
+		
+			// ------- 没有完成这项工作，现在完成 --------
+			FileWriter fw = new FileWriter(prevVPath, true);
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate();
+			
+			Calendar thisCal = (Calendar) allTradingDate.get(0).clone();
+			thisCal.setTime(sdf2.parse(todayDate));
+			Calendar lastCal = allTradingDate.get(allTradingDate.indexOf(thisCal) - 1);
+			
+			Date lastDate = lastCal.getTime();
+			String lastCalStr = sdf2.format(lastCal.getTime());
+			
+			String hist_1min_path = AVAT_ROOT_PATH + "historical 1min data\\" + lastCalStr + "\\";
+			
+			if(auctionData == null || auctionData.size() == 0)
+				getAuctionData();
+			
+			//FileWriter f = new FileWriter("D:\\test.csv");
+			for(Contract con : conArr) {
+				String stock = con.symbol();
+				
+				if(alreadyExist.indexOf(stock) > -1) {
+					continue;
+				}
+				
+				String path = hist_1min_path + stock + ".csv";
+				
+				Double vol = 0.0;
+				
+				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(path);
+				String line = "";
+				while((line = bf.readLine()) != null ) {
+					String[] lineArr = line.split(",");
+					
+					Double thisVol = Double.parseDouble(lineArr[5]);
+					vol += thisVol;
+				}
+				bf.close();
+				
+				Double auction = auctionData.get(stock).get(lastDate);
+				
+				vol += auction;
+				
+				prevV.put(stock, vol);
+				fw.write(stock + "," + vol + "\n");
+				//System.out.println(stock + "," + vol );
+			}
+			fw.close();
+			
 			
 			
 		}catch(Exception e)	{

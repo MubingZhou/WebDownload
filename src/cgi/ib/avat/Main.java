@@ -35,7 +35,7 @@ public class Main {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); todayDate="20171017";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171017";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
