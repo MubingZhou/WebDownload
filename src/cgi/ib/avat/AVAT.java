@@ -940,7 +940,8 @@ public class AVAT {
 	
 	public static void executionMonitor() {
 		try {
-			Double stopProfitLevel= 0.03;
+			Double stopProfitLevel1= 0.015;
+			Double stopProfitLevel2= 0.03;
 			
 			long lastRequestTime = new Date().getTime() - 5000;
 			lastRequestTime=0;
@@ -1047,20 +1048,34 @@ public class AVAT {
 					for(Double buyPrice : thisExeSum.keySet() ) {
 						Double filledQty = thisExeSum.get(buyPrice);
 						
-						Order sellOrder = new Order();
-						sellOrder.action(Action.SELL);
-						sellOrder.lmtPrice(AvatUtils.getCorrectPrice_down(buyPrice * (1 + stopProfitLevel)));
-						sellOrder.totalQuantity(lotSize * Math.floor(filledQty/lotSize));  //
-						sellOrder.transmit(true);
+						Order sellOrder1 = new Order();
+						sellOrder1.action(Action.SELL);
+						Double sellPrice1 = AvatUtils.getCorrectPrice_down(buyPrice * (1 + stopProfitLevel1));
+						sellOrder1.lmtPrice(sellPrice1);
+						Double sellQty1 = lotSize * Math.floor(filledQty/lotSize);
+						sellOrder1.totalQuantity(sellQty1);  //
+						sellOrder1.transmit(true);
 						
+						Order sellOrder2 = new Order();
+						sellOrder2.action(Action.SELL);
+						Double sellPrice2 = AvatUtils.getCorrectPrice_down(buyPrice * (1 + stopProfitLevel2));
+						sellOrder2.lmtPrice(sellPrice2);
+						Double sellQty2 = filledQty - sellQty1;
+						sellOrder2.totalQuantity(sellQty2);  //
+						sellOrder2.transmit(true);
 						
-						MyIOrderHandler sellOrderHandler = new MyIOrderHandler(con, sellOrder);
-						myController.placeOrModifyOrder(con, sellOrder, sellOrderHandler);  // sell order 放了就放了，不用monitor 
+						MyIOrderHandler sellOrderHandler1 = new MyIOrderHandler(con, sellOrder1);
+						myController.placeOrModifyOrder(con, sellOrder1, sellOrderHandler1);  // sell order 放了就放了，不用monitor 
+						MyIOrderHandler sellOrderHandler2 = new MyIOrderHandler(con, sellOrder2);
+						myController.placeOrModifyOrder(con, sellOrder2, sellOrderHandler2);  // sell order 放了就放了，不用monitor 
 					
-						while(sellOrderHandler.getOrderId() == -1) {Thread.sleep(5);}
-						HoldingRecord hld1 = new HoldingRecord(sellOrderHandler, new Date().getTime());
+						while(sellOrderHandler1.getOrderId() == -1 || sellOrderHandler2.getOrderId() == -1) {Thread.sleep(5);}
+						long time = new Date().getTime();
+						HoldingRecord hld1 = new HoldingRecord(sellOrderHandler1, time);
+						HoldingRecord hld2 = new HoldingRecord(sellOrderHandler2, time);
 						
 						orderWriter.write(hld1.toString() + "\n");
+						orderWriter.write(hld2.toString() + "\n");
 						orderWriter.flush();
 					}
 				}

@@ -23,7 +23,7 @@ public class SFC_Main {
 				System.out.println("size = " + stockList.size());
 				//stockList = new ArrayList<String>(); stockList.add("1"); stockList.add("2");
 				//;for(int i = 0; i < stockList.size(); i++){
-				SI_CompareWithSouthBound.generateReport(stockList, "20171003", "yyyyMMdd", "D:\\stock data\\SFC Short Interest\\compare with southbound");
+				SI_CompareWithSouthBound.generateReport(stockList, "20171013", "yyyyMMdd", "D:\\stock data\\SFC Short Interest\\compare with southbound");
 		
 			}
 			
