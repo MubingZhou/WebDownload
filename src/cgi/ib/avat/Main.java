@@ -27,8 +27,8 @@ import com.ib.controller.ApiController.IConnectionHandler;
 
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
-	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
-	//public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
+	//public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
 	
 	public static void main(String[] args) {

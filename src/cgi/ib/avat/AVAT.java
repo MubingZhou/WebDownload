@@ -150,7 +150,7 @@ public class AVAT {
 			
 			// get holdingRecords
 			File f = new File(holdingRecordsPath);
-			if(f.exists())
+			if(f.exists() && false)
 				holdingRecords = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(holdingRecordsPath);
 			
 			scanForAvat();
@@ -736,7 +736,7 @@ public class AVAT {
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
 						
-						utils.Utils.saveObject(holdingStocks, holdingRecordsPath);  // 目前还有问题，HashMap不是serializable的
+						//utils.Utils.saveObject(holdingStocks, holdingRecordsPath);  // 目前还有问题，HashMap不是serializable的
 						
 						/*
 						boolean control= false;
@@ -1052,7 +1052,7 @@ public class AVAT {
 						sellOrder1.action(Action.SELL);
 						Double sellPrice1 = AvatUtils.getCorrectPrice_down(buyPrice * (1 + stopProfitLevel1));
 						sellOrder1.lmtPrice(sellPrice1);
-						Double sellQty1 = lotSize * Math.floor(filledQty/lotSize);
+						Double sellQty1 = lotSize * Math.floor(filledQty*0.5/lotSize);
 						sellOrder1.totalQuantity(sellQty1);  //
 						sellOrder1.transmit(true);
 						
