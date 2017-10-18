@@ -19,6 +19,7 @@ import com.ib.client.Contract;
 import com.ib.client.ExecutionFilter;
 import com.ib.client.Order;
 import com.ib.client.OrderType;
+import com.ib.client.Types.Action;
 import com.ib.client.Types.BarSize;
 import com.ib.client.Types.DurationUnit;
 import com.ib.client.Types.WhatToShow;
@@ -27,15 +28,16 @@ import com.ib.controller.ApiController.IConnectionHandler;
 
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
-	//public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
-	public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
+	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	//public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
 	
+	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171017";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171018";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
@@ -60,7 +62,7 @@ public class Main {
 			int port = 7497;   	// 7497 - paper account
 								// 7496 - real account
 			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
-			int clientId = 1;
+			int clientId = 0;
 			
 			//[start] 
 			MyLogger inLogger = new MyLogger();
@@ -114,7 +116,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171016", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171017", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -221,10 +223,56 @@ public class Main {
 				}
 			}
 			if(mode == 101) {
-				MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
-				myController.takeTwsOrders(myLiveOrder);
+				AVAT.setting(myController, conArr, AVAT_ROOT_PATH);
 				
+				Thread orderMonitorThd = new Thread(new Runnable(){
+					   public void run(){
+						   //ordersMonitor();
+						   AVAT.executionMonitor();
+					   }
+				});
+				orderMonitorThd.start();
 				
+			}
+			if(mode == 102) {
+				//String path  = "Z:\\AVAT\\orders\\20171017\\holdingRecords.javaObj";
+				String path  = "D:\\test.javaObj";
+				
+				Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap<String, Map<Integer, HoldingRecord>>();
+				holdingRecords = (Map<String, Map<Integer, HoldingRecord>> ) utils.Utils.readObject(path)  ;
+				System.out.println(holdingRecords.get("493"));
+				System.out.println(holdingRecords.get("701"));
+				
+				Thread.sleep(1000 * 1000);
+				
+				Contract con = new Contract();
+				con.symbol("700");
+				con.exchange("SEHK");
+				con.secType("STK");
+				con.currency("HKD");
+				
+				Order order = new Order();
+				order.action(Action.BUY);
+				order.totalQuantity(100.0);;
+				order.orderType(OrderType.LMT);
+				order.lmtPrice(350.0);
+				
+				MyIOrderHandler myOrderH1 = new MyIOrderHandler (con, order); 
+				myOrderH1.isTransmit = true;
+				myController.placeOrModifyOrder(con, order, myOrderH1);
+				
+				while(myOrderH1.getOrderId() == -1) {Thread.sleep(5);}
+				
+				HoldingRecord hld1 = new HoldingRecord(myOrderH1, new Date().getTime());
+				
+				Map<Integer, HoldingRecord> thisHoldingMap = new HashMap();
+				
+				thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
+				holdingRecords.put("700", thisHoldingMap);
+				holdingRecords.put("701", thisHoldingMap);
+				
+				utils.Utils.saveObject(holdingRecords, path);
+				System.out.println("DONE");
 			}
 			
 			//============== requesting historical tick data ===============

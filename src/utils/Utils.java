@@ -846,6 +846,8 @@ public class Utils {
 		ObjectOutputStream out = new ObjectOutputStream(fos);
 		
 		out.writeObject(obj);
+		out.close();
+		fos.close();
 	}
 	
 	/**
@@ -855,9 +857,18 @@ public class Utils {
 	 * @throws Exception
 	 */
 	public static Object readObject(String path) throws Exception{
+		File f = new File(path);
+		if(!f.exists())
+			return null;
+		
 		FileInputStream fis = new FileInputStream(path);
 		ObjectInputStream in = new ObjectInputStream(fis);
-		return in.readObject();
+		
+		Object r = in.readObject();
+		fis.close();
+		in.close();
+		
+		return r;
 	}
 	
 	  

@@ -1,19 +1,22 @@
 Regular:
 	(Morning Work) Southbound, CBBC, warrant, 
 	(After market work) booking
-	(Weekly, every Monday) download SB data, outstadning data, SFC short interest data
+	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up
 	
+20171018
 
 
 20171017
 	Outstanding:
-		idea: JPY & N225, correlation and pair trading (spread trding)
-		avat: 	executions no recordings
-				holding records saving
+		idea: JPY & N225, correlation and pair trading (spread trding, OUTSTANDING)
+		avat: 	executions no recordings (DONE)
+				holding records saving (DONE)
+				save prepare variables (DONE, reading and saving objects are very time-consuming, so no need to do this)
+		Others: 2382 technical analysis (DONE)
 	Monitoring:
-		33 (JV), 1533 (A share ipo); 706 (pei gu); 358 (profit alert, eps 0.29, consensus 0.27, but 1 analyst)
-		158 (a share ipo)
+		33 (JV), 1533 (A share ipo); 706 (pei gu, consult karen); 358 (profit alert, eps 0.29, consensus 0.27, but 1 analyst)
+		1958 (a share ipo)
 20171016
 	Outstanding
 		AVAT: sell - 1.5% to sell 50%, another 1.5% to sell the other half (DONE)

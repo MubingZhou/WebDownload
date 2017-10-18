@@ -45,6 +45,7 @@ public class AvatUtils {
 	 */
 	public static Map<String, Map<Date,ArrayList<Double>>> getPrevCrossSectionalAvat(ArrayList<Contract> conArr) {
 		Map<String, Map<Date,ArrayList<Double>>> avatHist = new HashMap();
+		//String avatHistJavaobjPath = AVAT_ROOT_PATH + "\\avat para\\" + todayDate + "\\avatHist.javaobj";
 		try {
 			//String avatHistPath = AVAT_ROOT_PATH + "avat para\\" + todayDate + "\\";
 			
@@ -72,6 +73,7 @@ public class AvatUtils {
 				
 				avatHist.put(stock, thisStockData);
 			}
+			//utils.Utils.saveObject(avatHist, avatHistJavaobjPath);
 		}catch(Exception e) {
 			e.printStackTrace();
 		}

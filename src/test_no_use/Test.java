@@ -51,7 +51,10 @@ public class Test {
 		// TODO Auto-generated method stub
 		try {
 			
-			String p = "D:\\testV.javaobj";
+			String p = "Z:\\AVAT\\orders\\20171017\\holdingRecords.javaobj";
+			//String p = "D:\\test.javaobj";
+			
+			/*
 			FileOutputStream fos = new FileOutputStream(p);
 			ObjectOutputStream out = new ObjectOutputStream(fos);
 			
@@ -65,14 +68,39 @@ public class Test {
 			hh.put("test", hhh);
 			
 			out.writeObject(hh);
+			hh.put("test1", hhh);
+			out.close();
+			fos.close();
+			
+			
+			FileOutputStream fos2 = new FileOutputStream(p);
+			ObjectOutputStream out2 = new ObjectOutputStream(fos2);
+			out2.writeObject(hh);
+			
 			
 			FileInputStream fis = new FileInputStream(p);
 			ObjectInputStream in = new ObjectInputStream(fis);
-			Map<String, Map<Date,ArrayList<Double>>>  a = (Map<String, Map<Date,ArrayList<Double>>> ) in.readObject();
+			//Map<String, Map<Integer, HoldingRecord>>   a = (HashMap<String, Map<Integer, HoldingRecord>>  ) utils.Utils.readObject(p);
+			Map<String, Map<Integer, HoldingRecord>> a = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(p);
 			
-			System.out.print(a.get("test"));
+			System.out.print(a.get("493"));
 			
+			in.close();
+			fis.close();
+			*/
 			
+			Thread t = new Thread(new Runnable(){
+				   public void run(){
+					   try {
+							Thread.sleep(1000 * 3);
+							System.out.println("2");
+						}catch(Exception e) {
+							logger.error("           Can't log holding records!");
+						}
+				   }
+				});
+			t.start();
+			System.out.println("1");
 			
 		}catch(Exception e) {
 			e.printStackTrace();

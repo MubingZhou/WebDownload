@@ -68,7 +68,7 @@ public class AVAT {
 	//private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
 	public static boolean isStartOrders = true; // 是否开始监视order并落单
 	private static int isLotSizeMapToUpdate = 0;  // lot size map是否需要升级
-	private static Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap();  // String是stock code, Integer是order id（只存buy order）
+	private static Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap<String, Map<Integer, HoldingRecord>>();  // String是stock code, Integer是order id（只存buy order）
 	private static String holdingRecordsPath = "";  // 存储 holdingRecords 的路径
 	private static String orderWriterPath ;
 	private static FileWriter orderWriter;
@@ -150,8 +150,14 @@ public class AVAT {
 			
 			// get holdingRecords
 			File f = new File(holdingRecordsPath);
-			if(f.exists() && false)
-				holdingRecords = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(holdingRecordsPath);
+			if(f.exists()) {
+				try {
+					holdingRecords = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(holdingRecordsPath);
+				}catch(Exception e) {
+					logger.error("holdingRecords cannot be read!");
+				}
+			}
+				
 			
 			scanForAvat();
 			logger.info("output done");
@@ -167,54 +173,56 @@ public class AVAT {
 	}
 	
 	private static void prepare() {
-		allTradingDate = utils.Utils.getAllTradingDate(TRADING_DATE_PATH);
-		
-		// ------- avat - prepare historical avat --------
-		AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
-		logger.info("prepare prev cross setional avat - done");
 		try {
-			//Thread.sleep(1000 * 10000000);
+			allTradingDate = utils.Utils.getAllTradingDate(TRADING_DATE_PATH);
+			
+			// ------- avat - prepare historical avat --------
+			AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
+			logger.info("prepare prev cross setional avat - done");
+			
+			// ------- avat - historical avat ---------
+			avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
+			logger.info("get prev cross setional avat - done");
+			
+				//Thread.sleep(1000 * 10000000);
+			
+			// ------- avat - yesterday close ---------
+			avatPrevClose = AvatUtils.getPrevClose();
+			logger.info("get prev close - done");
+			
+			// ------- avat - industry ---------
+			ArrayList<Object> data = AvatUtils.getIndustry();
+			avatIndustry = (Map<String, String>) data.get(0);
+			avatIndustry_byIndustry = (Map<String, ArrayList<String>>) data.get(1);  // industry - stock list
+			logger.info("get industry - done");
+			
+			// ------ avat index members ----------
+			avatIndexMembers = AvatUtils.getIndexMembers();
+			logger.info("get index memebers - done");
+			
+			// ------- avat time path by 1min ---------
+			avatTimePath = AvatUtils.getTimePath();
+			logger.info("get time path - done");
+			
+			// -------- avat get today's auction --------
+			//Map<String, Double> todayAuction = AvatUtils.getTodayAuction();
+			
+			// ------ avat - get previous day's volume --------
+			prevVolume = AvatUtils.getPreviousVolume(conArr);   // 这个volume不包好unreportable的volume
+			
+			// ------ avat lot size --------
+			avatLotSize = AvatUtils.getLotSize();
+			logger.info("get lot size - done");
+			
+			// ------- 设置弹出窗口的容器 ----------
+		   frame.setLocation(0,0);
+		   frame.setSize(300, 700);
+		   frame.setVisible(true);
+	   
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		// ------- avat - historical avat ---------
-		avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
-		logger.info("get prev cross setional avat - done");
-		
-		// ------- avat - yesterday close ---------
-		avatPrevClose = AvatUtils.getPrevClose();
-		logger.info("get prev close - done");
-		
-		// ------- avat - industry ---------
-		ArrayList<Object> data = AvatUtils.getIndustry();
-		avatIndustry = (Map<String, String>) data.get(0);
-		avatIndustry_byIndustry = (Map<String, ArrayList<String>>) data.get(1);  // industry - stock list
-		logger.info("get industry - done");
-		
-		// ------ avat index members ----------
-		avatIndexMembers = AvatUtils.getIndexMembers();
-		logger.info("get index memebers - done");
-		
-		// ------- avat time path by 1min ---------
-		avatTimePath = AvatUtils.getTimePath();
-		logger.info("get time path - done");
-		
-		// -------- avat get today's auction --------
-		//Map<String, Double> todayAuction = AvatUtils.getTodayAuction();
-		
-		// ------ avat - get previous day's volume --------
-		prevVolume = AvatUtils.getPreviousVolume(conArr);   // 这个volume不包好unreportable的volume
-		
-		// ------ avat lot size --------
-		avatLotSize = AvatUtils.getLotSize();
-		logger.info("get lot size - done");
-		
-		// ------- 设置弹出窗口的容器 ----------
-	   frame.setLocation(0,0);
-	   frame.setSize(300, 700);
-	   frame.setVisible(true);
 	}
 	
 	/**
@@ -287,15 +295,15 @@ public class AVAT {
 					// find the nearest date
 					Map<Date,ArrayList<Double>> avatHist_stock = avatHist.get(stock);
 					if(avatHist_stock == null) {   // no such stock
-						logger.info("[real time data] stock=" + stock + " no such stock!");
+						logger.debug("[real time data] stock=" + stock + " no such stock!");
 						continue;
 					}
 					if(trdRtVolume == 0.0) {
-						logger.info("[real time data] stock=" + stock + " zero volume!");
+						logger.debug("[real time data] stock=" + stock + " zero volume!");
 						continue;
 					}
 					if(price == 0.0) {
-						logger.info("[real time data] stock=" + stock + " zero price!");
+						logger.debug("[real time data] stock=" + stock + " zero price!");
 						continue;
 					}
 					
@@ -578,7 +586,7 @@ public class AVAT {
 				if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
 					
 					boolean isBuy = false;
-					boolean isShort = false;
+					//boolean isShort = false;
 					
 					int buyCond2_1 = 0;
 					int buyCond2_2 = 0;
@@ -593,10 +601,7 @@ public class AVAT {
 							buyCond2_1 = 1;
 							isBuy = true;
 						}
-						if(priceChg <= -0.015) {
-							buyCond2_1 = 1;
-							isShort = true;
-						}	
+							
 					}
 						
 					if(singleRec.avatRatio20D > avatThld20D ) {
@@ -604,17 +609,14 @@ public class AVAT {
 							buyCond2_1 = 1;
 							isBuy = true;
 						}
-						if(priceChg <= -0.015) {
-							buyCond2_1 = 1;
-							isShort = true;
-						}	
+						
 					}
 					if(singleRec.volume >= singleRec.prevVolume && thisTime.before(volumeCondEndTime) && priceChg > 0)
 						buyCond2_3 = 1;
 					if(singleRec.turnover >= turnoverThld)
 						buyCond3 = 1;
 					
-					isShort =  false; // 先不考虑short
+					//isShort =  false; // 先不考虑short
 					//buyCond2_2 = 0;
 					//buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
 					
@@ -623,7 +625,7 @@ public class AVAT {
 					
 					Map<Integer, HoldingRecord> thisHoldingMap = holdingRecords.get(singleRec.stockCode);
 					// ---------- 是否出现buy signal------------
-					if(buyCond2_1 == 1 || buyCond2_2 == 1 || buyCond2_3 == 1) {
+					if((buyCond2_1 == 1 || buyCond2_2 == 1 || buyCond2_3 == 1) && priceChg > 0) {
 						int thisHoldingBuyCond2_1 = 0;
 						int thisHoldingBuyCond2_2 = 0;
 						int thisHoldingBuyCond2_3 = 0;
@@ -663,10 +665,6 @@ public class AVAT {
 						// ----------  其中一半的qty放在best bid上，另一半放在best offer上 --------------
 						Order order1 = new Order();
 						order1.action(Action.BUY);
-						if(isBuy)
-							order1.action(Action.BUY);
-						if(isShort)
-							order1.action(Action.SELL);  // 就是short position
 						order1.orderType(OrderType.LMT);
 						
 						Double buyPrice1 = singleRec.latestBestBid;
@@ -679,10 +677,6 @@ public class AVAT {
 						
 						Order order2 = new Order();
 						order1.action(Action.BUY);
-						if(isBuy)
-							order2.action(Action.BUY);
-						if(isShort)
-							order2.action(Action.SELL);  // 就是short position
 						order2.orderType(OrderType.LMT);
 						
 						Double buyPrice2 = singleRec.latestBestAsk;
@@ -714,14 +708,17 @@ public class AVAT {
 						if(buyTracer[0] == 1) {
 							hld1.buyCond2_1 = 1;
 							hld2.buyCond2_1 = 1;
+							hld1.buyReason += "avat5D;";
 						}
 						if(buyTracer[1] == 1) {
 							hld1.buyCond2_2 = 1;
 							hld2.buyCond2_2 = 1;
+							hld1.buyReason += "avat20D;";
 						}
 						if(buyTracer[2] == 1) {
 							hld1.buyCond2_3 = 1;
 							hld2.buyCond2_3 = 1;
+							hld1.buyReason += "volume;";
 						}
 							
 						thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
@@ -736,7 +733,6 @@ public class AVAT {
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
 						
-						//utils.Utils.saveObject(holdingStocks, holdingRecordsPath);  // 目前还有问题，HashMap不是serializable的
 						
 						/*
 						boolean control= false;
@@ -787,7 +783,6 @@ public class AVAT {
 						*/
 					}
 				}  // 买入信号的if结束
-				
 				/*
 				 * --------------- 卖出信号 ---------------
 				 * 卖出条件：
@@ -846,6 +841,18 @@ public class AVAT {
 				}*/
 					
 			}
+			
+			Thread t = new Thread(new Runnable(){
+				   public void run(){
+					   try {
+							utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
+							logger.info("            logging holding records done!");
+						}catch(Exception e) {
+							logger.error("           Can't log holding records!");
+						}
+				   }
+				});
+			t.start();
 			
 			logger.info("---------- scanForOrders ENDS ---------");
 		}catch(Exception e) {
@@ -942,6 +949,7 @@ public class AVAT {
 		try {
 			Double stopProfitLevel1= 0.015;
 			Double stopProfitLevel2= 0.03;
+			long waitingSec = 30;
 			
 			long lastRequestTime = new Date().getTime() - 5000;
 			lastRequestTime=0;
@@ -954,6 +962,7 @@ public class AVAT {
 			Date dayEndDate = sdf.parse(dayEndStr);
 			
 			MyITradeReportHandler myTradeReportHandler = new MyITradeReportHandler(executionsRecPath);
+			logger.info("getting into execution monitor....");
 			while(true) {
 				// ---------- MyITradeReportHandler的一些setting -----------
 				ExecutionFilter filter = new ExecutionFilter();
@@ -962,8 +971,8 @@ public class AVAT {
 					filter.time(sdf.format(new Date(lastRequestTime)));
 				lastRequestTime = new Date().getTime();
 				myTradeReportHandler.initialize();
+				myTradeReportHandler.isCalledByMonitor = 1;
 				myController.reqExecutions(filter, myTradeReportHandler);
-				myTradeReportHandler.isCalledByMonitor = 0;
 				
 				Date thisNow = new Date();
 				
@@ -971,11 +980,21 @@ public class AVAT {
 				if(thisNow.after(dayEndDate))
 					break;
 				
+				int count = 0;
 				while(true) {
 					if(myTradeReportHandler.isEnd == 1)
 						break;
+					count ++;
+					if(count >= 500)
+						break;
 					Thread.sleep(10);
 				}
+				if(count >= 500) {
+					logger.info("Execution Monitor, no executions....");
+					Thread.sleep(waitingSec * 1000);
+					continue;
+				}
+					
 				
 				Map<String, Map<Double, Double>> executionSummary = new HashMap ();  // String - stock code; 1st Double - buy order price; 2nd Double - cumulative filled qty
 				// ---------- 读取MyITradeReportHandler返回的数据 ---------------
@@ -1074,43 +1093,14 @@ public class AVAT {
 						HoldingRecord hld1 = new HoldingRecord(sellOrderHandler1, time);
 						HoldingRecord hld2 = new HoldingRecord(sellOrderHandler2, time);
 						
-						orderWriter.write(hld1.toString() + "\n");
+						orderWriter.write(hld1.toString() + "\n");  // no need to add into holding records
 						orderWriter.write(hld2.toString() + "\n");
 						orderWriter.flush();
 					}
-				}
-				
-				
-				// -------  如果时间在11点之后，所有的open buy order都要cancel ---------
-				if(thisNow.after(cancelOrderStartDate)  && false) {
-					MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler();
-					myController.reqLiveOrders(myLiveOrder);
-					
-					while(true) {
-						if(myLiveOrder.isEnd) {
-							break;
-						}
-						Thread.sleep(10);
-					}
-					
-					for(ArrayList<Object> orderStatus : myLiveOrder.orderStatusArr) {
-						int orderId = (int) orderStatus.get(0);
-						
-						for(ArrayList<Object> openOrder : myLiveOrder.openOrderArr) {
-							Order order = (Order) openOrder.get(1);
-							if(order.orderId() == orderId) {
-								if(order.action().equals(Action.BUY))
-									myController.cancelOrder(orderId);
-								break;
-							}
-						}
-					}
-				}
-				
-				
+				}		
 				// --------- update完records之后，还要根据成交的情况来放sell orders --------------
 				
-				Thread.sleep(1000 * 30);  // wait for 30 sec
+				Thread.sleep(1000 * waitingSec);  // wait for 30 sec
 			}
 			
 		}catch(Exception e) {

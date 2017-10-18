@@ -44,6 +44,7 @@ public class HoldingRecord  implements Serializable {
 	public int buyCond2_1 = 0;
 	public int buyCond2_2 = 0;
 	public int buyCond2_3 = 0;
+	public String buyReason = "";
 	
 	// order handler 
 	public MyIOrderHandler buyOrderHanlder = null;
@@ -74,7 +75,7 @@ public class HoldingRecord  implements Serializable {
 	public String toString() {
 		SimpleDateFormat sdf = new SimpleDateFormat ("yyyyMMdd HH:mm:ss"); 
 		String s = stockCode + "," + sdf.format(new Date(orderTimeStamp)) + "," + buyOrderHanlder.order.action() + ","
-				+ orderPrice + "," + orderQty + "," + orderId + "," + status.toString() ;
+				+ orderPrice + "," + orderQty + "," + orderId + "," + status.toString() + "," + buyReason;
 		
 		return s;
 	}

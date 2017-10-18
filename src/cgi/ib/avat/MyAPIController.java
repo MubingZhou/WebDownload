@@ -306,7 +306,7 @@ public class MyAPIController extends ApiController{
 	// ---------------------------------------- Trade reports ----------------------------------------
     public void reqExecutions( ExecutionFilter filter, MyITradeReportHandler handler) {
 		super.reqExecutions(filter, handler);
-		handler.isCalledByMonitor = 1;
+		//handler.isCalledByMonitor = 1;
     }
 
 	

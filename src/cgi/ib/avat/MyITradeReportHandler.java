@@ -29,8 +29,10 @@ public class MyITradeReportHandler implements ITradeReportHandler {
 		
 		try {
 			fileWriter = new FileWriter(executionRecordPath, true);
+			logger.info("Execution file writer created~~~");
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.info("Execution file writer failed...");
 		}
 	}
 	
