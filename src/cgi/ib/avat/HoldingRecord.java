@@ -71,6 +71,9 @@ public class HoldingRecord  implements Serializable {
 		this.orderId = handler.getOrderId();
 	}
 	
+	public HoldingRecord() {
+		
+	}
 	
 	public String toString() {
 		SimpleDateFormat sdf = new SimpleDateFormat ("yyyyMMdd HH:mm:ss"); 
@@ -78,5 +81,41 @@ public class HoldingRecord  implements Serializable {
 				+ orderPrice + "," + orderQty + "," + orderId + "," + status.toString() + "," + buyReason;
 		
 		return s;
+	}
+	
+	/**
+	 * 将holding record转换为逗号分隔符的形式的字符串
+	 * @return
+	 */
+	public String toSaveToString() {
+		return stockCode + "," 
+				+ orderTimeStamp + "," + orderPrice + "," + orderQty + "," + orderId + ","
+				+ filledTimeStamp + "," + avgFillPrice + "," + lastFillPrice + "," + filledQty + ","
+				+ buyCond2_1 + "," + buyCond2_2 + "," + buyCond2_3 + "," + buyReason;   // 共13项
+ 	}
+	
+	public void recoverFromString(String s) {
+		String[]  arr = s.split(",");
+		if(arr.length != 13)
+			System.out.println("[HoldingRecord - recoverFromString] string size not correct!");
+		
+		try {
+			this.stockCode = arr[0];
+			this.orderTimeStamp = Long.parseLong(arr[1]);
+			this.orderPrice = Double.parseDouble(arr[2]);
+			this.orderQty = Double.parseDouble(arr[3]);
+			this.orderId = Integer.parseInt(arr[4]);
+			this.filledTimeStamp = Long.parseLong(arr[5]);
+			this.avgFillPrice = Double.parseDouble(arr[6]);
+			this.lastFillPrice = Double.parseDouble(arr[7]);
+			this.filledQty = Double.parseDouble(arr[8]);
+			this.buyCond2_1 = Integer.parseInt(arr[9]);
+			this.buyCond2_2 = Integer.parseInt(arr[10]);
+			this.buyCond2_3 = Integer.parseInt(arr[11]);
+			this.buyReason = arr[12];
+		}catch(Exception e) {
+			System.out.println("[HoldingRecord - recoverFromString] Unknown error!");
+			e.printStackTrace();
+		}
 	}
 }

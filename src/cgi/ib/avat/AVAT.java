@@ -1088,7 +1088,17 @@ public class AVAT {
 						MyIOrderHandler sellOrderHandler2 = new MyIOrderHandler(con, sellOrder2);
 						myController.placeOrModifyOrder(con, sellOrder2, sellOrderHandler2);  // sell order 放了就放了，不用monitor 
 					
-						while(sellOrderHandler1.getOrderId() == -1 || sellOrderHandler2.getOrderId() == -1) {Thread.sleep(5);}
+						int count2 = 0;
+						while(sellOrderHandler1.getOrderId() == -1 || sellOrderHandler2.getOrderId() == -1) {
+							Thread.sleep(5); 
+							count2++;
+							if(count2 >= 1000) {
+								logger.info("[Placing sell order no feedbacks...] stock=" + con.symbol() + " price=" + sellOrder1.lmtPrice() + "&" + sellOrder2.lmtPrice() + " qty=" + sellOrder1.totalQuantity() + "&" + sellOrder2.totalQuantity());
+								break;
+							}
+								
+						}
+						
 						long time = new Date().getTime();
 						HoldingRecord hld1 = new HoldingRecord(sellOrderHandler1, time);
 						HoldingRecord hld2 = new HoldingRecord(sellOrderHandler2, time);

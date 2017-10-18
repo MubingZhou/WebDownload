@@ -29,8 +29,9 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 					System.out.println("=========== i = " + i + "/" + stockCodeList.size() + " " + stockCode + " ================");
 					
 					String fileName = stockCode + ".csv";
-					String filePath = "D:\\stock data\\stock hist data - webb";
-					boolean isOK = getHistoricalData(stockCode, fileName, filePath);
+					//String outFilePath = "D:\\stock data\\stock hist data - webb";
+					String outFilePath = "T:\\Mubing\\stock data\\stock hist data - webb";
+					boolean isOK = getHistoricalData(stockCode, fileName, outFilePath);
 					if(!isOK) {
 						failedList.add(stockCode);
 					}
@@ -145,4 +146,6 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 		
 		return isOK;
 	}
+
+	//public static ArrayList<String> getHistoricalDataSinceDate(Str)
 }
