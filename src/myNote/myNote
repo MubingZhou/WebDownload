@@ -3,9 +3,15 @@ Regular:
 	(After market work) booking
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up
+	
+	
+20171023 
+	Outstanding:
+		update autions and prevclose
+	
 20171020
 	Outstanding:
-		Check # of limit ups this year, return distribution after 1st limit up
+		Check # of limit ups this year, return distribution after 1st limit up (DONE)
 
 20171019
 	Outstanding:

@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 public class DataGetter extends myAbstract.DataFetch {
-	public static String STOCK_DATA_PATH = "D:\\stock data\\stock hist data - webb\\";
+	public static String STOCK_DATA_PATH = "Z:\\Mubing\\stock data\\stock hist data - webb\\";
 	
 	public static ArrayList<String> getStockDataLine(String stockCode, String date, String dateFormat) throws Exception{
 		// ======= deal with read path ===========

@@ -73,7 +73,7 @@ public class AVAT {
 	private static String holdingRecordsPath = "";  // 存储 holdingRecords 的路径
 	private static String orderWriterPath ;
 	private static FileWriter orderWriter;
-	private static boolean transmitToIB = true;  // 是否transmit 到 IB
+	private static boolean transmitToIB = false;  // 是否transmit 到 IB server
 	
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {

@@ -43,7 +43,8 @@ public class Main {
 			 * 1 - full backtesting
 			 * 2 - drawdown analysis
 			 * 3 - reshape & calculate avg volume & turnover
-			 * 4 - reshape stock outstanding shares info
+			 * 4 - reshape stock outstanding shares info - undone
+			 * 先download数据（包括outstanding shares的数据和southbound的数据），再run mode 3，然后再run mode 1
 			 */
 			
 			if(mode == 0) {
@@ -66,7 +67,7 @@ public class Main {
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - filter";
+				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - normal";
 				//String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
 				File f = new File(portFilePath);
 				f.mkdir();
@@ -90,8 +91,8 @@ public class Main {
 					rebalDateArr .add("20170601");
 					rebalDateArr .add("20170703");
 					rebalDateArr .add("20170801");*/
-					rebalDateArr .add("20170901");
 					rebalDateArr .add("20170929");
+					rebalDateArr .add("20171017");
 				}else if(rebalDate == 1) {
 					rebalDateArr .add("20160715");
 					rebalDateArr .add("20160815");
@@ -142,7 +143,7 @@ public class Main {
 				
 				
 				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
-				int idea = 2;
+				int idea = 0;
 				
 				int lastNdays = 20;     // for idea1 only
 				
@@ -154,11 +155,11 @@ public class Main {
 				if(idea == 1 || idea == 2) {
 					/*
 					 * =================================================================
-					 * idea1：在每个rebalancing date，计算每只股票前lastNdays天每一天的ranking，加总之后求均值，再根据这个均值的ranking来选股票
+					 * idea1 (average)：在每个rebalancing date，计算每只股票前lastNdays天每一天的ranking，加总之后求均值，再根据这个均值的ranking来选股票
 					 */
 					/*
 					 * ===============================================================
-					 * idea2: 给每只股票每天设一个filter1，如果当天的southbound的share是增加的，则这个filter1设为1；如果过去30天中的filter1大于0的天数大于15，则另一个filter2设为1
+					 * idea2 (filter): 给每只股票每天设一个filter1，如果当天的southbound的share是增加的，则这个filter1设为1；如果过去30天中的filter1大于0的天数大于15，则另一个filter2设为1
 					 * 在rebalancing时，只考虑filter2大于0的情况
 					 */
 					
@@ -371,7 +372,7 @@ public class Main {
 				Backtesting bt = new Backtesting();
 				//bt.startDate = "20160630";
 				bt.startDate = rebalDateArr.get(0);
-				bt.endDate = "20170913";
+				bt.endDate = "20171017";
 				bt.tradingCost = 0.000;
 				
 				bt.rotationalTrading(dateArr, "yyyyMMdd", data);
@@ -534,7 +535,7 @@ public class Main {
 				}
 				
 				// write data
-				String stockDirPath = "D:\\stock data\\stock hist data - webb\\";
+				String stockDirPath = stockPrice.DataGetter.STOCK_DATA_PATH;
 				File f = new File(stockDirPath );
 				String[] fileList = f.list();
 				for(int i = 0; i < fileList.length; i++) {
@@ -605,7 +606,7 @@ public class Main {
 			
 			}
 			
-			if(mode == 4) {  // reshaping outstanding shares info
+			if(mode == 4) {  // reshaping outstanding shares info - undone
 				logger.info("============== reshaping outstanding shares info ===============");
 				
 				Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期

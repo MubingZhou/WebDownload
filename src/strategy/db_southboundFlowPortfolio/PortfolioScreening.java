@@ -46,7 +46,7 @@ public class PortfolioScreening {
 			date = sdf.format(benchCal.getTime());
 			
 			int ind = allTradingDate.indexOf(benchCal);
-			Calendar oneMonthBefore = allTradingDate.get(ind - 20);
+			Calendar oneMonthBefore = allTradingDate.get(ind - 6);
 			Calendar threeMonthBefore = allTradingDate.get(ind - 60);
 			
 			// ========= get stock free float pct ========
@@ -216,7 +216,7 @@ public class PortfolioScreening {
 					try {
 						stock.osShares_today = Double.parseDouble(todayOsSharesStr);
 					}catch(Exception e) {
-						
+						e.printStackTrace();
 					}
 					
 					try {
@@ -230,7 +230,7 @@ public class PortfolioScreening {
 					try {
 						stock.osValue_today = Double.parseDouble(todayOsValueStr);
 					}catch(Exception e) {
-						
+						e.printStackTrace();
 					}
 					
 					try {
@@ -258,7 +258,7 @@ public class PortfolioScreening {
 					try {
 						stock.osShares_1MBefore = Double.parseDouble(oneMonthBefore_osShareStr); 
 					}catch(Exception e) {
-						
+						e.printStackTrace();
 					}
 					try {
 						stock.osShares_freefloat_1MBefore = stock.osShares_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
@@ -270,7 +270,7 @@ public class PortfolioScreening {
 					try {
 						stock.osValue_1MBefore = Double.parseDouble(oneMonthBefore_osValueStr); 
 					}catch(Exception e) {
-						
+						e.printStackTrace();
 					}
 					try {
 						stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
@@ -452,7 +452,7 @@ public class PortfolioScreening {
 						ffValue_1MBefore = s.osValue_1MBefore * Double.parseDouble(ffPctMap.get(s.stockCode));
 						ffShare_1MBefore =s.osShares_1MBefore * Double.parseDouble(ffPctMap.get(s.stockCode));
 					}catch(Exception e) {
-						
+						e.printStackTrace();
 					}
 					
 					Double SB_over_ff_today_shares = s.SB_today_holding / ffShare;

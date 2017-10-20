@@ -49,7 +49,7 @@ public class Main {
 			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
 			// ------------ MODE -----------
-			int mode = 1;
+			int mode = 0;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
@@ -83,7 +83,7 @@ public class Main {
 			if(myClient.isConnected()){
 				System.out.println("Is connected!");
 				try {
-					Thread.sleep(1000 * 0);   
+					Thread.sleep(1000 * 3);   
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -117,7 +117,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171019", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171020", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -279,7 +279,7 @@ public class Main {
 				System.out.println("");
 				for(int i = 0; i < 405; i++) {
 					Contract con = conArr.get(i);
-					MyITopMktDataHandler myTop = new MyITopMktDataHandler(con.symbol(), AVAT_ROOT_PATH, "20171019");
+					MyITopMktDataHandler myTop = new MyITopMktDataHandler(con.symbol(), AVAT_ROOT_PATH, "20171020");
 					//myTop.fileWriterMainPath = AVAT_ROOT_PATH + "real time data\\";
 					//topMktDataHandlerArr.add(myTop);
 					//myController.reqMktDataType(MarketDataType.REALTIME);
@@ -292,6 +292,7 @@ public class Main {
 					 */
 					logger.info("Subscribe top market data. Stock=" + con.symbol() + " i=" + i);
 				}
+				/*
 				//orderMonitorThd.start();
 				   Contract con1 = new Contract();
 					con1.localSymbol("EUR.USD");
@@ -321,6 +322,7 @@ public class Main {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					*/
 			}
 			if(mode == 104) {
 				AVAT.setting(myController, conArr, AVAT_ROOT_PATH);

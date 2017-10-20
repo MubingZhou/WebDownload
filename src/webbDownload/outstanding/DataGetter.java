@@ -57,7 +57,7 @@ public class DataGetter extends myAbstract.DataFetch{
 				
 					if(counter == 1){ // the 1st data line
 						if(!benchCal.before(thisCal))
-							dataLine.addAll(Arrays.asList(lineArr));
+							dataLine.addAll(Arrays.asList(lineArr));  // 如果要求日期在数据最晚日期的后面，则返回最晚的数据
 					
 					}else {
 						String prevDateStr = prevDataLine[0];
