@@ -51,56 +51,7 @@ public class Test {
 		// TODO Auto-generated method stub
 		try {
 			
-			String p = "Z:\\AVAT\\orders\\20171017\\holdingRecords.javaobj";
-			//String p = "D:\\test.javaobj";
-			
-			/*
-			FileOutputStream fos = new FileOutputStream(p);
-			ObjectOutputStream out = new ObjectOutputStream(fos);
-			
-			
-			Map<String, Map<Date,ArrayList<Double>>> hh = new HashMap();
-			Map<Date,ArrayList<Double>> hhh = new HashMap();
-			ArrayList<Double> hhhh = new ArrayList<Double>();
-			hhhh.add(1.0);
-			hhhh.add(2.0);
-			hhh.put(new Date(), hhhh);
-			hh.put("test", hhh);
-			
-			out.writeObject(hh);
-			hh.put("test1", hhh);
-			out.close();
-			fos.close();
-			
-			
-			FileOutputStream fos2 = new FileOutputStream(p);
-			ObjectOutputStream out2 = new ObjectOutputStream(fos2);
-			out2.writeObject(hh);
-			
-			
-			FileInputStream fis = new FileInputStream(p);
-			ObjectInputStream in = new ObjectInputStream(fis);
-			//Map<String, Map<Integer, HoldingRecord>>   a = (HashMap<String, Map<Integer, HoldingRecord>>  ) utils.Utils.readObject(p);
-			Map<String, Map<Integer, HoldingRecord>> a = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(p);
-			
-			System.out.print(a.get("493"));
-			
-			in.close();
-			fis.close();
-			*/
-			
-			Thread t = new Thread(new Runnable(){
-				   public void run(){
-					   try {
-							Thread.sleep(1000 * 3);
-							System.out.println("2");
-						}catch(Exception e) {
-							logger.error("           Can't log holding records!");
-						}
-				   }
-				});
-			t.start();
-			System.out.println("1");
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyyMMdd"); 
 			
 		}catch(Exception e) {
 			e.printStackTrace();

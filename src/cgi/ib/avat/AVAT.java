@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -106,7 +107,7 @@ public class AVAT {
 		File f14 = new File(avatOrdersPath); if(!f14.exists()) f14.mkdirs();
 		
 		
-		holdingRecordsPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\holdingRecords.javaObj";
+		holdingRecordsPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\holdingRecords.csv";
 	}
 	
 	public static void start() {
@@ -152,7 +153,8 @@ public class AVAT {
 			File f = new File(holdingRecordsPath);
 			if(f.exists()) {
 				try {
-					holdingRecords = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(holdingRecordsPath);
+					//holdingRecords = (Map<String, Map<Integer, HoldingRecord>>) utils.Utils.readObject(holdingRecordsPath);
+					recoverTradingRecord();
 				}catch(Exception e) {
 					logger.error("holdingRecords cannot be read!");
 				}
@@ -238,9 +240,9 @@ public class AVAT {
 			/*
 			 * Generic tick type:
 			 * 233 - RT volume
-			 * 375 - RT trade volume
+			 * 375 - RT trade volumes
 			 */
-			
+			logger.info("Subscribe top market data. Stock=" + con.symbol() + " i=" + i);
 		}
 	}
 	
@@ -568,7 +570,6 @@ public class AVAT {
 			
 			// --------- 浏览各个AvatRecordSingleStock ----------- 
 			for(AvatRecordSingleStock singleRec : avatRecord) {
-				
 				/*
 				 * ------- 先看是否有买入信号 ---------
 				 * 买入条件：
@@ -581,7 +582,7 @@ public class AVAT {
 				 * 
 				 * 	其中2.1-2.3每满足一个条件就加一注码
 				 */
-				
+			
 				Date thisTime = new Date(singleRec.timeStamp);
 				if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
 					
@@ -606,7 +607,7 @@ public class AVAT {
 						
 					if(singleRec.avatRatio20D > avatThld20D ) {
 						if(priceChg >= 0.015) {
-							buyCond2_1 = 1;
+							buyCond2_2 = 1;
 							isBuy = true;
 						}
 						
@@ -705,22 +706,25 @@ public class AVAT {
 						if(thisHoldingMap == null)
 							thisHoldingMap = new HashMap<Integer, HoldingRecord>();
 						
+						String buyReason = "";
 						if(buyTracer[0] == 1) {
 							hld1.buyCond2_1 = 1;
 							hld2.buyCond2_1 = 1;
-							hld1.buyReason += "avat5D;";
+							buyReason += "avat5D;";
 						}
 						if(buyTracer[1] == 1) {
 							hld1.buyCond2_2 = 1;
 							hld2.buyCond2_2 = 1;
-							hld1.buyReason += "avat20D;";
+							buyReason += "avat20D;";
 						}
 						if(buyTracer[2] == 1) {
 							hld1.buyCond2_3 = 1;
 							hld2.buyCond2_3 = 1;
-							hld1.buyReason += "volume;";
+							buyReason += "volume;";
 						}
-							
+						hld1.buyReason = buyReason ;
+						hld2.buyReason = buyReason ;
+						
 						thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
 						thisHoldingMap.put(myOrderH2.getOrderId(), hld2);
 						holdingRecords.put(stockCode, thisHoldingMap);
@@ -733,54 +737,6 @@ public class AVAT {
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
 						
-						
-						/*
-						boolean control= false;
-						if(!control) {
-							HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
-							hld.orderId = myOrderH.orderId;
-							
-							holdingRecords.put(con.symbol(), hld);  // 存储holding
-							
-							orderWriter.write(hld.toString() + "\n");
-							orderWriter.flush();
-						}
-						while(control) {
-							if(myOrderH.isSubmitted == 1) {
-								logger.info("Order submitted! stock=" + con.symbol() + " " + orderQty + " " + order1.action() + " " + order1.lmtPrice() + " scanTime" + sdf.format(now) + " realTime=" + sdf.format(new Date()));
-								HoldingRecord hld = new HoldingRecord(con.symbol(), con, now.getTime(), buyPrice, orderQty);
-								hld.orderId = myOrderH.orderId;
-								
-								holdingRecords.put(con.symbol(), hld);  // 存储holding
-								
-								orderWriter.write(hld.toString() + "\n");
-								orderWriter.flush();
-								
-								break;
-							}
-							
-							// 处理error
-							if(myOrderH.errorCode == 461) {
-								isLotSizeMapToUpdate=1;
-								Double newLotSize = myOrderH.newLostSize;  // 修改然后resubmit
-								orderQty = newLotSize * (int)(fixedBuyAmount / newLotSize / buyPrice);
-								order1.totalQuantity(orderQty );
-								
-								myController.placeOrModifyOrder(con, order1, myOrderH);
-								
-								logger.info("need new lot size = " + newLotSize + " resubmit order!");
-								
-								// update avatLotSize
-								avatLotSize.put(stockCode, newLotSize);
-								myOrderH.errorCode = -1;  // 处理完毕，reset errorcode
-							}
-							
-							if(!transmitToIB) // for simulation
-								myOrderH.isSubmitted = 1;
-							
-							Thread.sleep(30);
-						} // end of while	
-						*/
 					}
 				}  // 买入信号的if结束
 				/*
@@ -790,63 +746,14 @@ public class AVAT {
 				 * 		2. 持股到当日15：00仍未卖出，以买入成本价（需要考虑交易成本）卖出
 				 * 		3. 持股到当日15：50仍未卖出，以市价卖出
 				 */
-				
-				/*
-				int sellCond1 = 0;
-				int sellCond2 = 0;
-				
-				if(holdingStocks .contains(singleRec.stockCode)) {  // 只有在已经买了这只股票之后才判断是否需要卖出
-					HoldingRecord thisHolding = holdingRecords.get(singleRec.stockCode);
-					
-					if(thisHolding.filledQty > 0) {   // 如果有filled的qty，先看看是否符合卖出条件，如果是，则cancel剩余的qty（如有），然后卖出filled的qty
-						Double currentPrice = singleRec.currentPrice;
-						Double avgFillPrice = thisHolding.avgFillPrice;
-						
-						if(currentPrice > avgFillPrice * 1.03) { // 止盈卖出(不考虑交易成本)
-							sellCond1 = 1;
-						}
-						if(now.after(sellThldTime)) {
-							sellCond2 = 1;
-						}
-						
-						if(sellCond1 == 1 || sellCond2 == 1) {
-							
-							if(thisHolding.filledQty < thisHolding.orderQty) {// partially filled, 先cancel剩余的qty，然后卖出filled的qty
-								int orderId = thisHolding.orderId;
-								myController.cancelOrder(orderId);
-							}
-							
-							Contract con = singleRec.contract;
-							
-							Order sellOrder = new Order();
-							sellOrder.action(Action.SELL);
-							Double sellPrice = 0.0;
-							if(sellCond1 == 1) {
-								sellPrice = singleRec.latestBestAsk;
-							}
-							if(sellCond2 == 1) {
-								sellPrice = AvatUtils.getCorrectPrice_down(thisHolding.orderPrice * (1+bilateralTrdCost));
-							}
-							sellOrder.lmtPrice(sellPrice);
-							sellOrder.totalQuantity(thisHolding.filledQty);
-							
-							sellOrder.transmit(transmitToIB);  // false - 只在api平台有这个order
-							
-							// 不用监视了吧
-							MyIOrderHandler myOrderH = new MyIOrderHandler (con, sellOrder); 
-							myController.placeOrModifyOrder(con, sellOrder, myOrderH);
-							
-						}					
-					}
-				}*/
-					
 			}
 			
 			Thread t = new Thread(new Runnable(){
 				   public void run(){
 					   try {
-							utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
-							logger.info("            logging holding records done!");
+							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
+						   saveHoldingRecords();
+							//logger.info("            logging holding records done!");
 						}catch(Exception e) {
 							logger.error("           Can't log holding records!");
 						}
@@ -951,8 +858,9 @@ public class AVAT {
 			Double stopProfitLevel2= 0.03;
 			long waitingSec = 30;
 			
-			long lastRequestTime = new Date().getTime() - 5000;
-			lastRequestTime=0;
+			long lastRequestTime = 0;
+			//lastRequestTime=sdf.parse("20171018 09:00:00").getTime();
+			lastRequestTime = new Date().getTime() - 1000 * waitingSec;
 			
 			String executionsRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\executions records.csv";
 			
@@ -969,6 +877,7 @@ public class AVAT {
 				filter.secType("STK");
 				if(lastRequestTime != 0)
 					filter.time(sdf.format(new Date(lastRequestTime)));
+				logger.info("last time = " + sdf.format(new Date(lastRequestTime)));
 				lastRequestTime = new Date().getTime();
 				myTradeReportHandler.initialize();
 				myTradeReportHandler.isCalledByMonitor = 1;
@@ -980,10 +889,12 @@ public class AVAT {
 				if(thisNow.after(dayEndDate))
 					break;
 				
+				logger.info("check if received data");
 				int count = 0;
 				while(true) {
-					if(myTradeReportHandler.isEnd == 1)
+					if(myTradeReportHandler.isEnd == 1) {
 						break;
+					}
 					count ++;
 					if(count >= 500)
 						break;
@@ -998,8 +909,8 @@ public class AVAT {
 				
 				Map<String, Map<Double, Double>> executionSummary = new HashMap ();  // String - stock code; 1st Double - buy order price; 2nd Double - cumulative filled qty
 				// ---------- 读取MyITradeReportHandler返回的数据 ---------------
-				logger.info("[Start scanning execution details...] " + sdf.format(new Date()));
 				ArrayList<ArrayList<Object>> tradeReportArr = myTradeReportHandler.tradeReportArr;
+				logger.info("[Start scanning execution details...] " + sdf.format(new Date()) + " size=" + tradeReportArr.size());
 				for(ArrayList<Object> tradeReport : tradeReportArr ) {
 					Contract contract = (Contract) tradeReport.get(1);
 					Execution execution = (Execution) tradeReport.get(2);
@@ -1116,6 +1027,62 @@ public class AVAT {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * 将holding records存到csv里面
+	 */
+	public static void saveHoldingRecords() {
+		try {
+			//Map<String, Map<Integer, HoldingRecord>> holdingRecords
+			FileWriter fw = new FileWriter (AVAT_ROOT_PATH + "orders\\" + todayDate + "\\holdingRecords.csv");
+			
+			for(String stock : holdingRecords.keySet()) {
+				String toWrite = "";
+				Map<Integer, HoldingRecord> orderIdMap = holdingRecords.get(stock);
+				for(Integer orderId : orderIdMap.keySet()) {
+					toWrite += stock + "," + orderId + "," + orderIdMap.get(orderId).toSaveToString() + "\n";
+				}
+				fw.write(toWrite);
+			}
+			fw.close();
+			logger.info("--> holding records saved!");
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void recoverTradingRecord() {
+		try {
+			String path = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\holdingRecords.csv";
+			if(!(new File(path).exists())) {
+				logger.error("--> holding records recovery failed! No such file.");
+				return;
+			}
+			
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(path);
+			String line = "";
+			while((line = bf.readLine()) != null) {
+				ArrayList<String> arr = new ArrayList<String>(Arrays.asList(line.split(",")));
+				String stock = arr.get(0);
+				Integer orderId = Integer.parseInt(arr.get(1));
+				ArrayList<String> subArr = new ArrayList<String>(arr.subList(2, arr.size()));
+				
+				HoldingRecord h = new HoldingRecord ();
+				h.recoverFromString(subArr);
+				
+				Map<Integer, HoldingRecord> orderIdMap = holdingRecords.get(stock);
+				if(orderIdMap  == null)
+					orderIdMap = new HashMap<Integer, HoldingRecord>();
+				orderIdMap.put(orderId, h);
+				holdingRecords.put(stock, orderIdMap);
+			}
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 
 }

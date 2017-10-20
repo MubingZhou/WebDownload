@@ -12,8 +12,8 @@ public class NoUse_BBG_AMB {
 		int count = 1;  
 		
 		try {
-			String readPath = "D:\\stock data\\A share\\A share.csv";
-			String writeRootPath = "D:\\stock data\\A share\\historical data\\";
+			String readPath = "Z:\\Mubing\\stock data\\A share data\\stock data.csv";
+			String writeRootPath = "Z:\\Mubing\\stock data\\A share data\\historical data\\";
 			
 			FileWriter fw = new FileWriter("D:\\test.csv");
 			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(readPath);
@@ -21,9 +21,9 @@ public class NoUse_BBG_AMB {
 			
 			String line = "";
 			 
-			int fixLine = 8;
+			int fixLine = 9;
 			/*
-			 * 数据格式如下，一共8行（包括最后一行的空格）
+			 * 数据格式如下，一共9行（包括最后一行的空格）
 			 * 	300706 CH Equity							
 				Date	25/9/2017	26/9/2017	27/9/2017	28/9/2017	29/9/2017	9/10/2017	10/10/2017
 				PX_OPEN	#N/A N/A	11.96	15.8	17.38	19.12	21.03	23.13
@@ -31,40 +31,26 @@ public class NoUse_BBG_AMB {
 				PX_LOW	#N/A N/A	11.96	15.8	17.38	19.12	21.03	23.13
 				PX_LAST	9.97	14.36	15.8	17.38	19.12	21.03	23.13
 				PX_VOLUME	#N/A N/A	5700	2000	2000	4500	5200	6600
+				EQY_SH_OUT	17170.411	17170.411	17170.411	17170.411	17170.411
+
 							
 			 */
 			
 			ArrayList<String> dateArr = new ArrayList<String> ();
+			
 			ArrayList<String> openArr = new ArrayList<String> ();
 			ArrayList<String> highArr = new ArrayList<String> ();
 			ArrayList<String> lowArr = new ArrayList<String> ();
 			ArrayList<String> closeArr = new ArrayList<String> ();
 			ArrayList<String> volArr =  new ArrayList<String> ();
+			ArrayList<String> shArr =  new ArrayList<String> ();  // share outstanding
+			
 			SimpleDateFormat sdf0 = new SimpleDateFormat ("dd/MM/yyyy");
 			SimpleDateFormat sdf1 = new SimpleDateFormat ("yyyyMMdd");
 			
 			while((line = bf.readLine()) != null) {
 				int innerLine = Math.floorMod(count, fixLine);
-				ArrayList<String> lineArr = new ArrayList<String>(Arrays.asList(line.split(",")));
-				
-				if(count >= 937 && count <= 944	) { //特殊情况
-					count++;
-					continue;
-				}
-				if(count >= 3121 && count <= 3128	) { //特殊情况
-					count++;
-					continue;
-				}
-				if(count >= 3625 && count <= 3632	) { //特殊情况
-					count++;
-					continue;
-				}
-				if(count >= 4321 && count <= 4328	) { //特殊情况
-					count++;
-					continue;
-				}
-					
-					
+				ArrayList<String> lineArr = new ArrayList<String>(Arrays.asList(line.split(",")));	
 				
 				switch(innerLine) {
 				case 1:
@@ -79,19 +65,12 @@ public class NoUse_BBG_AMB {
 					lowArr = new ArrayList<String> ();
 					closeArr = new ArrayList<String> ();
 					volArr = new ArrayList<String> ();
+					shArr = new ArrayList<String> ();
+					
 					break;
 				case 2:
-					ArrayList<String> dateArr0 =  new ArrayList<String> (lineArr.subList(1, lineArr.size()));
-					for(int i = 0; i < dateArr0.size(); i++) {
-						String date = dateArr0.get(i);
-						String date1 = "";
-						try {
-							date1 = sdf1.format(sdf0.parse(date));  // change to yyyyMMdd
-						}catch(Exception e) {
-							
-						}
-						dateArr.add(date1);
-					}
+					dateArr =  new ArrayList<String> (lineArr.subList(1, lineArr.size()));
+					//openArr =  new ArrayList<String> (lineArr.subList(1, lineArr.size()));
 					break;
 				case 3:
 					openArr =  new ArrayList<String> (lineArr.subList(1, lineArr.size()));
@@ -108,6 +87,9 @@ public class NoUse_BBG_AMB {
 				case 7:
 					volArr =  new ArrayList<String> (lineArr.subList(1, lineArr.size()));
 					break;
+				case 8:
+					shArr =  new ArrayList<String> (lineArr.subList(1, lineArr.size()));
+					break;
 				case 0:
 					// write
 					for(int i = 0; i < openArr.size(); i++) {
@@ -117,20 +99,42 @@ public class NoUse_BBG_AMB {
 						String low = lowArr.get(i);
 						String close = closeArr.get(i);
 						String vol = volArr.get(i);
+						String share = shArr.get(i);
 						
-						if(open.equals("#N/A N/A")) {
-							open = close;
-							high = close;
-							low = close;
-							vol = "0";
+						
+						if(vol.equals("#N/A N/A")) {
+							continue;
 						}
 						
-						fw.write( date + ","
+						Double shareDouble = 0.0;
+						try {
+							shareDouble = Double.parseDouble(share) * 1000000;
+						}catch(Exception e) {
+							for(int j = i; j < openArr.size(); j++) {
+								try {
+									shareDouble = Double.parseDouble(shArr.get(j)) * 1000000;
+									break;
+								}catch(Exception ee) {
+									
+								}
+							}
+						}
+						
+						String date1 = date;
+						try {
+							date1 = sdf0.format(sdf0.parse(date));  // change to yyyyMMdd
+						}catch(Exception e) {
+							//System.out.println("Date formatting failed! i=" + i + " date=" + date1);
+						}
+						
+						fw.write( date1 + ","
 								+  open + ","
 								+ high + ","
 								+ low + ","
 								+ close + ","
-								+ vol + "\n");
+								+ vol + ","
+								+ shareDouble + 
+								"\n");
 					}
 					fw.close();
 					break;
@@ -149,20 +153,29 @@ public class NoUse_BBG_AMB {
 				String low = lowArr.get(i);
 				String close = closeArr.get(i);
 				String vol = volArr.get(i);
+				String share = shArr.get(i);
 				
-				if(open.equals("#N/A N/A")) {
-					open = close;
-					high = close;
-					low = close;
-					vol = "0";
+				
+				if(vol.equals("#N/A N/A")) {
+					continue;
 				}
 				
-				fw.write( date + ","
+				Double shareDouble = Double.parseDouble(share) * 1000000;
+				String date1 = date;
+				try {
+					date1 = sdf0.format(sdf0.parse(date));  // change to yyyyMMdd
+				}catch(Exception e) {
+					System.out.println("Date formatting failed! i=" + i + " date=" + date1);
+				}
+				
+				fw.write( date1 + ","
 						+  open + ","
 						+ high + ","
 						+ low + ","
 						+ close + ","
-						+ vol + "\n");
+						+ vol + ","
+						+ shareDouble + 
+						"\n");
 			}
 			fw.close();
 			
@@ -182,7 +195,7 @@ public class NoUse_BBG_AMB {
 		if(subName.equals("30") || subName.equals("00") )
 			fullName += ".SZ";
 		
-		fullName += "_tdx";
+		fullName = "tdx_" + fullName ;
 		
 		return fullName;
 	}

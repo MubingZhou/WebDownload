@@ -148,7 +148,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 		info = sysTime + "," + tickType.name() + "," + String.valueOf(size);
 		switch(tickType) {
 		case BID_SIZE:
-			orderBookInfo = info;
+			orderBookInfo = info; //logger.info(info);
 			break;
 		case ASK_SIZE:
 			orderBookInfo = info;

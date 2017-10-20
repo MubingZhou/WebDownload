@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 
 import com.ib.client.Contract;
 import com.ib.client.ExecutionFilter;
+import com.ib.client.MarketDataType;
 import com.ib.client.Order;
 import com.ib.client.OrderType;
 import com.ib.client.Types.Action;
@@ -37,7 +38,7 @@ public class Main {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171018";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); todayDate="20171020";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
@@ -82,7 +83,7 @@ public class Main {
 			if(myClient.isConnected()){
 				System.out.println("Is connected!");
 				try {
-					Thread.sleep(1000 * 3);   
+					Thread.sleep(1000 * 0);   
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -116,7 +117,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171017", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171019", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -239,7 +240,7 @@ public class Main {
 				String path  = "D:\\test.javaObj";
 				
 				Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap<String, Map<Integer, HoldingRecord>>();
-				holdingRecords = (Map<String, Map<Integer, HoldingRecord>> ) utils.Utils.readObject(path)  ;
+				//holdingRecords = (Map<String, Map<Integer, HoldingRecord>> ) utils.Utils.readObject(path)  ;
 				System.out.println(holdingRecords.get("493"));
 				System.out.println(holdingRecords.get("701"));
 				
@@ -271,91 +272,85 @@ public class Main {
 				holdingRecords.put("700", thisHoldingMap);
 				holdingRecords.put("701", thisHoldingMap);
 				
-				utils.Utils.saveObject(holdingRecords, path);
+				//utils.Utils.saveObject(holdingRecords, path);
 				System.out.println("DONE");
 			}
-			
-			//============== requesting historical tick data ===============
-			ArrayList<MyIHistoricalTickHandler> histTickHandlerArr = new ArrayList<MyIHistoricalTickHandler>();
-			if(false) {
-				int numOfRead = 1;
-				int counter  = 1;
-				String startTimeS = "20170831 09:00:00";
-				String endTimeS = "20170926 17:00:30";
-				Date endTime = sdf.parse(endTimeS);
-				Date startTime = sdf.parse(startTimeS);
-				Long endTimeL = endTime.getTime();
-				Long startTimeL = startTime.getTime();
-				
-				String dataType = "TRADES";   // 
-				for(int i = 1; i < conArr.size(); i++) {
-					logger.debug("i=" + i + " Downloading " + conArr.get(i).symbol());
-	
-					int numOfData = 1000;
-					long nextTimeL = startTimeL;
-					String lastTimeS = startTimeS;
-					MyIHistoricalTickHandler myHistTick = new MyIHistoricalTickHandler(conArr.get(i).symbol());
-					histTickHandlerArr.add(myHistTick);
-					
-					//myController.reqHistoricalTicks(conArr.get(i), startTimeS, null, numOfData, dataType, 1, true, myHistTick);
-					
-					int isNo_trades = 0;
-					while(nextTimeL <= endTimeL ) {  // 这样只可以读一天的数据
-						logger.trace("Downloading ... " + sdf.format(new Date(nextTimeL)));
-						// ========= step 1: flush data and initializing ==========
-						ArrayList<Object> data_trades = myHistTick.getData_trades();
-						
-						myHistTick.flushData_trades();
-						myHistTick.initialize();
-						
-						// ============ step 2: downloading data ============				
-						String nextTimeS =  sdf.format(new Date(nextTimeL));
-						logger.info("Downloading... nextTimeS = " + nextTimeS + " stock=" + conArr.get(i).symbol());
-						myController.reqHistoricalTicks(conArr.get(i), nextTimeS, null, numOfData, dataType, 1, true, myHistTick);
-						
-						// =========== step 3: update next time & indicator ===========
-						while(myHistTick.getIsEnd_trades() != 1) {  // 判断是否将这次的数据都读完了
-							Thread.sleep(500);
-						}
-						isNo_trades = myHistTick.getIsNo_trades();
-						//nextTimeL = myHistTick.getLastTime_trades(); // 更新next time
-						
-						if(isNo_trades == 1) { // day end
-							// get next trading date
-							Calendar lastTimeCal = (Calendar) allTradingDate.get(0).clone();
-							SimpleDateFormat sdf_temp = new SimpleDateFormat("yyyyMMdd");
-							String lastTimeS2 =  sdf_temp.format(new Date(nextTimeL));
-							logger.trace("----- last time date = " + lastTimeS2);
-							
-							lastTimeCal.setTime(sdf_temp.parse(lastTimeS2));  // change to yyyyMMdd
-							lastTimeCal.add(Calendar.DATE, 1);
-							
-							//int ind = allTradingDate.indexOf(lastTimeCal);
-							//Calendar nextDate = allTradingDate.get(ind + 1);
-							String nextDateS = sdf_temp.format(lastTimeCal.getTime().getTime());
-							logger.trace("--- next day = " + nextDateS);
-							
-							nextTimeL = sdf.parse(nextDateS + " 09:00:00").getTime();
-							
-						}else {
-							nextTimeL = myHistTick.getLastTime_trades() + 1000;   // lastTime的下一秒
-							//lastTimeNextS =  sdf.format(new Date(lastTimeNextL));
-						}
-					}
-					myHistTick.close();
+			if(mode == 103) {
+				System.out.println("");
+				for(int i = 0; i < 405; i++) {
+					Contract con = conArr.get(i);
+					MyITopMktDataHandler myTop = new MyITopMktDataHandler(con.symbol(), AVAT_ROOT_PATH, "20171019");
+					//myTop.fileWriterMainPath = AVAT_ROOT_PATH + "real time data\\";
+					//topMktDataHandlerArr.add(myTop);
+					//myController.reqMktDataType(MarketDataType.REALTIME);
+					myController.reqTopMktData(con, "233,375", false, false, myTop);
+					//Thread.sleep(20);
+					/*
+					 * Generic tick type:
+					 * 233 - RT volume
+					 * 375 - RT trade volumes
+					 */
+					logger.info("Subscribe top market data. Stock=" + con.symbol() + " i=" + i);
 				}
+				//orderMonitorThd.start();
+				   Contract con1 = new Contract();
+					con1.localSymbol("EUR.USD");
+					con1.exchange("IDEALPRO");
+					con1.secType("CASH");
+					con1.currency("USD");
+					Contract con2 = new Contract();
+					con2.localSymbol("GBP.USD");
+					con2.exchange("IDEALPRO");
+					con2.secType("CASH");
+					con2.currency("USD");
+					Contract con3 = new Contract();
+					con3.localSymbol("USD.JPY");
+					con3.exchange("IDEALPRO");
+					con3.secType("CASH");
+					con3.currency("JPY");
+					
+					MyITopMktDataHandler myTop1 = new MyITopMktDataHandler(con1.localSymbol(), AVAT_ROOT_PATH, "20171019");
+					myController.reqTopMktData(con1, "233,375", false, false, myTop1);
+					MyITopMktDataHandler myTop2 = new MyITopMktDataHandler(con2.localSymbol(), AVAT_ROOT_PATH, "20171019");
+					myController.reqTopMktData(con2, "233,375", false, false, myTop2);
+					MyITopMktDataHandler myTop3 = new MyITopMktDataHandler(con3.localSymbol(), AVAT_ROOT_PATH, "20171019");
+					myController.reqTopMktData(con3, "233,375", false, false, myTop3);
+					try {
+						//Thread.sleep(1000 * 10000);
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+			}
+			if(mode == 104) {
+				AVAT.setting(myController, conArr, AVAT_ROOT_PATH);
+				
+				AVAT.executionMonitor();
+				
+				Thread.sleep(1000 * 10000);
+				
+				ExecutionFilter filter = new ExecutionFilter();
+				filter.secType("STK");
+				
+				String executionsRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\executions records.csv";
+				MyITradeReportHandler myTradeReportHandler = new MyITradeReportHandler(executionsRecPath);
+				myTradeReportHandler.isCalledByMonitor = 1;
+				myController.reqExecutions(filter, myTradeReportHandler);
+				//System.out.println("here11234--------");
+				//Thread.sleep(1000 * 10000);
 			}
 			
 			System.out.println("here11234");
 			// pause and disconnect
 			try {   
 				Thread.sleep(1000 * 10000000);
-			} catch (InterruptedException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			
 			
 			// ======== close =========
+			/*
 			myController.disconnect();
 			if(myClient.isConnected()){
 				System.out.println("Is connected!");
@@ -363,6 +358,7 @@ public class Main {
 			else{
 				System.out.println("Not connected!");
 			}
+			*/
 			System.out.println("========================== END ==========================");
 			
 		}catch(Exception e) {

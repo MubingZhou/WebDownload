@@ -3,6 +3,7 @@ package cgi.ib.avat;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -95,24 +96,26 @@ public class HoldingRecord  implements Serializable {
  	}
 	
 	public void recoverFromString(String s) {
-		String[]  arr = s.split(",");
-		if(arr.length != 13)
+		recoverFromString(new ArrayList<String> (Arrays.asList(s.split(","))));
+	}
+	public void recoverFromString(ArrayList<String> sArr) {
+		if(sArr.size() != 13)
 			System.out.println("[HoldingRecord - recoverFromString] string size not correct!");
 		
 		try {
-			this.stockCode = arr[0];
-			this.orderTimeStamp = Long.parseLong(arr[1]);
-			this.orderPrice = Double.parseDouble(arr[2]);
-			this.orderQty = Double.parseDouble(arr[3]);
-			this.orderId = Integer.parseInt(arr[4]);
-			this.filledTimeStamp = Long.parseLong(arr[5]);
-			this.avgFillPrice = Double.parseDouble(arr[6]);
-			this.lastFillPrice = Double.parseDouble(arr[7]);
-			this.filledQty = Double.parseDouble(arr[8]);
-			this.buyCond2_1 = Integer.parseInt(arr[9]);
-			this.buyCond2_2 = Integer.parseInt(arr[10]);
-			this.buyCond2_3 = Integer.parseInt(arr[11]);
-			this.buyReason = arr[12];
+			this.stockCode = sArr.get(0);
+			this.orderTimeStamp = Long.parseLong(sArr.get(1));
+			this.orderPrice = Double.parseDouble(sArr.get(2));
+			this.orderQty = Double.parseDouble(sArr.get(3));
+			this.orderId = Integer.parseInt(sArr.get(4));
+			this.filledTimeStamp = Long.parseLong(sArr.get(5));
+			this.avgFillPrice = Double.parseDouble(sArr.get(6));
+			this.lastFillPrice = Double.parseDouble(sArr.get(7));
+			this.filledQty = Double.parseDouble(sArr.get(8));
+			this.buyCond2_1 = Integer.parseInt(sArr.get(9));
+			this.buyCond2_2 = Integer.parseInt(sArr.get(10));
+			this.buyCond2_3 = Integer.parseInt(sArr.get(11));
+			this.buyReason = sArr.get(11);
 		}catch(Exception e) {
 			System.out.println("[HoldingRecord - recoverFromString] Unknown error!");
 			e.printStackTrace();

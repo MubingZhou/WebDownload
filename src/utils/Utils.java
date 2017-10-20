@@ -841,6 +841,7 @@ public class Utils {
 	 * @param path
 	 * @throws Exception
 	 */
+		/*
 	public static void saveObject(Object obj, String path) throws Exception { 
 		FileOutputStream fos = new FileOutputStream(path);
 		ObjectOutputStream out = new ObjectOutputStream(fos);
@@ -849,13 +850,14 @@ public class Utils {
 		out.close();
 		fos.close();
 	}
-	
+	*/
 	/**
 	 * 读取某变量
 	 * @param path
 	 * @return
 	 * @throws Exception
 	 */
+		/*
 	public static Object readObject(String path) throws Exception{
 		File f = new File(path);
 		if(!f.exists())
@@ -870,6 +872,6 @@ public class Utils {
 		
 		return r;
 	}
-	
+	*/
 	  
 }

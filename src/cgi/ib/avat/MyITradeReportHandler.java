@@ -46,7 +46,7 @@ public class MyITradeReportHandler implements ITradeReportHandler {
 		
 		
 		try {
-			if(isCalledByMonitor == 1) {
+			if(isCalledByMonitor == 1 && false) {
 				logger.info(info);
 				
 				fileWriter.write(info + "\n");
@@ -73,8 +73,8 @@ public class MyITradeReportHandler implements ITradeReportHandler {
 			if(isCalledByMonitor == 1) {
 				logger.info(info);
 				
-				fileWriter.write(info + "\n");
-				fileWriter.flush();
+				//fileWriter.write(info + "\n");
+				//fileWriter.flush();
 			}
 			
 		} catch (Exception e) {
