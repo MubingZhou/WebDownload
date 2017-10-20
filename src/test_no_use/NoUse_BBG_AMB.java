@@ -12,8 +12,9 @@ public class NoUse_BBG_AMB {
 		int count = 1;  
 		
 		try {
-			String readPath = "Z:\\Mubing\\stock data\\A share data\\stock data.csv";
-			String writeRootPath = "Z:\\Mubing\\stock data\\A share data\\historical data\\";
+			String rootPath = "T:\\Mubing\\stock data\\A share data\\";
+			String readPath = rootPath + "northbound stock data.csv";
+			String writeRootPath = rootPath + "historical data\\";
 			
 			FileWriter fw = new FileWriter("D:\\test.csv");
 			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(readPath);
