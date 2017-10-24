@@ -15,7 +15,7 @@ public class CountAShareLimitUp {
 	public static void main(String[] args) {
 		Logger logger = Logger.getLogger(CountAShareLimitUp.class.getName());
 		try {
-			String rootPath = "Z:\\Mubing\\stock data\\A share data\\";
+			String rootPath = "T:\\Mubing\\stock data\\A share data\\";
 			
 			SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 			Date date2016Bgn = sdf.parse("01/01/2016");
@@ -23,18 +23,18 @@ public class CountAShareLimitUp {
 			Date date2016End = sdf.parse("31/12/2016");
 			
 			//String stockListPath = "Z:\\Mubing\\stock data\\A share data\\stock list.csv";
-			String stockListPath = "Z:\\Mubing\\stock data\\A share data\\northbound stock.csv";
+			String stockListPath = rootPath + "northbound stock.csv";
 			BufferedReader bf1 = utils.Utils.readFile_returnBufferedReader(stockListPath);
 			String line1 = bf1.readLine();
 			ArrayList<String> stockList = new ArrayList<String>(Arrays.asList(line1.split(",")));
 			//stockList = new ArrayList<String>();
 			//stockList .add("000639");
 			
-			String stockDataRootPath = "Z:\\Mubing\\stock data\\A share data\\historical data\\";
+			String stockDataRootPath = rootPath + "historical data\\";
 			
 			// ----- get listing date first -----
 			Map<String, Date> listingMap = new HashMap<String, Date>();
-			String listingPath = "Z:\\Mubing\\stock data\\A share data\\listing date.csv";
+			String listingPath = rootPath + "listing date.csv";
 			BufferedReader bfff = utils.Utils.readFile_returnBufferedReader(listingPath);
 			line1 = "";
 			int c = 0;
@@ -45,15 +45,17 @@ public class CountAShareLimitUp {
 				}
 				String[] arr = line1.split(",");
 				String stock = arr[0];
+				//System.out.println("c=" +c);
 				String dateStr = arr[1];
 				Date date = new SimpleDateFormat("dd/MM/yyyy").parse(dateStr);
 				listingMap.put(stock, date);
+				c++;
 			}
 			bfff.close();
 			
 			// ------- get trading date -------
 			ArrayList<Date> trdDate = new ArrayList<Date>();
-			String trdDatePath = "Z:\\Mubing\\stock data\\A share data\\trading date.csv";
+			String trdDatePath = rootPath + "trading date.csv";
 			BufferedReader bffff = utils.Utils.readFile_returnBufferedReader(trdDatePath);
 			line1 = bffff.readLine();
 			bffff.close();
@@ -64,10 +66,10 @@ public class CountAShareLimitUp {
 			
 			
 			// ---------------------
-			FileWriter fw1Limit = new FileWriter("Z:\\Mubing\\stock data\\A share data\\consecutive 1 limit ups.csv");
-			FileWriter fw2Limit = new FileWriter("Z:\\Mubing\\stock data\\A share data\\consecutive 2 limit ups.csv");
-			FileWriter fw3Limit = new FileWriter("Z:\\Mubing\\stock data\\A share data\\consecutive 3 limit ups.csv");
-			FileWriter fw4Limit = new FileWriter("Z:\\Mubing\\stock data\\A share data\\consecutive 4 limit ups.csv");
+			FileWriter fw1Limit = new FileWriter(rootPath + "consecutive 1 limit ups.csv");
+			FileWriter fw2Limit = new FileWriter(rootPath + "consecutive 2 limit ups.csv");
+			FileWriter fw3Limit = new FileWriter(rootPath + "consecutive 3 limit ups.csv");
+			FileWriter fw4Limit = new FileWriter(rootPath + "consecutive 4 limit ups.csv");
 			int num1LimitAll = 0;
 			int num2LimitAll = 0;
 			int num3LimitAll = 0;
@@ -116,6 +118,15 @@ public class CountAShareLimitUp {
 					String[] lineArr = line.split(",");
 					
 					String date = lineArr[0];
+					Date thisDate = new SimpleDateFormat("dd/MM/yyyy").parse(date);
+					
+					// ---------- 只考虑2017年的情况 -----------
+					if(thisDate.before(date2017Bgn)) {
+						//count++;
+						continue;
+					}
+						
+					
 					Double open = Double.parseDouble(lineArr[1]);
 					Double high = Double.parseDouble(lineArr[2]);
 					Double low = Double.parseDouble(lineArr[3]);
@@ -129,7 +140,8 @@ public class CountAShareLimitUp {
 					closeArr.add(close);
 					volArr.add(volume);
 					
-					Date thisDate = new SimpleDateFormat("dd/MM/yyyy").parse(date);
+					
+					
 					long _90Days = 90;
 					boolean isNew = false;
 					long diff = (thisDate.getTime() - firstDate.getTime()) / 1000 / 60 / 60 / 24;
@@ -284,6 +296,7 @@ public class CountAShareLimitUp {
 					returnDistFW.write("," + returnDist3rdLimitUp.get(i));
 				if(i < returnDist4thLimitUp.size())
 					returnDistFW.write("," + returnDist4thLimitUp.get(i));
+				returnDistFW.write("\n");
 			}
 			returnDistFW.close();
 			
