@@ -1,13 +1,17 @@
 Regular:
-	(Morning Work) Southbound, CBBC, warrant, 
+	(Morning Work) Southbound, CBBC, warrant, A share limit up strategy
 	(After market work) booking
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up
-	
+
+20171024
+	Outstanding:
+		A share open high characteristics: high change but not limit up 
+		upload yesterday's trading records (need to create new CBBC & find code for Japan options)
 	
 20171023 
 	Outstanding:
-		update autions and prevclose
+		update auctions and prevclose (done)
 	
 20171020
 	Outstanding:
