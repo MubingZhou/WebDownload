@@ -2,12 +2,29 @@ Regular:
 	(Morning Work) Southbound, CBBC, warrant, A share limit up strategy
 	(After market work) booking
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
-	Monitoring A share limit up
+	Monitoring A share limit up（get strategy candidates, update trading records)
 
+20171026
+	Outstanding:
+		林洋转债（DOne）
+	Monitor：林洋能源，1513（丽珠医药）
+		
+		
+20171025 
+	Outstanding:
+		A share open high characteristics: high change but not limit up (partially done)
+		单独开一个file专门记录我们的A股strategy
+		计算A股的reverting period（rolling hit rate)
+		要约收购（研究596以及东方海外国际）
+	Monitoring:
+		998(中信银行，miss the concensus) (713，非常重大出售事项）297（出售子公司股权，出售给母公司而已）467（收购，但是目标公司规模很小，同业）521（海航）
+	
 20171024
 	Outstanding:
 		A share open high characteristics: high change but not limit up 
-		upload yesterday's trading records (need to create new CBBC & find code for Japan options)
+		upload yesterday's trading records (need to create new CBBC & find code for Japan options, DONE)
+		单独开一个file专门记录我们的A股strategy
+		计算A股的reverting period（rolling hit rate)
 	
 20171023 
 	Outstanding:

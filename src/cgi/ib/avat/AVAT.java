@@ -29,6 +29,7 @@ import com.ib.client.OrderType;
 import com.ib.client.Types.Action;
 import com.ib.controller.ApiController;
 
+import utils.PlayWAV;
 import utils.XMLUtil;
 
 public class AVAT {
@@ -73,7 +74,7 @@ public class AVAT {
 	private static String holdingRecordsPath = "";  // 存储 holdingRecords 的路径
 	private static String orderWriterPath ;
 	private static FileWriter orderWriter;
-	private static boolean transmitToIB = false;  // 是否transmit 到 IB server
+	private static boolean transmitToIB = true;  // 是否transmit 到 IB server
 	
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
@@ -614,7 +615,7 @@ public class AVAT {
 					}
 					if(singleRec.volume >= singleRec.prevVolume && thisTime.before(volumeCondEndTime) && priceChg > 0)
 						buyCond2_3 = 1;
-					if(singleRec.turnover >= turnoverThld)
+					if(singleRec.turnover >= turnoverThld )
 						buyCond3 = 1;
 					
 					//isShort =  false; // 先不考虑short
@@ -736,7 +737,18 @@ public class AVAT {
 						orderWriter.flush();
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
-						
+						Thread placingOrderAlert = new Thread(new Runnable(){
+							   public void run(){
+								   try {
+										//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
+									   PlayWAV.play("hahaha.wav");
+										//logger.info("            logging holding records done!");
+									}catch(Exception e) {
+										logger.error("           Sound alert failed!");
+									}
+							   }
+							});
+						placingOrderAlert.start();
 					}
 				}  // 买入信号的if结束
 				/*

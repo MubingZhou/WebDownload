@@ -15,7 +15,7 @@ public class CountAShareLimitUp {
 	public static void main(String[] args) {
 		Logger logger = Logger.getLogger(CountAShareLimitUp.class.getName());
 		try {
-			String rootPath = "T:\\Mubing\\stock data\\A share data\\";
+			String rootPath = "Z:\\Mubing\\stock data\\A share data\\";
 			
 			SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 			Date date2016Bgn = sdf.parse("01/01/2016");
@@ -65,7 +65,7 @@ public class CountAShareLimitUp {
 			}
 			
 			
-			// ---------------------
+			// --------------------- 
 			FileWriter fw1Limit = new FileWriter(rootPath + "consecutive 1 limit ups.csv");
 			FileWriter fw2Limit = new FileWriter(rootPath + "consecutive 2 limit ups.csv");
 			FileWriter fw3Limit = new FileWriter(rootPath + "consecutive 3 limit ups.csv");
