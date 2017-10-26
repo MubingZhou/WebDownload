@@ -11,16 +11,14 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import test_no_use.CountAShareLimitUp;
-import test_no_use.NoUse_BBG_AMB;
-
 public class OpenHigh {
 
 	public static void main(String[] args) {
 		Logger logger = Logger.getLogger(CountAShareLimitUp.class.getName());
+		SimpleDateFormat sdf0 = new SimpleDateFormat("yyyyMMdd hh_mm_ss"); 
 		
 		try {
-			String rootPath = "Z:\\Mubing\\stock data\\A share data\\";
+			String rootPath = "T:\\Mubing\\stock data\\A share data\\";
 			
 			SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 			Date date2016Bgn = sdf.parse("01/01/2016");
@@ -42,7 +40,11 @@ public class OpenHigh {
 			String[] groups = {"below 5%","-5% ~ -4%","-4% ~ -3%", "-3% ~ -2%", "-2% ~ -1.5%", "-1.5 ~ -1%", "-1% ~ -0.5%", "-0.5 ~ 0%"
 					, "0% ~ 0.5%", "0.5% ~ 1%", "1% ~ 1.5%", "1.5% ~ 2%", "2% ~ 3%", "3% ~ 4%", "4% ~ 5%", "above 5%"	
 					};
-			FileWriter fw = new FileWriter(rootPath + "\\open high research\\yesterday up.csv");
+			Date now = new Date();
+			FileWriter fw = new FileWriter(rootPath + "\\open high research\\yesterday up " + sdf0.format(now) + ".csv");
+			FileWriter fw_stock = new FileWriter(rootPath + "\\open high research\\stock records " + sdf0.format(now) + ".csv");
+			
+			fw_stock.write("stock,date,openChg,highChg,lowChg,closeChg,return\n");
 			fw.write("If T-1 close is 6% higher than T-2 close and not limit up at T-1, check the open distribution of T day\n");
 			
 			int totalFreq = 0;
@@ -123,7 +125,7 @@ public class OpenHigh {
 					rocArr.add(priceChg);
 					
 					// -------- 判断昨天是否符合要求 ----------
-					if(isLimitUpArr.get(count - 1) != 1 && rocArr.get(count - 1) > 0.06) {
+					if(isLimitUpArr.get(count - 1) != 1 && rocArr.get(count - 1) > 0.08) {
 						double openChg = open / lastClose - 1;
 						double highChg = high / lastClose - 1;
 						double lowChg = low / lastClose - 1;
@@ -139,8 +141,8 @@ public class OpenHigh {
 						// 模拟交易
 						numSimTrades ++;
 						double ret = 0.0;
-						double stopProfit1 = 0.02;
-						double stopProfit2 = 0.05;
+						double stopProfit1 = 0.01;
+						double stopProfit2 = 0.02;
 						if(highChg >= stopProfit2)
 							ret = (stopProfit1 + stopProfit2) / 2;
 						if(highChg >= stopProfit1 && highChg < stopProfit2)
@@ -150,6 +152,9 @@ public class OpenHigh {
 						ret -= 0.002;  // transaction cost
 						
 						cumRetSimTrades += ret;
+						
+						fw_stock.write(stock  + "," + date + "," + openChg  + "," + highChg + "," + lowChg + "," + closeChg + "," + ret + "\n" );
+						
 					}
 					count++;
 					
@@ -174,6 +179,7 @@ public class OpenHigh {
 			
 			fw.write("# of trades=," + numSimTrades + ",avg return=," + cumRetSimTrades / numSimTrades);
 			fw.close();
+			fw_stock.close();
 			
 		}catch(Exception e) {
 			e.printStackTrace();

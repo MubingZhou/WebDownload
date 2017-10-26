@@ -1,4 +1,4 @@
-package test_no_use;
+package ashare.probability;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
