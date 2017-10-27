@@ -67,7 +67,7 @@ public class Main {
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - filter";
+				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - avg rank";
 				//String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
 				File f = new File(portFilePath);
 				f.mkdir();
@@ -139,18 +139,20 @@ public class Main {
 					rebalDateArr .add("20170620");
 					rebalDateArr .add("20170720");
 					rebalDateArr .add("20170818");
+					rebalDateArr .add("20170920");
+					rebalDateArr .add("20171020");
 				}
 				
 				
 				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
-				int idea = 0;
+				int idea = 1;
 				/*
 				 * 0 - normal
 				 * 1 - avg rank
 				 * 2 - filter 
 				 */
 				
-				int lastNdays = 20;     // for idea1 only
+				int lastNdays = 10;     // for idea1 only
 				
 				int lookbackDays2 = 20; // for idea2 only  最近lookbackDays2天中至少要有minDays2满足条件
 				int minDays2 = 15;		// for idea2 only

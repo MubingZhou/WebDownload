@@ -2,6 +2,7 @@ package strategy.db_southboundFlowPortfolio;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,9 +19,12 @@ public class PortfolioScreening {
 	public static String outputPath = "";
 	public static int topNStocks = 20;
 	public static ArrayList<StockSingleDate> stockList = new ArrayList<StockSingleDate>();
+	public static double avgDailyValueThreshHold_USD = 7000000.0;
+	public static int oneMonthBeforeDays = 1; // 正常而言这应该是 ind - 20，表示考虑20天前的数据
 	
 	private static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
 	private static Map<String, String> ffPctMap = new HashMap();
+	
 
 	/**
 	 * 在某一天进行portfolio screening. 先不选出合适的股票，只是把每只股票的相关数据以及ranking全部 计算出来，然后排序
@@ -46,7 +50,7 @@ public class PortfolioScreening {
 			date = sdf.format(benchCal.getTime());
 			
 			int ind = allTradingDate.indexOf(benchCal);
-			Calendar oneMonthBefore = allTradingDate.get(ind - 15);  // 正常而言这应该是 ind - 20，表示考虑20天前的数据
+			Calendar oneMonthBefore = allTradingDate.get(ind - oneMonthBeforeDays);  // 正常而言这应该是 ind - 20，表示考虑20天前的数据
 			Calendar threeMonthBefore = allTradingDate.get(ind - 60);
 			
 			// ========= get stock free float pct ========
@@ -398,7 +402,7 @@ public class PortfolioScreening {
 				
 				// ========= test if suspended && volume is OK ==========
 				if(s.filter1 > 0 && s.filter2 > 0 && s.filter3 > 0 && s.filter4 > 0) {
-					if(!s.suspended && s.Turnover_3M_avg > (7500000 * 7.8)) {
+					if(!s.suspended && s.Turnover_3M_avg > (avgDailyValueThreshHold_USD * 7.8)) {
 						//stockListStr.add(s.stockCode);
 						stockPickedList.add(s);
 						stockCounter ++;
@@ -414,10 +418,12 @@ public class PortfolioScreening {
 			if(isOutput) {
 				FileWriter fw = new FileWriter(outputPath + "\\screening " + date + ".csv");
 				//fw.write("stock,1M avg vol,rank1,SB today holding,SB 1M before holding,os share today,os shares 1M before,SB today/os today,SB 1M/os 1M,diff,rank2,rank1+2\n");
+				Double avgDailyValueThreshHold_USD_mln = avgDailyValueThreshHold_USD / 1000000;
+				DecimalFormat  df = new DecimalFormat("#.0");
 				fw.write("stock,mkt cap (US mm),3M ADV (US mm),Score,"
 						+ "H-share discount,SB Holding (US mm),SB Holding to FF,"
 						+ "1M Change in SB holding (US mm),1M Change in SB holding/FF,rank1,1m SB Flow to Turnover,rank2,"
-						+ "suspend,turnover > 7.5m US?,total rank(idea1),filter1,filter2(idea2),filter3(idea2)\n");
+						+ "suspend,turnover > " + String.valueOf(df.format(avgDailyValueThreshHold_USD_mln)) +"m US?,total rank(idea1),filter1,filter2(idea2),filter3(idea2)\n");
 				
 				FileWriter fw2 = new FileWriter(outputPath + "\\screening " + date + " shares.csv");
 				fw2.write("stock,SB today (shares),SB 1M Before (shares),change,"
@@ -447,12 +453,17 @@ public class PortfolioScreening {
 					Double ffValue_1MBefore = s.osValue_1MBefore;
 					Double ffShare_1MBefore =s.osShares_1MBefore;
 					try {
-						ffValue = s.osValue_today* Double.parseDouble(ffPctMap.get(s.stockCode));
-						ffShare = s.osShares_today* Double.parseDouble(ffPctMap.get(s.stockCode));
-						ffValue_1MBefore = s.osValue_1MBefore * Double.parseDouble(ffPctMap.get(s.stockCode));
-						ffShare_1MBefore =s.osShares_1MBefore * Double.parseDouble(ffPctMap.get(s.stockCode));
+						String ffPct_single = ffPctMap.get(s.stockCode);
+						if(ffPct_single == null)
+							ffPct_single = "1";
+						
+						ffValue = s.osValue_today* Double.parseDouble(ffPct_single);
+						ffShare = s.osShares_today* Double.parseDouble(ffPct_single);
+						ffValue_1MBefore = s.osValue_1MBefore * Double.parseDouble(ffPct_single);
+						ffShare_1MBefore =s.osShares_1MBefore * Double.parseDouble(ffPct_single);
 					}catch(Exception e) {
 						e.printStackTrace();
+						//System.out.println("   no FF stock=" + s.stockCode);
 					}
 					
 					Double SB_over_ff_today_shares = s.SB_today_holding / ffShare;
@@ -463,7 +474,7 @@ public class PortfolioScreening {
 					Double SB_change_share = s.SB_today_holding - s.SB_1MBefore_holding;
 					Double SB_change_value = s.SB_today_holdingValue - s.SB_1MBefore_holdingValue; 
 					
-					Double isVolLarge = s.Turnover_3M_avg / 7.8 / 1000000 > 7.5?1.0:0.0;
+					Double isVolLarge = s.Turnover_3M_avg / 7.8 > avgDailyValueThreshHold_USD?1.0:0.0;
 							
 					fw.write(s.stockCode + "," + String.valueOf(s.osValue_today / 7.8 / 1000000) + "," + String.valueOf(s.Turnover_3M_avg / 7.8 / 1000000) + "," + String.valueOf(s.dummy1 + s.dummy2) + ","
 							+ "" + "," + String.valueOf(s.SB_today_holdingValue / 7.8 / 1000000) + "," + String.valueOf(s.SB_today_holdingValue / ffValue) + "," 
