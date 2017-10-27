@@ -67,7 +67,7 @@ public class Main {
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - normal";
+				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - filter";
 				//String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
 				File f = new File(portFilePath);
 				f.mkdir();
@@ -92,7 +92,7 @@ public class Main {
 					rebalDateArr .add("20170703");
 					rebalDateArr .add("20170801");*/
 					rebalDateArr .add("20170929");
-					rebalDateArr .add("20171017");
+					rebalDateArr .add("20171025");
 				}else if(rebalDate == 1) {
 					rebalDateArr .add("20160715");
 					rebalDateArr .add("20160815");
@@ -144,6 +144,11 @@ public class Main {
 				
 				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
 				int idea = 0;
+				/*
+				 * 0 - normal
+				 * 1 - avg rank
+				 * 2 - filter 
+				 */
 				
 				int lastNdays = 20;     // for idea1 only
 				

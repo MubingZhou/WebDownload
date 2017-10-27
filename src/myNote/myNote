@@ -4,6 +4,12 @@ Regular:
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up（get strategy candidates, update trading records)
 
+20171027
+	Outstanding:
+		EUR QE decrease indication (consult Karen, DONE)
+	Monitoring:  2333 (profit decreased 60%) 3808(profit increase nearly 100%) 2883(loss, miss the consus) 763(although revenue decreased, profit
+		beat the concensus)
+
 20171026
 	Outstanding:
 		林洋转债（DOne）

@@ -46,7 +46,7 @@ public class PortfolioScreening {
 			date = sdf.format(benchCal.getTime());
 			
 			int ind = allTradingDate.indexOf(benchCal);
-			Calendar oneMonthBefore = allTradingDate.get(ind - 6);
+			Calendar oneMonthBefore = allTradingDate.get(ind - 15);  // 正常而言这应该是 ind - 20，表示考虑20天前的数据
 			Calendar threeMonthBefore = allTradingDate.get(ind - 60);
 			
 			// ========= get stock free float pct ========

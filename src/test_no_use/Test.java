@@ -65,7 +65,9 @@ public class Test {
 				   public void run(){
 					   try {
 							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
-						   PlayWAV.play("hahaha.wav");
+						   //PlayWAV.play("hahaha.wav");
+						   String s = "-1.02%";
+						   System.out.println(Double.parseDouble(s.substring(0, s.length()-1)));
 							//logger.info("            logging holding records done!");
 						}catch(Exception e) {
 							logger.error("           Can't log holding records!");
