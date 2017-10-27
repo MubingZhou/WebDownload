@@ -7,6 +7,8 @@ Regular:
 20171027
 	Outstanding:
 		EUR QE decrease indication (consult Karen, DONE)
+		T-2 strategy: to improve: 	idea1 - 将PE分层，然后至买入某一层的PE，查看效果
+									idea2 - 计算trades的hit rate，如果hit rate小于avg rate - 1 std，则暂停买入，当hit rate恢复时重新开始买入
 	Monitoring:  2333 (profit decreased 60%) 3808(profit increase nearly 100%) 2883(loss, miss the consus) 763(although revenue decreased, profit
 		beat the concensus)
 

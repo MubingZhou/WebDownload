@@ -44,7 +44,7 @@ public class OpenHigh {
 			FileWriter fw = new FileWriter(rootPath + "\\open high research\\yesterday up " + sdf0.format(now) + ".csv");
 			FileWriter fw_stock = new FileWriter(rootPath + "\\open high research\\stock records " + sdf0.format(now) + ".csv");
 			
-			fw_stock.write("stock,date,openChg,highChg,lowChg,closeChg,return\n");
+			fw_stock.write("stock,date,openChg,highChg,lowChg,closeChg,return,cum return\n");
 			fw.write("If T-1 close is 6% higher than T-2 close and not limit up at T-1, check the open distribution of T day\n");
 			
 			int totalFreq = 0;
@@ -84,7 +84,7 @@ public class OpenHigh {
 					// ---------- 只考虑2017年的情况 -----------
 					if(thisDate.before(date2017Bgn)) {
 						//count++;
-						continue;
+						//continue;
 					}
 					
 					Double open = Double.parseDouble(lineArr[1]);
@@ -100,7 +100,7 @@ public class OpenHigh {
 					closeArr.add(close);
 					volArr.add(volume);
 					
-					if(count == 0) {
+					if(count == 0 ) {
 						count ++;
 						isLimitUpArr.add(0);
 						rocArr.add(0.0);
@@ -125,7 +125,24 @@ public class OpenHigh {
 					rocArr.add(priceChg);
 					
 					// -------- 判断昨天是否符合要求 ----------
-					if(isLimitUpArr.get(count - 1) != 1 && rocArr.get(count - 1) > 0.08) {
+					int recentHighUp = 0;
+					for(int j = count - 2; j >= count - 22 && j > 0; j--) {
+						//System.out.println("       j=" + j);
+						if(rocArr.get(j) > 0.04 ) {
+							recentHighUp  ++ ;
+						}
+							
+					}
+					if(count >= 23
+							&& isLimitUpArr.get(count - 2) != 1 
+							//&& highArr.get(count - 2) / closeArr.get(count - 2) - 1 > 0.02
+							//&& openArr.get(count - 2) / openArr.get(count - 3) - 1 < 0.01
+							&& recentHighUp <= 1
+							&& rocArr.get(count - 2) > 0.04 
+							//&& rocArr.get(count - 2) < 0.07
+							&& rocArr.get(count - 1) > -0.02
+							&& rocArr.get(count - 1) < 0.02
+							) {
 						double openChg = open / lastClose - 1;
 						double highChg = high / lastClose - 1;
 						double lowChg = low / lastClose - 1;
@@ -141,19 +158,25 @@ public class OpenHigh {
 						// 模拟交易
 						numSimTrades ++;
 						double ret = 0.0;
-						double stopProfit1 = 0.01;
-						double stopProfit2 = 0.02;
-						if(highChg >= stopProfit2)
-							ret = (stopProfit1 + stopProfit2) / 2;
-						if(highChg >= stopProfit1 && highChg < stopProfit2)
-							ret = (stopProfit1 + closeChg ) / 2;
-						if(highChg < stopProfit1)
-							ret = closeChg;
+						double openStopProfit = 0.01;
+						double stopProfit1 = 0.02;
+						double stopProfit2 = 0.05;
+						
+						if(openChg >= openStopProfit) {
+							ret = openChg;
+						}else {
+							if(highChg >= stopProfit2)
+								ret = (stopProfit1 + stopProfit2) / 2;
+							if(highChg >= stopProfit1 && highChg < stopProfit2)
+								ret = (stopProfit1 + closeChg ) / 2;
+							if(highChg < stopProfit1)
+								ret = closeChg;
+						}
 						ret -= 0.002;  // transaction cost
 						
 						cumRetSimTrades += ret;
 						
-						fw_stock.write(stock  + "," + date + "," + openChg  + "," + highChg + "," + lowChg + "," + closeChg + "," + ret + "\n" );
+						fw_stock.write(stock  + "," + date + "," + openChg  + "," + highChg + "," + lowChg + "," + closeChg + "," + ret + "," + cumRetSimTrades + "\n" );
 						
 					}
 					count++;
@@ -177,7 +200,7 @@ public class OpenHigh {
 			//fw.write(data1 + "\n");
 			//fw.write(data2 + "\n");
 			
-			fw.write("# of trades=," + numSimTrades + ",avg return=," + cumRetSimTrades / numSimTrades);
+			fw.write("# of trades=," + numSimTrades + ",avg return=," + cumRetSimTrades / numSimTrades + ",cum return=," + cumRetSimTrades);
 			fw.close();
 			fw_stock.close();
 			

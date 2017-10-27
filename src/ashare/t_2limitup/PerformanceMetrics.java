@@ -35,9 +35,10 @@ public class PerformanceMetrics {
 	public static Double initialEquity = 10000.0;
 	
 	public static void main(String[] args) {
-		String rootPath = "Z:\\A share strategy\\T-2 backtest\\";
+		String rootPath = "T:\\A share strategy\\T-2 backtest\\";
 		readTrades(rootPath + "trades.csv");
-		getRollingDataByDay();
+		int mode = 2;
+		getRollingData(mode);
 		output(rootPath + "analysis.csv");
 	}
 	
@@ -75,8 +76,8 @@ public class PerformanceMetrics {
 					tr.cumProfit = Double.parseDouble(cumProfitStr);
 					tradeRecords.add(tr);
 					
-					if(tradingDate.indexOf(tr.buyDate) == -1)
-						tradingDate.add(tr.buyDate);
+					if(tradingDate.indexOf(tr.sellDate) == -1)
+						tradingDate.add(tr.sellDate);
 				}else { // 偶数行
 					String buyPrice = lineArr[2];
 					String sellPrice = lineArr[3];
@@ -98,28 +99,54 @@ public class PerformanceMetrics {
 		}
 	}
 
-	// 以固定天数为为一个period，进行roll
-	public static void getRollingDataByDay() {
+	/**
+	 * 以固定天数为为一个period，进行roll
+	 * mode
+	 * 1 - get rolling data by data, needs to define "rollingPeriod"
+	 * 2 - get rolling data by trades, needs to define "rollingNumTrades"
+	 * @param mode
+	 */
+	public static void getRollingData(int mode) {
 		try {
+			//mode = 1;
+			
 			if(tradeRecords == null || tradeRecords.size() == 0)
 				return;
 			
 			ArrayList<TradeRecord> rollingRecords = new ArrayList<TradeRecord>(); 
+			
 			Date rollingEndDate = tradingDate.get(rollingPeriod-1);
-			int rollingEndInd = rollingPeriod-1;
+			int rollingEndInd = 0;
+			if(mode == 1)
+				rollingEndInd = rollingPeriod-1;   // for mode 1
+			if(mode == 2)
+				rollingEndInd = rollingNumTrades - 1; // for mode 2
+				
 			Double currentEquity = initialEquity;
 			for(int i = 0; i < tradeRecords.size(); i++) {
 				TradeRecord thisTr = tradeRecords.get(i);
 				currentEquity = initialEquity +  thisTr.cumProfit;
 				
-				Date thisDate = thisTr.buyDate;
+				Date thisDate = thisTr.sellDate;
 				logger.info("stock=" + thisTr.stock + "   date=" + sdf.format(thisDate)  );
 				
-				if(!thisDate.after(rollingEndDate)) {  // this date 在rollingEndDate前面
+				// -------- 填充rolling records -----------
+				if(mode  == 1 && !thisDate.after(rollingEndDate)) {  // this date 在rollingEndDate前面
 					rollingRecords.add(thisTr);
 				}
-				if(thisDate.after(rollingEndDate) || i == tradeRecords.size() - 1 ){  //分析完之后再向前roll trding date
-					Date lastDate = rollingRecords.get(rollingRecords.size() - 1).buyDate;
+				if(mode == 2 && i <= rollingEndInd) {
+					rollingRecords.add(thisTr);
+				}
+				
+				// ----------- rolling records 填充完毕，开始分析，并将rollingInd推到下一个 -------
+				boolean isFilled  = false;
+				if(mode == 1 && (thisDate.after(rollingEndDate) || i == tradeRecords.size() - 1 ))
+					isFilled = true;
+				if(mode == 2 && i == rollingEndInd)
+					isFilled = true;
+				
+				if(isFilled ){  //分析完之后再向前roll trding date
+					Date lastDate = rollingRecords.get(rollingRecords.size() - 1).sellDate;
 					
 					ArrayList<Double> data = analyzeTrades(rollingRecords);
 					double totalTrades = data.get(0);
@@ -133,27 +160,35 @@ public class PerformanceMetrics {
 					rollingAvgLoseProfit.put(lastDate, avgLoseProfit);
 					rollingTotalEquity.put(lastDate, currentEquity);
 					
-					// 然后去除最后一天的
-					Date firstDate = rollingRecords.get(0).buyDate;
-					//ArrayList<TradeRecord> rollingRecords_copy = (ArrayList<TradeRecord>) rollingRecords.clone(); 
-					Set<TradeRecord> toDelete = new HashSet();
-					for(int j = 0; j < rollingRecords.size();j++) {
-						TradeRecord tr = rollingRecords.get(0);
-						if(tr.buyDate.equals(firstDate)) {
-							toDelete.add(tr);
-							rollingRecords.remove(0);
-							logger.trace("       to delete: stock=" + tr.stock + " date=" + sdf.format(tr.buyDate));
+					if(mode == 1) {
+						// 然后去除最前一天的
+						Date firstDate = rollingRecords.get(0).sellDate;
+						//ArrayList<TradeRecord> rollingRecords_copy = (ArrayList<TradeRecord>) rollingRecords.clone(); 
+						Set<TradeRecord> toDelete = new HashSet();
+						for(int j = 0; j < rollingRecords.size();j++) {
+							TradeRecord tr = rollingRecords.get(0);
+							if(tr.sellDate.equals(firstDate)) {
+								toDelete.add(tr);
+								rollingRecords.remove(0);
+								logger.trace("       to delete: stock=" + tr.stock + " date=" + sdf.format(tr.sellDate));
+							}
+							else
+								break;
 						}
-						else
-							break;
+						
+						if(i != tradeRecords.size() - 1) {
+							rollingEndInd++;
+							rollingEndDate = tradingDate.get(rollingEndInd);
+						}
+						
+						rollingRecords.add(thisTr);
 					}
-					
-					if(i != tradeRecords.size() - 1) {
+					if(mode == 2) { // 除去第一个record，然后加上最后一个record
+						rollingRecords.remove(0);
+						//rollingRecords.add(thisTr);
 						rollingEndInd++;
-						rollingEndDate = tradingDate.get(rollingEndInd);
 					}
 					
-					rollingRecords.add(thisTr);
 					
 				}
 				
@@ -166,20 +201,6 @@ public class PerformanceMetrics {
 		
 	}
 	
-	public static void getRollingDataByTrades() {
-		try {
-			if(tradeRecords == null || tradeRecords.size() == 0)
-				return;
-			
-			ArrayList<TradeRecord> rollingRecords = new ArrayList<TradeRecord>(); 
-			for(int i = 0; i < tradeRecords.size(); i++) {
-				TradeRecord thisTr = tradeRecords.get(i);
-			} // End of FOR
-			
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
 	public static ArrayList<Double> analyzeTrades(ArrayList<TradeRecord> rollingRecords) {
 		ArrayList<Double> data = new ArrayList<Double> (); 
 		
