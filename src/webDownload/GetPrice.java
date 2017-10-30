@@ -30,7 +30,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 					
 					String fileName = stockCode + ".csv";
 					//String outFilePath = "D:\\stock data\\stock hist data - webb";
-					String outFilePath = "T:\\Mubing\\stock data\\stock hist data - webb";
+					String outFilePath = "Z:\\Mubing\\stock data\\stock hist data - webb";
 					boolean isOK = getHistoricalData(stockCode, fileName, outFilePath);
 					if(!isOK) {
 						failedList.add(stockCode);
