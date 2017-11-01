@@ -117,7 +117,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171027", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171031", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;

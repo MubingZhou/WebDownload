@@ -20,7 +20,7 @@ public class PortfolioScreening {
 	public static int topNStocks = 20;
 	public static ArrayList<StockSingleDate> stockList = new ArrayList<StockSingleDate>();
 	public static double avgDailyValueThreshHold_USD = 7000000.0;
-	public static int oneMonthBeforeDays = 1; // 正常而言这应该是 ind - 20，表示考虑20天前的数据
+	public static int oneMonthBeforeDays = 20; // 正常而言这应该是 ind - 20，表示考虑20天前的数据
 	
 	private static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
 	private static Map<String, String> ffPctMap = new HashMap();
@@ -355,14 +355,7 @@ public class PortfolioScreening {
 				}
 			}
 			
-			Collections.sort(stockList, StockSingleDate.getComparator(-1));  
-			for(int i = 1000000; i < stockList.size(); i++) {
-				StockSingleDate stock = stockList.get(i);
-				stock.dummy1 = (double) i;
-			}
-			
-			
-			
+			Collections.sort(stockList, StockSingleDate.getComparator(-1)); 			
 				
 		}catch(Exception e) {
 			e.printStackTrace();

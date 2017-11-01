@@ -16,6 +16,8 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 		try {
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
+			Thread.sleep(1000 * 3600 * 6);
+			
 			ArrayList<String> stockCodeList = WebDownload.getCGITopHoldingStocks("D:\\stock data\\all stock list.csv");
 			//List<String> stockCodeList = stockCodeList0.subList(100, stockCodeList0.size() );
 			
