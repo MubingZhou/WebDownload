@@ -58,11 +58,19 @@ import javax.xml.bind.annotation.XmlType;
    "dummy2",
    "dummy3",
    "dummy4",
+   "dummy5",
+   "dummy6",
    
    "filter1",
    "filter2",
    "filter3",
    "filter4",
+   
+   "rank1",
+   "rank2",
+   "rank3",
+   "rank4",
+   "rank5",
 })  
 public class StockSingleDate {
 	public Calendar cal = Calendar.getInstance();
@@ -104,6 +112,8 @@ public class StockSingleDate {
 	public Double dummy2 = 0.0;
 	public Double dummy3 = 0.0;
 	public Double dummy4 = 0.0;
+	public Double dummy5 = 0.0;
+	public Double dummy6 = 0.0;
 	
 	public Double filter1 = 1.0;
 	public Double filter2 = 1.0;
@@ -112,6 +122,18 @@ public class StockSingleDate {
 	
 	public Double db_SB_over_ff = 0.0;
 	public Double db_SB_over_turnover = 0.0;
+	
+	/*
+	 * Rank 1 - Southbound的change除以Freefloat，月尾和月初的差值
+	 * Rank 2 - Southbound的change除以3个月的Average Daily Volume，月尾和月初的差值
+	 * Rank 3 - Southbound的change除以Freefloat，对每日的差值做ranking，然后取这个月所有天ranking的均值
+	 * Rank 4 - Southbound的change除以3个月的Average Daily Volume，然后取这个月所有天ranking的均值
+	 */
+	public Double rank1 = 0.0;
+	public Double rank2 = 0.0;
+	public Double rank3 = 0.0;
+	public Double rank4 = 0.0;
+	public Double rank5 = 0.0;
 	
 	public StockSingleDate(String stockCode, String date, String dateFormat) {
 		this.stockCode = stockCode;

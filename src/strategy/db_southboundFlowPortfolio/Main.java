@@ -10,6 +10,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,7 +68,7 @@ public class Main {
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - avg rank";
+				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date()) + " - idea3";
 				//String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
 				File f = new File(portFilePath);
 				f.mkdir();
@@ -75,6 +76,14 @@ public class Main {
 				
 				ArrayList<String> rebalDateArr = new ArrayList<String>();
 				
+				int idea =3;
+				/*
+				 * 0 - normal
+				 * 1 - avg rank, if choose idea = 1, need to consider oneMonthBeforeDays in "PortfolioScreening"
+				 * 2 - filter 
+				 */
+				PortfolioScreening.oneMonthBeforeDays = 20;
+						
 				int rebalDate = 0;  
 				if(rebalDate == 0) { // please make sure that all rebalancing dates are trading date
 					/*rebalDateArr .add("20160704");
@@ -92,7 +101,7 @@ public class Main {
 					rebalDateArr .add("20170703");
 					rebalDateArr .add("20170801");*/
 					rebalDateArr .add("20170929");
-					rebalDateArr .add("20171025");
+					rebalDateArr .add("20171027");
 				}else if(rebalDate == 1) {
 					rebalDateArr .add("20160715");
 					rebalDateArr .add("20160815");
@@ -145,21 +154,22 @@ public class Main {
 				
 				
 				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
-				int idea = 1;
-				/*
-				 * 0 - normal
-				 * 1 - avg rank
-				 * 2 - filter 
-				 */
 				
-				int lastNdays = 10;     // for idea1 only
 				
-				int lookbackDays2 = 20; // for idea2 only  最近lookbackDays2天中至少要有minDays2满足条件
-				int minDays2 = 15;		// for idea2 only
-				int lookbackDays3 = 5; // for idea2 only	同时，最近lookbackDays3天中至少要有minDays3满足条件
+				int lastNdays = 13;     // for idea1 only，对多少天之内的数据进行average ranking
+				
+				int lookbackDays2 = 13; // for idea2 only  最近lookbackDays2天中至少要有minDays2 （inclusive) 满足条件
+				int minDays2 = 9;		// for idea2 only
+				int lookbackDays3 = 5; // for idea2 only	同时，最近lookbackDays3天中至少要有minDays3（inclusive) 满足条件
 				int minDays3 = 4;		// for idea2 only
 				
-				if(idea == 1 || idea == 2) {
+				boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change，只在idea1和idea2下有效
+				FileWriter fw_dailyCCASSChg ; // 仅仅是为了初始化
+				Map<String, Map<Date, Double>> dailyCCASSChg_map = new HashMap<String, Map<Date, Double>>();
+				Set<Date> dailyCCASSChg_allDates = new  HashSet<>();;
+
+				
+				if(idea == 1 || idea == 2 || idea == 3) {
 					/*
 					 * =================================================================
 					 * idea1 (average)：在每个rebalancing date，计算每只股票前lastNdays天每一天的ranking，加总之后求均值，再根据这个均值的ranking来选股票
@@ -195,20 +205,26 @@ public class Main {
 					case 2:
 						dayCalStart = lookbackDays2 + 1;
 						break;
+					case 3:
+						dayCalStart = 20;
+						break;
 					default:
 						break;
 					}
+					int daysBetweenRelancingDate = 0;
 					for(int i = rebalStartInd-dayCalStart; i <= rebalEndInd; i++) {   
+						daysBetweenRelancingDate++;
 						String todayDate = sdf_yyyyMMdd.format(allTradingDate.get(i).getTime());
 						logger.info("\tScreening date = " + todayDate);
 						
+						PortfolioScreening.oneMonthBeforeDays = 1;
 						ArrayList<StockSingleDate> todaySel = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd"); //对每只股票进行赋值
 						logger.debug("\t\ttodaySel .size() = " + todaySel .size());
 						allPortfolioScreeningData.add(todaySel );
 						
 						int todayInd = allPortfolioScreeningData.size() - 1;
 						// ===================== idea == 2 ===================
-						if(idea == 2 && todayInd > 0) {  //比较昨天south bound的数据，update filter
+						if((isOutputDailyCCASSChg || idea == 2 || idea == 3) && todayInd > 0) {  //比较昨天south bound的数据，update filter
 							
 							ArrayList<StockSingleDate> lastDateSel = allPortfolioScreeningData.get(todayInd - 1);
 							// 将昨天的数据转换为map
@@ -223,29 +239,189 @@ public class Main {
 								StockSingleDate thisStock = todaySel.get(k);
 								StockSingleDate thisStock_yest = lastDateSel_map.get(thisStock.stockCode);
 								
-								if(thisStock_yest == null) { // 找不到昨天的数据
-									thisStock.dummy4 = 1.0;  // 用dummy4来存储当天southbound的share的变动
-								}else {
-									Double sb_yesterday = thisStock_yest.SB_today_holding;
-									Double sb_today = thisStock.SB_today_holding;
-									
-									if(sb_today > sb_yesterday) {
-										thisStock.dummy4 = 1.0;
+								if(idea == 2 || idea == 3) {
+									if(thisStock_yest == null) { // 找不到昨天的数据
+										thisStock.dummy6 = 1.0;  // 用dummy6来存储当天southbound的share的变动
 									}else {
-										thisStock.dummy4 = -1.0;
+										Double sb_yesterday = thisStock_yest.SB_today_holding;
+										Double sb_today = thisStock.SB_today_holding;
+										
+										if(sb_today >= sb_yesterday) {
+											thisStock.dummy6 = 1.0;
+										}else {
+											thisStock.dummy6 = -1.0;
+										}
+									}
+									todaySel.set(k, thisStock);
+								}
+								
+								// 输出每日的chg
+								if(isOutputDailyCCASSChg) {   
+									Double chg = 0.0;
+									if(thisStock_yest != null && thisStock != null) {
+										Double sb_yesterday =  0.0;
+										if(thisStock_yest != null && thisStock_yest.SB_today_holding != null)
+											sb_yesterday = thisStock_yest.SB_today_holding;
+										Double sb_today = 0.0 ;
+										if(thisStock != null && thisStock.SB_today_holding != null)
+											sb_today = thisStock.SB_today_holding;
+										chg = sb_today / thisStock.osShares_freefloat_today 
+												- sb_yesterday/ thisStock_yest.osShares_freefloat_today;
+									
+									
+										Map<Date, Double> thisStock_chg_date = dailyCCASSChg_map.get(thisStock_yest.stockCode);
+										if(thisStock_chg_date == null)
+											thisStock_chg_date = new HashMap<Date, Double>();
+										
+										Date thisDate = allTradingDate.get(i).getTime();
+										thisStock_chg_date.put(thisDate, chg);
+										dailyCCASSChg_map.put(thisStock_yest.stockCode, thisStock_chg_date);
+										
+										dailyCCASSChg_allDates.add(thisDate);
 									}
 								}
-								todaySel.set(k, thisStock);
+								
 							}
 							
 							allPortfolioScreeningData.set(todayInd, todaySel);
+							
 						}
 						// ======= idea2 END ==========
 						
 						// *********** rebalancing date *************
 						if(todayDate.equals(rebalDateArr.get(rebalCount))) { 
-							logger.info("\t\tToday is a rebalancing date!");
+							logger.info("\t\tToday is a rebalancing date! daysBetweenRelancingDate=" + daysBetweenRelancingDate);
 							ArrayList<StockSingleDate> stocksToBuy = new ArrayList<StockSingleDate> ();
+							
+							// ================= idea == 3 =================
+							if(idea == 3) {
+								Map<String, StockSingleDate> rebalStock_map = new HashMap();  // 想要在rebal那天将每只股票的rank都列出来
+								for(int j = 0; j < todaySel .size(); j++) { // 先将rebalStock的框架搭出来
+									StockSingleDate stock = todaySel.get(j);
+									stock.dummy3 = stock.dummy1;  // dummy1是按照freefloat的排序排出来的
+									stock.dummy4 = stock.dummy2;  // dummy1是按照3M ADV的排序排出来的
+									stock.dummy5 = 1.0;    // 有效天数
+									rebalStock_map.put(stock.stockCode, stock);
+								}
+								
+								for(int j = 1; j < lastNdays; j++) { // 寻找最近20天的数据，不用循环j=0的情况了
+									ArrayList<StockSingleDate> rebal_thisDateSel = allPortfolioScreeningData.get(allPortfolioScreeningData.size() - 1 - j) ;
+									//String rebal_thisDate = sdf_yyMMdd.format(allTradingDate.get(i-j).getTime());
+									for(int k = 0; k < rebal_thisDateSel.size(); k++) {
+										StockSingleDate thisStock = rebal_thisDateSel.get(k);
+										StockSingleDate findStock =rebalStock_map.get(thisStock.stockCode);
+										if(findStock != null) { // 只考虑能找到的情况
+											findStock.dummy3 = findStock.dummy3 + thisStock.dummy1; // dummy1是每只股票在当天的按照southbound的变化除以freefloat的排名，dummy3来存储20天内这个排名的总值  
+											findStock.dummy4 = findStock.dummy4 + thisStock.dummy2;
+											findStock.dummy5 = findStock.dummy5 + 1;  // dummy4 来存储有多少天是有效的
+											rebalStock_map.put(thisStock.stockCode, findStock);
+										}
+									}
+								}
+								
+								// 上面是做daily的ranking，这里只做month end和month begin的ranking
+								PortfolioScreening.oneMonthBeforeDays = daysBetweenRelancingDate;
+								ArrayList<StockSingleDate> todaySel_20 = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd");
+								Map<String, StockSingleDate> todaySel_20_map = new HashMap<String, StockSingleDate>();
+								for(int k = 0; k < todaySel_20.size(); k++) {
+									StockSingleDate thisStock = todaySel_20.get(k);
+									StockSingleDate findStock =rebalStock_map.get(thisStock.stockCode);
+									if(findStock != null) { // 只考虑能找到的情况
+										findStock.rank1 = thisStock.dummy1;
+										findStock.rank2 = thisStock.dummy2;
+										rebalStock_map.put(thisStock.stockCode, findStock);
+										
+										todaySel_20_map.put(findStock.stockCode, thisStock);
+									}
+								}
+								
+								
+								// 将每只股票最近20天的ranking加总，然后求平均值，再排序
+								ArrayList<StockSingleDate> todaySel2 = new ArrayList<StockSingleDate>();
+								todaySel2.addAll(rebalStock_map.values());
+								logger.debug("\t\trebalStock_map.values().size() = " + rebalStock_map.values().size());
+								logger.debug("\t\ttodaySel2.size() = " + todaySel2 .size());
+								for(int j = 0; j < todaySel2 .size(); j++) {
+									StockSingleDate thisStock = todaySel2.get(j);
+									thisStock.rank3 = thisStock.dummy3 / thisStock.dummy5;
+									thisStock.rank4 = thisStock.dummy4 / thisStock.dummy5;
+									
+									thisStock.sorting_indicator = (thisStock.rank1 + thisStock.rank2 
+											+ thisStock.rank3 + thisStock.rank4)/4;   // 这个句子决定了最后的排序
+									thisStock.rank5 = thisStock.sorting_indicator;
+								}
+								
+								Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
+								
+								// 还要进行filter
+								lookbackDays2 = daysBetweenRelancingDate;
+								minDays2 = (int) Math.floor((double) lookbackDays2 * 0.7);
+								for(int j = 0; j < lookbackDays2; j++) { // 回看过去20天
+									ArrayList<StockSingleDate> thisDateSel = allPortfolioScreeningData.get(todayInd - j);
+									
+									Map<String, StockSingleDate> thisDateSel_map = new HashMap()	;
+									for(int k = 0; k < thisDateSel.size(); k++) {
+										StockSingleDate thisStock = thisDateSel.get(k);
+										thisDateSel_map.put(thisStock.stockCode, thisStock);
+									}
+									
+									for(int k = 0; k < todaySel2.size(); k++	) {   // 对今天的每只股票，查看过去某一天其southbound是否增加，如果增加，则filter2增加100
+										StockSingleDate thisStock = todaySel2.get(k);
+										StockSingleDate findStock = thisDateSel_map.get(thisStock.stockCode);
+										
+										if(findStock == null) {
+											thisStock.filter2 = thisStock.filter2 + 100;
+											if(j < lookbackDays3)  // 最近5天的情况
+												thisStock.filter3 = thisStock.filter3 + 100;
+										}else {
+											if(findStock.dummy6 == 1.0) {
+												thisStock.filter2 = thisStock.filter2 + 100; 
+												if(j < lookbackDays3)  // 最近5天的情况
+													thisStock.filter3 = thisStock.filter3 + 100;
+											}
+										}
+										
+										todaySel2.set(k, thisStock);
+									}
+								}// end of filter
+								
+								// 判断每只股票的符合条件的天数是否满足最小天数要求
+								for(int k = 0; k < todaySel2.size(); k++	) {
+									StockSingleDate thisStock = todaySel2.get(k);
+									
+									if(thisStock.filter2 / (lookbackDays2 * 100) >= ((double) minDays2 / lookbackDays2)
+											&& thisStock.filter3 / (lookbackDays3 * 100) >= ((double) minDays3 / lookbackDays3)) {
+										thisStock.filter4 = 2.0;
+									}else {
+										thisStock.filter4 = -2.0;
+									}
+								}
+								
+								stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
+								
+								//进行output
+								FileWriter fw = new FileWriter(portFilePath + "\\stock ranking " + todayDate + ".csv");
+								fw.write("stock,"
+										+ "3M ADV (USD mm),SB/FF,rank1,SB/3M ADV,rank2,"
+										+ "rank3(avg daily SB/FF ranking),rank4(avg daily SB/3M ADV ranking),Total Ranking,"
+										+ "filter2,filter3,filter4\n");
+								for(int j = 0; j < todaySel2 .size(); j++) {
+									StockSingleDate thisStock = todaySel2.get(j);
+									Double _3MADV = thisStock.Turnover_3M_avg / 7.8 / 1000000;
+									
+									StockSingleDate thisStock_20 = todaySel_20_map.get(thisStock.stockCode);
+									Double monthlySBChg_FF = thisStock_20.SB_over_os_shares;
+									Double monthlySBChg_vol = thisStock_20.SB_over_vol;
+									
+									fw.write(thisStock.stockCode + "," + _3MADV + "," 
+											+ monthlySBChg_FF + "," + thisStock.rank1 + ","
+											+ monthlySBChg_vol + "," + thisStock.rank2 + ","
+											+ thisStock.rank3 + "," + thisStock.rank4 + "," + thisStock.rank5 + ","
+											+ thisStock.filter2 + "," + thisStock.filter3 + "," + thisStock.filter4 + "\n");
+								}
+								fw.close();
+							}
+							// ============= idea == 3 ---- END ===============
 							
 							// ================= idea == 1 =================
 							if(idea  == 1) {
@@ -308,7 +484,7 @@ public class Main {
 											if(j < lookbackDays3)  // 最近5天的情况
 												thisStock.filter3 = thisStock.filter3 + 100;
 										}else {
-											if(findStock.dummy4 == 1.0) {
+											if(findStock.dummy6 == 1.0) {
 												thisStock.filter2 = thisStock.filter2 + 100; 
 												if(j < lookbackDays3)  // 最近5天的情况
 													thisStock.filter3 = thisStock.filter3 + 100;
@@ -342,14 +518,59 @@ public class Main {
 							}
 							data.add(stocksToBuy_str);
 							
+							
+							// ========== 写入每日的southbound change ==========
+							if(isOutputDailyCCASSChg) {
+								SimpleDateFormat sdf111 = new SimpleDateFormat ("dd/MM/yyyy"); 
+								//dailyCCASSChg_map;
+								fw_dailyCCASSChg = new FileWriter(portFilePath + "\\daily southbound chg (over free float) " + todayDate + ".csv");
+								Set<String> allStocks = dailyCCASSChg_map.keySet();
+								
+								// 先对date list 进行排序
+								ArrayList<Date> allDateArr = new ArrayList<Date>();
+								allDateArr.addAll(dailyCCASSChg_allDates);
+								Collections.sort(allDateArr);
+								for(int j = 0; j < allDateArr.size(); j++) {
+									fw_dailyCCASSChg.write("," + sdf111.format(allDateArr.get(j)));
+								}
+								fw_dailyCCASSChg.write("\n");
+								
+								// 读取每只股票数据
+								for(String stock : allStocks) {
+									Map<Date, Double> thisStockData = dailyCCASSChg_map.get(stock);
+									ArrayList<String> thisStockToWrite = new ArrayList<String>();
+									thisStockToWrite.add(stock);
+									for(int k = 0; k < allDateArr.size(); k++)
+										thisStockToWrite.add("");
+									
+									for(Date date : thisStockData.keySet()) {
+										int ind = allDateArr.indexOf(date);
+										if(ind >= 0)
+											thisStockToWrite.set(ind + 1, String.valueOf(thisStockData.get(date) * 100));
+									}
+									
+									for(int k = 0; k < thisStockToWrite.size(); k++) {
+										if(k > 0)
+											fw_dailyCCASSChg.write(",");
+										fw_dailyCCASSChg.write(thisStockToWrite.get(k));
+									}
+									fw_dailyCCASSChg.write("\n");
+								}
+								fw_dailyCCASSChg.close();
+								dailyCCASSChg_allDates = new HashSet<Date>();
+								dailyCCASSChg_map = new HashMap<String, Map<Date, Double>>();
+							}
+							
 							rebalCount ++;
+							daysBetweenRelancingDate = 0;
 						} // rebalancing 结束
 					}
 					
 					/*
-					 * idea1结束
+					 * idea1/2/3结束
 					 * ===============================================================
 					 */
+				
 				}
 				
 				

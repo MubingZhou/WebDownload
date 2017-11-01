@@ -60,23 +60,27 @@ public class Test {
 		// TODO Auto-generated method stub
 		try {
 
-		
-			Thread t = new Thread(new Runnable(){
-				   public void run(){
-					   try {
-							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
-						   //PlayWAV.play("hahaha.wav");
-						   String s = "-1.02%";
-						   System.out.println(Double.parseDouble(s.substring(0, s.length()-1)));
-							//logger.info("            logging holding records done!");
-						}catch(Exception e) {
-							logger.error("           Can't log holding records!");
-						}
-				   }
-				});
-			t.start();
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+			
+			Date d1 = sdf.parse("20170101");
+			Date d2 = sdf.parse("20170201");
+			Date d3 = sdf.parse("20170301");
+			
+			Map<Date, String> m =  new HashMap();
+			m.put(d1, "0101");
+			m.put(d2, "0201");
+			m.put(d3, "0301");
+			
+			ArrayList<Date> l = new ArrayList<Date>();
+			l.addAll(m.keySet());
+			Collections.sort( l,Collections.reverseOrder());
+			
+			for(int i = 0; i< l.size(); i++) {
+				 System.out.println(m.get(l.get(i)));
+			}
+			
             
-            System.out.println("sdfsdf");
+           
 			
 		}catch(Exception e) {
 			e.printStackTrace();

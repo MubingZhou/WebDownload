@@ -4,10 +4,31 @@ Regular:
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up（get strategy candidates, update trading records)
 
+20171101
+	Outstanding: 
+	Monitoring: 1668 (华南城，利润下降60%）
+				2328 （中国财险，业绩不及预期）
+				1432 （中国圣牧，利润下降70%）
+				3323（附属子公司利润上升50%）
+				1462（利润增长20倍，一次性原因）
+20171031 
+	Outstanding: Download yesterday's price data and update DB south bound strategy
+	Monitoring: 906(中粮包装，入股加多宝）
+				1169（海尔电器，业绩增长20%，但是似乎是in line with estimation的）
+				836（华润电力，业绩下降）
+				1919(利润大增，但是似乎股价已经在第二季度price in了）
+				1339（
+				
+
 20171030 
 	Outstanding: Find the next potential A shares - 次新 + 业绩好; go through Jisilu
-	Monitoring: 3301 (配售低于市价，8.52） 285（业绩同比增长，环比下降，1 coverage, beat the consensus）2009(业绩还行）2039（业绩较好）1211（比亚迪，业绩吧不及预期）
-		2318(中国平安，业绩好于新华保险）2601（中国太保）6060（亏损4亿）1088（中国神华，beat the concensus) 1866(业绩大好）1546（profit alert，内幕？）1317（枫叶教育，预计盈利增加）
+	Monitoring: 3301 (配售低于市价，8.52,结果：大跌，但是没有跳空低开） 285（业绩同比增长，环比下降，1 coverage, beat the consensus，上涨）2009(业绩还行，无太大反应）2039（业绩较好，无太大反应）1211（比亚迪，业绩不及预期，下跌）
+		2318(中国平安，业绩好于新华保险，股价没有表现）2601（中国太保，slightly beat the consensus, 股价没有表现）
+		6060（亏损4亿，高开低走。。。。，高开可能是受昨天美国科技股大涨的影响）
+		1088（中国神华，beat the concensus,但是股价高开2%之后低走) 
+		1866(中国心连心化肥，盈喜，业绩大好，但是之前早就盈喜过了，所以这次股价没有表现）
+		1546（profit alert，内幕？看不懂）
+		1317（枫叶教育，预计盈利增加）
 
 20171027
 	Outstanding:
