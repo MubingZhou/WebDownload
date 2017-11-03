@@ -38,7 +38,7 @@ public class Main {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171020";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171102";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
@@ -117,7 +117,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171031", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171102", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;

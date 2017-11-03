@@ -1,6 +1,7 @@
 package strategy.db_southboundFlowPortfolio;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -24,7 +25,7 @@ public class PortfolioScreening {
 	
 	private static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
 	private static Map<String, String> ffPctMap = new HashMap();
-	
+	private static Map<String, Map<Date,Double>> sbDataMap = new HashMap<String, Map<Date,Double>>();
 
 	/**
 	 * 在某一天进行portfolio screening. 先不选出合适的股票，只是把每只股票的相关数据以及ranking全部 计算出来，然后排序
@@ -508,6 +509,47 @@ public class PortfolioScreening {
 		}
 		
 		return stockPickedList;
+	}
+	
+	public static void getAllSbData(String rootPath) {
+		try {
+			//Map<String, Map<Date,Double>> sbDataMap = new HashMap<String, Map<Date,Double>>();
+			
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+            File allFile = new File(rootPath);
+            for(File f : allFile.listFiles()) {
+            	String fileName = f.getName();  // "2017-07-21.csv"
+            	String filePath = rootPath + "\\" + fileName	;
+            	String dateStr = fileName.substring(0, fileName.length() - 4); // "2017-07-21"   
+            	Date date = sdf.parse(dateStr);
+            	System.out.println(dateStr);
+            	
+            	BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
+            	String line ="";
+            	int count  = 0;
+            	while((line = bf.readLine()) != null) {
+            		if(count  == 0) {
+            			count ++;
+            			continue;
+            		}
+            		String[] lineArr = line.split(",");
+            		String stock = lineArr[0];
+            		String holding = lineArr[2];
+            		Double holdingD = Double.parseDouble(holding);
+            		
+            		Map<Date,Double> stockData = sbDataMap.get(stock);
+            		if(stockData == null)
+            			stockData = new HashMap<Date,Double>(); 
+            		stockData.put(date, holdingD);
+            		
+            		sbDataMap.put(stock, stockData);
+            		count++;
+            	} // end of while
+            } // end of file for
+           
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }

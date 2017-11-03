@@ -64,7 +64,9 @@ public class AVAT {
 	
 	private static Map<Double, String> msg_eligibleStocksMap = new HashMap<Double, String>();  // 用来存储每次运行完之后符合要求的股票，用于在对话框中显示，key是avat，value是stock code
 	private static String alertToShow = "";   // 将要显示在弹出框的内容
-	private static JFrame frame = new JFrame();
+	private static JFrame avatDisplayFrame = new JFrame();   // 
+	private static String buyOrdersToShow = "";
+	private static JFrame buyOrdersFrame = new JFrame();    // show buy orders
 	
 	// -------- orders ----------
 	//private static ArrayList<String> boughtRecords = new ArrayList<String>(); // stocks that have been bought 
@@ -218,9 +220,13 @@ public class AVAT {
 			logger.info("get lot size - done");
 			
 			// ------- 设置弹出窗口的容器 ----------
-		   frame.setLocation(0,0);
-		   frame.setSize(300, 700);
-		   frame.setVisible(true);
+		   avatDisplayFrame.setLocation(0,0);
+		   avatDisplayFrame.setSize(300, 700);
+		   avatDisplayFrame.setVisible(true);
+		   
+		   buyOrdersFrame.setLocation(0,300);
+		   buyOrdersFrame.setSize(300, 700);
+		   buyOrdersFrame.setVisible(true);
 	   
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -482,7 +488,7 @@ public class AVAT {
 					
 					Thread t = new Thread(new Runnable(){
 						   public void run(){
-							   JOptionPane.showMessageDialog(frame, alertToShow, "AVAT Results", JOptionPane.PLAIN_MESSAGE);
+							   JOptionPane.showMessageDialog(avatDisplayFrame, alertToShow, "AVAT Results", JOptionPane.PLAIN_MESSAGE);
 						        
 						   }
 						});
@@ -737,11 +743,15 @@ public class AVAT {
 						orderWriter.flush();
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
+						buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + stockCode + "\n";
+						
 						Thread placingOrderAlert = new Thread(new Runnable(){
 							   public void run(){
 								   try {
 										//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
 									   PlayWAV.play("hahaha.wav");
+									   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
+								        
 										//logger.info("            logging holding records done!");
 									}catch(Exception e) {
 										logger.error("           Sound alert failed!");
