@@ -4,6 +4,12 @@ Regular:
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up（get strategy candidates, update trading records)
 
+20171104
+	Outstanding:
+	Monitoring:
+	
+	
+	
 20171103
 	Monitoring: 3883 (中国奥园，业绩大增，但其实没哟out of expectation）
 

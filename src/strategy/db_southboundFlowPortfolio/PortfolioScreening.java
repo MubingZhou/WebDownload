@@ -25,7 +25,7 @@ public class PortfolioScreening {
 	
 	private static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
 	private static Map<String, String> ffPctMap = new HashMap();
-	private static Map<String, Map<Date,Double>> sbDataMap = new HashMap<String, Map<Date,Double>>();
+	private static Map<String, Map<Date,ArrayList<Double>>> sbDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();
 
 	/**
 	 * 在某一天进行portfolio screening. 先不选出合适的股票，只是把每只股票的相关数据以及ranking全部 计算出来，然后排序
@@ -49,10 +49,12 @@ public class PortfolioScreening {
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			benchCal = utils.Utils.getMostRecentDate(benchCal, allTradingDate);
 			date = sdf.format(benchCal.getTime());
+			Date todayDate = benchCal.getTime();
 			
 			int ind = allTradingDate.indexOf(benchCal);
 			Calendar oneMonthBefore = allTradingDate.get(ind - oneMonthBeforeDays);  // 正常而言这应该是 ind - 20，表示考虑20天前的数据
 			Calendar threeMonthBefore = allTradingDate.get(ind - 60);
+			Date oneMonthBeforeDate = oneMonthBefore.getTime();
 			
 			// ========= get stock free float pct ========
 			if(ffPctMap.isEmpty()){
@@ -102,95 +104,32 @@ public class PortfolioScreening {
 				
 				// ========== get southbound flow information ==============
 				//ArrayList<String> today_SBData = webbDownload.southboundData.DataGetter.getStockData(stockCode, date, dateFormat);
-				ArrayList<String> today_SBData = sbToday_map.get(stockCode);
+				ArrayList<Double> today_SBData = sbDataMap.get(stockCode).get(todayDate);
 				//Double today_holding = 0.0;
 				if(today_SBData != null && today_SBData.size() > 0) {
-					stock.SB_today_holding = Double.parseDouble(today_SBData.get(2));
-					stock.SB_today_holdingValue = Double.parseDouble(today_SBData.get(3));
+					stock.SB_today_holding = today_SBData.get(0);
+					stock.SB_today_holdingValue = today_SBData.get(1);
 				}else {
 					logger.debug("[today SB data not exists] code=" + stockCode +  " " + date);
+					stock.SB_today_holding = 0.0;
+					stock.SB_today_holdingValue = 0.0;
 				}
 				
-				//ArrayList<Calendar> allTradingDate = stock.allTradingDate;
-				//ArrayList<String> oneMontBeofore_SBData = webbDownload.southboundData.DataGetter.getStockData(stockCode, oneMonthBefore);
-				ArrayList<String> oneMontBeofore_SBData = sbOneMonthBefore_map.get(stockCode);
-				//Double oneMontBeofore_holding = 0.0;
+				ArrayList<Double> oneMontBeofore_SBData = sbDataMap.get(stockCode).get(oneMonthBeforeDate);
 				if(oneMontBeofore_SBData != null && oneMontBeofore_SBData.size() > 0) {
-					stock.SB_1MBefore_holding = Double.parseDouble(oneMontBeofore_SBData.get(2));
-					stock.SB_1MBefore_holdingValue = Double.parseDouble(oneMontBeofore_SBData.get(3));
+					stock.SB_1MBefore_holding = oneMontBeofore_SBData.get(0);
+					stock.SB_1MBefore_holdingValue = oneMontBeofore_SBData.get(1);
 				}else {
 					logger.debug("[1 month ago SB data not exists] code=" + stockCode +  " " + date);
+					stock.SB_1MBefore_holding = 0.0;
+					stock.SB_1MBefore_holdingValue = 0.0;
 				}
 				
 				stock.SB_1M_trailingFlow = stock.SB_today_holding - stock.SB_1MBefore_holding;
 				//System.out.println(new SimpleDateFormat("yyyyMMdd").format(oneMonthBefore.getTime()) + " Southbound trailing = " + stock.SB_1M_trailingFlow);
 				
 				// ======== get stock volume & turnover information ============
-				/*
-				Double cumVol = 0.0;
-				Double avgVol = 0.0;
-				Double cumTurnover = 0.0;
-				Double avgTurnover = 0.0;
-				int numValidData = 0;
-				
-				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockPrice.DataGetter.STOCK_DATA_PATH + stockCode + ".csv");
-				String dataLine = "";
-				int rowC = 0;
-				int dayCount = 0;
-				int numDays = 60;
-				while((dataLine = bf.readLine()) != null) {
-					if(rowC > 0) {
-						ArrayList<String> dataLineArr = new ArrayList<String>(Arrays.asList(dataLine.split(",")));
-						String thisDateStr = dataLineArr.get(0);
-						Calendar thisDate = utils.Utils.dateStr2Cal(thisDateStr, "yyyy-MM-dd");
-						if(!thisDate.before(oneMonthBefore) && !thisDate.after(benchCal)) {
-							// if thisDate is between oneMonthBefore & benchCal
-							if(dayCount < numDays) {
-								String volStr = dataLineArr.get(8);
-								String turnoverStr = dataLineArr.get(9);
-								
-								numValidData++;
-								try {
-									Double todayVol = Double.parseDouble(volStr);
-									if(todayVol.compareTo(0.1) < 0)
-										throw new Exception();
-									else
-										cumVol = cumVol + todayVol;
-									
-									Double todayTurnover = Double.parseDouble(turnoverStr);
-									if(todayTurnover.compareTo(0.1) < 0)
-										throw new Exception();
-									else
-										cumTurnover = cumTurnover + todayTurnover;
-								}catch(Exception e) {
-									numValidData --;
-								}
-							}else
-								break;
-							
-							dayCount++;
-						}
-						// get today's value to see if the stock is suspended
-						if(thisDate.compareTo(benchCal) == 0) {  
-							String isSuspended = dataLineArr.get(2);
-							try {
-								if(isSuspended.equals("1") ) {
-									stock.suspended = true;
-								}
-							}catch(Exception e) {
-								
-							}
-						}
-					}
-					rowC++;
-				}
-				bf.close();
-				
-				if(numValidData != 0) {
-					avgVol = cumVol / numValidData;
-					avgTurnover = cumTurnover / numValidData;
-				}
-				*/
+	
 				
 				//stock.Vol_1M_avg = avgVol;
 				if(avgVol_map.get(stockCode) != null)
@@ -536,11 +475,17 @@ public class PortfolioScreening {
             		String stock = lineArr[0];
             		String holding = lineArr[2];
             		Double holdingD = Double.parseDouble(holding);
+            		String value = lineArr[3];
+            		Double valueD = Double.parseDouble(value);
             		
-            		Map<Date,Double> stockData = sbDataMap.get(stock);
+            		Map<Date,ArrayList<Double>> stockData = sbDataMap.get(stock);
             		if(stockData == null)
-            			stockData = new HashMap<Date,Double>(); 
-            		stockData.put(date, holdingD);
+            			stockData = new HashMap<Date,ArrayList<Double>>(); 
+            		ArrayList<Double> data = new ArrayList<Double>();
+            		data.add(holdingD);
+            		data.add(valueD);
+            		
+            		stockData.put(date, data);
             		
             		sbDataMap.put(stock, stockData);
             		count++;
