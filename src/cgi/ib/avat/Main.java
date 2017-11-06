@@ -38,7 +38,7 @@ public class Main {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171020";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171102";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
@@ -63,7 +63,7 @@ public class Main {
 			int port = 7497;   	// 7497 - paper account
 								// 7496 - real account
 			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
-			int clientId = 0;
+			int clientId = 1;
 			
 			//[start] 
 			MyLogger inLogger = new MyLogger();
@@ -117,7 +117,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171031", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171103", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -340,6 +340,18 @@ public class Main {
 				myController.reqExecutions(filter, myTradeReportHandler);
 				//System.out.println("here11234--------");
 				//Thread.sleep(1000 * 10000);
+			}
+			if(mode == 105) {
+				// A share
+				Contract con1 = new Contract();
+				con1.symbol("000001");
+				con1.exchange("SEHKSZSE");
+				con1.secType("STK");
+				con1.currency("CNH");
+				
+				//MyITopMktDataHandler myH = new MyITopMktDataHandler(); 
+				//myController.reqTopMktData(con1, null, false, false, myH);
+				
 			}
 			
 			System.out.println("here11234");

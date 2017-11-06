@@ -59,29 +59,46 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+			Map<String, Map<Date,Double>> sbDataMap = new HashMap<String, Map<Date,Double>>();
 			
-			Date d1 = sdf.parse("20170101");
-			Date d2 = sdf.parse("20170201");
-			Date d3 = sdf.parse("20170301");
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+			String sbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
+            File allFile = new File(sbDataPath);
+            for(File f : allFile.listFiles()) {
+            	String fileName = f.getName();  // "2017-07-21.csv"
+            	String filePath = sbDataPath + "\\" + fileName	;
+            	String dateStr = fileName.substring(0, fileName.length() - 4); // "2017-07-21"   
+            	Date date = sdf.parse(dateStr);
+            	System.out.println(dateStr);
+            	
+            	BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
+            	String line ="";
+            	int count  = 0;
+            	while((line = bf.readLine()) != null) {
+            		if(count  == 0) {
+            			count ++;
+            			continue;
+            		}
+            		String[] lineArr = line.split(",");
+            		String stock = lineArr[0];
+            		String holding = lineArr[2];
+            		Double holdingD = Double.parseDouble(holding);
+            		
+            		Map<Date,Double> stockData = sbDataMap.get(stock);
+            		if(stockData == null)
+            			stockData = new HashMap<Date,Double>(); 
+            		stockData.put(date, holdingD);
+            		
+            		sbDataMap.put(stock, stockData);
+            		count++;
+            	} // end of while
+            } // end of file for
 			
-			Map<Date, String> m =  new HashMap();
-			m.put(d1, "0101");
-			m.put(d2, "0201");
-			m.put(d3, "0301");
-			
-			ArrayList<Date> l = new ArrayList<Date>();
-			l.addAll(m.keySet());
-			Collections.sort( l,Collections.reverseOrder());
-			
-			for(int i = 0; i< l.size(); i++) {
-				 System.out.println(m.get(l.get(i)));
-			}
-			
-            
+           System.out.println("123");
+           for(int i = 0; i < 100; i++) {
+        	   System.out.println(sbDataMap.get("700").get(sdf.parseObject("2017-11-02")));
+           }
            
-			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
