@@ -3,6 +3,21 @@ Regular:
 	(After market work) booking
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up（get strategy candidates, update trading records)
+Project - DB MMA Strategy
+	Factor:	1. Strategy 1-4 (combination of rankings)
+			2. Filter for 3M ADV (in DB's paper, it is 7.5m USD)
+			3. # of stocks.
+			4. Filter for flow (current: 70% of the period has inflow & at least 3 days out of the most recent 5 days have inflow)
+			5. 需要剔除的股票（看看是否某些股票连续出现多少out flow就需要剔除）
+			6. 所有股票是equally weighted还是按照ranking进行不同的weight
+			7. 进行long/short的时候，是short HSI还是HSCEI
+			8. rebalancing的频率，是monthly, weekly还是biweekly之类的。
+			9. 未来计划将股票列表限制为HSI或者HSCEI的指数成分股
+	Evaluating Metrics:
+			1. Return
+			2. Max Drawdown		
+			3. Realized Volatility
+			4. Sharpe Ratio
 
 20171104
 	Outstanding:

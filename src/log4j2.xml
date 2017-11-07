@@ -12,7 +12,7 @@
     	<SizeBasedTriggeringPolicy size="10MB"></SizeBasedTriggeringPolicy>
     	<ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"></ThresholdFilter></RollingFile></Appenders>
   <Loggers>
-    <Root level="info">
+    <Root level="debug">
       <AppenderRef ref="Console"></AppenderRef>
       <AppenderRef ref="RollingFile"></AppenderRef>
       <AppenderRef ref="file"></AppenderRef>

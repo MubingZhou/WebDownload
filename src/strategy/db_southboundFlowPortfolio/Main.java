@@ -74,6 +74,7 @@ public class Main {
 				File f = new File(portFilePath);
 				f.mkdir();
 				PortfolioScreening.outputPath = portFilePath;
+				PortfolioScreening.getAllSbData("D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined");
 				
 				ArrayList<String> rebalDateArr = new ArrayList<String>();
 				

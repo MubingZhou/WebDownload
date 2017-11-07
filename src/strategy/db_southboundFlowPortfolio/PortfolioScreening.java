@@ -26,6 +26,9 @@ public class PortfolioScreening {
 	private static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
 	private static Map<String, String> ffPctMap = new HashMap();
 	private static Map<String, Map<Date,ArrayList<Double>>> sbDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();
+	
+	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
+	private static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
 
 	/**
 	 * 在某一天进行portfolio screening. 先不选出合适的股票，只是把每只股票的相关数据以及ranking全部 计算出来，然后排序
@@ -104,7 +107,9 @@ public class PortfolioScreening {
 				
 				// ========== get southbound flow information ==============
 				//ArrayList<String> today_SBData = webbDownload.southboundData.DataGetter.getStockData(stockCode, date, dateFormat);
-				ArrayList<Double> today_SBData = sbDataMap.get(stockCode).get(todayDate);
+				ArrayList<Double> today_SBData = sbDataMap
+						.get(stockCode)
+						.get(todayDate);
 				//Double today_holding = 0.0;
 				if(today_SBData != null && today_SBData.size() > 0) {
 					stock.SB_today_holding = today_SBData.get(0);
@@ -129,8 +134,6 @@ public class PortfolioScreening {
 				//System.out.println(new SimpleDateFormat("yyyyMMdd").format(oneMonthBefore.getTime()) + " Southbound trailing = " + stock.SB_1M_trailingFlow);
 				
 				// ======== get stock volume & turnover information ============
-	
-				
 				//stock.Vol_1M_avg = avgVol;
 				if(avgVol_map.get(stockCode) != null)
 					stock.Vol_3M_avg = avgVol_map.get(stockCode);
@@ -450,9 +453,14 @@ public class PortfolioScreening {
 		return stockPickedList;
 	}
 	
+	/**
+	 * update all southbound data
+	 * @param rootPath
+	 */
 	public static void getAllSbData(String rootPath) {
 		try {
 			//Map<String, Map<Date,Double>> sbDataMap = new HashMap<String, Map<Date,Double>>();
+			//rootPath  ="D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 			
 			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
             File allFile = new File(rootPath);
@@ -461,7 +469,7 @@ public class PortfolioScreening {
             	String filePath = rootPath + "\\" + fileName	;
             	String dateStr = fileName.substring(0, fileName.length() - 4); // "2017-07-21"   
             	Date date = sdf.parse(dateStr);
-            	System.out.println(dateStr);
+            	logger.debug("get all SB data - " + dateStr);
             	
             	BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
             	String line ="";
@@ -490,8 +498,19 @@ public class PortfolioScreening {
             		sbDataMap.put(stock, stockData);
             		count++;
             	} // end of while
+            	bf.close();
             } // end of file for
            
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void getAllTradingDate(String filePath) {
+		try {
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
+			//while()
+			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
