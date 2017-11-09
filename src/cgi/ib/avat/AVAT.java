@@ -754,8 +754,6 @@ public class AVAT {
 								   try {
 										//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
 									   PlayWAV.play("hahaha.wav");
-									   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
-								        
 										//logger.info("            logging holding records done!");
 									}catch(Exception e) {
 										logger.error("           Sound alert failed!");
@@ -766,13 +764,14 @@ public class AVAT {
 					}
 				}  // 买入信号的if结束
 
-			}
+			} // end of for
 			
 			Thread t = new Thread(new Runnable(){
 				   public void run(){
 					   try {
 							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
 						   saveHoldingRecords();
+						   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
 							//logger.info("            logging holding records done!");
 						}catch(Exception e) {
 							logger.error("           Can't log holding records!");

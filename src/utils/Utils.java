@@ -569,110 +569,127 @@ public class Utils {
 			
 			return allStockList;
 		}
-		private static ArrayList<String> getSouthboundStocks_support(String filePath, String date, String dateFormat) throws Exception{
+		private static ArrayList<String> getSouthboundStocks_support(String filePath, String date, String dateFormat) {
+			BufferedReader bf = null;
 			ArrayList<String> stockList = new ArrayList<String>();
-			String special = "2969";  // it seems that this code always represents a temporary code, so if it appears in the list, it should be mapped back to its original code
-			
-			// allData is in the following form:
-			// stock code1, direction, date
-			// stock code2, direction, date ...
-			ArrayList<ArrayList<Object>> allData = new ArrayList<ArrayList<Object>>();
-			
-			// read data
-			BufferedReader bf = readFile_returnBufferedReader(filePath);
-			String line = "";
-			int counter = 0;
-			while((line = bf.readLine())!= null) {
-				if(counter == 0) {
-					counter ++; // skip the first line
-					continue;
+			try {
+				String special = "2969";  // it seems that this code always represents a temporary code, so if it appears in the list, it should be mapped back to its original code
+				
+				// allData is in the following form:
+				// stock code1, direction, date
+				// stock code2, direction, date ...
+				ArrayList<ArrayList<Object>> allData = new ArrayList<ArrayList<Object>>();
+				
+				// read data
+				bf = readFile_returnBufferedReader(filePath);
+				String line = "";
+				int counter = 0;
+				SimpleDateFormat thisSdf = new SimpleDateFormat("dd/MM/yyyy");
+				ArrayList<Object> dataLine;
+				Calendar cal =Calendar.getInstance();
+				while((line = bf.readLine())!= null) {
+					if(counter == 0) {
+						counter ++; // skip the first line
+						continue;
+					}
+					
+					String[] thisLineArr = line.split(",");
+					String stockCode = thisLineArr[0];
+					String direction = thisLineArr[3];
+					String thisDate = thisLineArr[4];
+					// cal = ;
+					cal.setTime(thisSdf.parse(thisDate));
+					
+					dataLine = new ArrayList<Object> ();
+					dataLine.add(stockCode);
+					dataLine.add(direction);
+					dataLine.add(cal);
+					
+					allData.add(dataLine);
+					dataLine = null;
+					//cal = null;
 				}
 				
-				String[] thisLineArr = line.split(",");
-				String stockCode = thisLineArr[0];
-				String direction = thisLineArr[3];
-				String thisDate = thisLineArr[4];
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(thisDate));
-				
-				ArrayList<Object> dataLine = new ArrayList<Object> ();
-				dataLine.add(stockCode);
-				dataLine.add(direction);
-				dataLine.add(cal);
-				
-				allData.add(dataLine);
-			}
-			
-			// sort data with date descending, latest date in the front
-			Comparator cp = new Comparator() {
-				public int compare(Object o0, Object o1) {
-					
-					ArrayList<Object> arg0 = (ArrayList<Object>) o0;
-					ArrayList<Object> arg1 = (ArrayList<Object>) o1;
-					int cp = 0;
-					
-					Calendar c0 = (Calendar) arg0.get(2);
-					Calendar c1 = (Calendar) arg1.get(2);
-					
-					if(c0.before(c1)) {
-						cp = -1;
-						if(c0.after(c1)) {
-							cp = 1;
-						}else {
-							cp = 0;
+				// sort data with date descending, latest date in the front
+				Comparator cp = new Comparator() {
+					public int compare(Object o0, Object o1) {
+						
+						ArrayList<Object> arg0 = (ArrayList<Object>) o0;
+						ArrayList<Object> arg1 = (ArrayList<Object>) o1;
+						int cp = 0;
+						
+						Calendar c0 = (Calendar) arg0.get(2);
+						Calendar c1 = (Calendar) arg1.get(2);
+						
+						if(c0.before(c1)) {
+							cp = -1;
+							if(c0.after(c1)) {
+								cp = 1;
+							}else {
+								cp = 0;
+							}
+								
 						}
-							
+						return cp;
 					}
-					return cp;
+					
+				};
+				Collections.sort(allData, cp);
+				
+				// display [temp]
+				if(false)
+				for(int i = 0; i < 20; i++) {
+					ArrayList<Object> thisLine = allData.get(i);
+					Calendar c = (Calendar) thisLine.get(2);
+					String stockCode = (String) thisLine.get(0);
+					String dir = (String) thisLine.get(1);
+					
+					System.out.println(stockCode + " " + dir + " " + new SimpleDateFormat("yyyyMMdd").format(c.getTime())); 
 				}
 				
-			};
-			Collections.sort(allData, cp);
-			
-			// display [temp]
-			if(false)
-			for(int i = 0; i < 20; i++) {
-				ArrayList<Object> thisLine = allData.get(i);
-				Calendar c = (Calendar) thisLine.get(2);
-				String stockCode = (String) thisLine.get(0);
-				String dir = (String) thisLine.get(1);
-				
-				System.out.println(stockCode + " " + dir + " " + new SimpleDateFormat("yyyyMMdd").format(c.getTime())); 
-			}
-			
-			//get the stock list
-			Calendar benchDate = Calendar.getInstance();
-			benchDate.setTime(new SimpleDateFormat(dateFormat).parse(date));
-			for(int i = allData.size()-1; i > -1; i--) {
-				ArrayList<Object> thisLine = allData.get(i);
-				
-				Calendar c = (Calendar) thisLine.get(2);
-				String stockCode = (String) thisLine.get(0);
-				String dir = (String) thisLine.get(1);
-				
-				if(!c.after(benchDate)) {
-					if(dir.equals("1")) {
-						int ind = stockList.indexOf(stockCode);
-						if(ind == -1)
-							stockList.add(stockCode);
-					}else if(dir.equals("-1")) {
-						int ind = stockList.indexOf(stockCode);
-						if(ind != -1)
-							stockList.remove(ind);
-					}else {
-						System.out.println("[Get Southbound Data] direction not correct! " + stockCode + benchDate.getTime());
-					}
-				}else
-					break;
-			}
-			
-			// print out [temp]
-			if(false) {
-				FileWriter fw = new FileWriter("D:\\test.csv");
-				for(int i = 0; i < stockList.size(); i++) {
-					fw.write(stockList.get(i) + "\n");
+				//get the stock list
+				Calendar benchDate = Calendar.getInstance();
+				benchDate.setTime(new SimpleDateFormat(dateFormat).parse(date));
+				for(int i = allData.size()-1; i > -1; i--) {
+					ArrayList<Object> thisLine = allData.get(i);
+					
+					Calendar c = (Calendar) thisLine.get(2);
+					String stockCode = (String) thisLine.get(0);
+					String dir = (String) thisLine.get(1);
+					
+					if(!c.after(benchDate)) {
+						if(dir.equals("1")) {
+							int ind = stockList.indexOf(stockCode);
+							if(ind == -1)
+								stockList.add(stockCode);
+						}else if(dir.equals("-1")) {
+							int ind = stockList.indexOf(stockCode);
+							if(ind != -1)
+								stockList.remove(ind);
+						}else {
+							System.out.println("[Get Southbound Data] direction not correct! " + stockCode + benchDate.getTime());
+						}
+					}else
+						break;
 				}
-				fw.close();
+				
+				// print out [temp]
+				if(false) {
+					FileWriter fw = new FileWriter("D:\\test.csv");
+					for(int i = 0; i < stockList.size(); i++) {
+						fw.write(stockList.get(i) + "\n");
+					}
+					fw.close();
+				}
+			}catch(Exception e) {
+				e.printStackTrace();
+			}finally {
+				try {
+					bf.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			
 			
@@ -731,8 +748,11 @@ public class Utils {
 				return null;
 			}
 			if(calArr.size() == 1) {
-				if(thisCal.before(calArr.get(0)))
+				if(thisCal.before(calArr.get(0))) {
+					logger.info("[Utils - getMostRecentDate] array size 1 and today before all dates!");
 					return null;
+				}
+					
 				else
 					return calArr.get(0);
 			}
@@ -750,12 +770,31 @@ public class Utils {
 					thisCal = thisTradingDate;
 				}
 				if(i == 0) {  // thisCal is before every date of calArr
-					if(thisCal.before(thisTradingDate))
+					if(thisCal.before(thisTradingDate)) {
+						logger.info("[Utils - getMostRecentDate] today before all dates!");
 						return null;
+					}
+						
 				}
 			}
 			
 			return thisCal;
+		}
+		
+		public static Date getMostRecentDate(Date thisDate, ArrayList<Date> dateArr) throws Exception{
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(thisDate);
+			
+			ArrayList<Calendar> calArr = new ArrayList<Calendar>();
+			for(int i = 0 ; i< dateArr.size(); i++) {
+				Calendar thisCal = Calendar.getInstance();
+				thisCal.setTime(dateArr.get(i));
+				calArr.add(thisCal);
+			}
+			
+			Calendar mostRecentCal = getMostRecentDate(cal, calArr);
+			
+			return mostRecentCal.getTime();
 		}
 		
 		/**

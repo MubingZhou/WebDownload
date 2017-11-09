@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,12 +24,15 @@ public class PortfolioScreening {
 	public static double avgDailyValueThreshHold_USD = 7000000.0;
 	public static int oneMonthBeforeDays = 20; // 正常而言这应该是 ind - 20，表示考虑20天前的数据
 	
-	private static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
-	private static Map<String, String> ffPctMap = new HashMap();
-	private static Map<String, Map<Date,ArrayList<Double>>> sbDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();
+	public static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
+	public static Map<String, String> ffPctMap = new HashMap();
+	public static Map<String, Map<Date,ArrayList<Double>>> sbDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {holding shares, holding value}
+	public static Map<String, Map<Date,ArrayList<Double>>> osDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {outstanding shares, outstanding value}
+	public static Map<String, ArrayList<Object>> osDataMap2 = new HashMap<String, ArrayList<Object>>();  // String - stock, ArrayList<Object> - 三个元素，一个是ArrayList<Date>，一个是ArrayList<Double>，一个是ArrayList<Double>，第一个是股本有变化的日期，第二个是当日的股本，第三个当日的市值
+	public static String outstandingFilePath = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
 	
 	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
-	private static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
+	public static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
 
 	/**
 	 * 在某一天进行portfolio screening. 先不选出合适的股票，只是把每只股票的相关数据以及ranking全部 计算出来，然后排序
@@ -39,6 +43,8 @@ public class PortfolioScreening {
 	 */
 	public static ArrayList<StockSingleDate> assignValue_singleDate(String date, String dateFormat){
 		logger.info("======= Stocks Screening - " + date + " ===============");
+		long startTime = System.currentTimeMillis(); 
+		
 		ArrayList<StockSingleDate> stockList = new ArrayList<StockSingleDate>();
 		//ArrayList<StockSingleDate> stockPickedList = new ArrayList<StockSingleDate>();
 		ArrayList<String> stockListStr = new ArrayList<String> ();
@@ -47,38 +53,34 @@ public class PortfolioScreening {
 		try {
 			// ==== convert the date to the most recent trading date before it =========
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
-			Calendar benchCal = Calendar.getInstance();
-			benchCal.setTime(sdf.parse(date));
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
-			benchCal = utils.Utils.getMostRecentDate(benchCal, allTradingDate);
-			date = sdf.format(benchCal.getTime());
-			Date todayDate = benchCal.getTime();
+			//Date todayDate = utils.Utils.getMostRecentDate(sdf.parse(date), allTradingDate);
+			Date todayDate = sdf.parse(date);
+			//logger.info("today date = " + sdf.format(todayDate));
 			
-			int ind = allTradingDate.indexOf(benchCal);
-			Calendar oneMonthBefore = allTradingDate.get(ind - oneMonthBeforeDays);  // 正常而言这应该是 ind - 20，表示考虑20天前的数据
-			Calendar threeMonthBefore = allTradingDate.get(ind - 60);
-			Date oneMonthBeforeDate = oneMonthBefore.getTime();
+			int ind = allTradingDate.indexOf(todayDate);
+			Date oneMonthBeforeDate = allTradingDate.get(ind - oneMonthBeforeDays); // 正常而言这应该是 ind - 20，表示考虑20天前的数据
 			
 			// ========= get stock free float pct ========
-			if(ffPctMap.isEmpty()){
+			if(ffPctMap == null || ffPctMap.isEmpty() || ffPctMap.size() == 0){
 				BufferedReader ff_reader = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\freefloat pct - hk.csv");
 				String ff_line = "";
 				while((ff_line = ff_reader.readLine()) != null) {
 					String[] ff_lineArr = ff_line.split(",");
 					ffPctMap.put(ff_lineArr[0], ff_lineArr[1]);
 				}
+				ff_reader.close();
 			}
 			
 			// ========= get southbound info ============
 			// southbound的数据是每天的数据存一个文件，我们可以先读出今天的文件的内容
-			Map<String, ArrayList<String>> sbToday_map = webbDownload.southboundData.DataGetter.getStockData_map(date, "yyyyMMdd");
-			Map<String, ArrayList<String>> sbOneMonthBefore_map = webbDownload.southboundData.DataGetter.getStockData_map(oneMonthBefore);
+			//Map<String, ArrayList<String>> sbToday_map = webbDownload.southboundData.DataGetter.getStockData_map(date, "yyyyMMdd");
+			//Map<String, ArrayList<String>> sbOneMonthBefore_map = webbDownload.southboundData.DataGetter.getStockData_map(oneMonthBefore);
 			
 			
 			// ======== get avg vol info ==========
 			// 经过处理后的average volume：每天一个file，存储所有股票前三个月的avg vol
-			Map<String, Double> avgVol_map = new HashMap();
-			Map<String, Double> avgTur_map = new HashMap();
+			Map<String, Double> avgVol_map = new HashMap<String, Double>();
+			Map<String, Double> avgTur_map = new HashMap<String, Double>();
 			String avgVolPath = "D:\\stock data\\southbound flow strategy - db\\stock avg trd vol\\" + date + ".csv";
 			BufferedReader bf_avgVol = utils.Utils.readFile_returnBufferedReader(avgVolPath);
 			String avgVolLine = "";
@@ -96,20 +98,24 @@ public class PortfolioScreening {
 				avgVol_map.put(stock, Double.parseDouble(avgVol));
 				avgTur_map.put(stock, Double.parseDouble(avgTur));
 			}
+			bf_avgVol.close();
 			
 			// get southbound stock list at the specified date
 			ArrayList<String> stockListStrArr = utils.Utils.getSouthboundStocks(date, dateFormat, true, true);
-			for(int i = 0; i < stockListStrArr.size(); i++) {
+			final int size = stockListStrArr.size();
+			StockSingleDate stock;
+			for(int i = 0; i < size; i++) {
 				String stockCode = stockListStrArr.get(i);  // stock code in the form of "1","6881" etc...
 				//System.out.println("======== stock = " + stockCode + " ============");
 				
-				StockSingleDate stock = new StockSingleDate(stockCode, date, dateFormat);
+				 stock = new StockSingleDate(stockCode, date, dateFormat);
 				
 				// ========== get southbound flow information ==============
 				//ArrayList<String> today_SBData = webbDownload.southboundData.DataGetter.getStockData(stockCode, date, dateFormat);
-				ArrayList<Double> today_SBData = sbDataMap
-						.get(stockCode)
-						.get(todayDate);
+				ArrayList<Double> today_SBData = new ArrayList<Double> ();
+				Map<Date,ArrayList<Double>> sbDataMap_oneStock = sbDataMap.get(stockCode);
+				if(sbDataMap_oneStock != null)
+					today_SBData = sbDataMap_oneStock.get(todayDate);
 				//Double today_holding = 0.0;
 				if(today_SBData != null && today_SBData.size() > 0) {
 					stock.SB_today_holding = today_SBData.get(0);
@@ -120,7 +126,9 @@ public class PortfolioScreening {
 					stock.SB_today_holdingValue = 0.0;
 				}
 				
-				ArrayList<Double> oneMontBeofore_SBData = sbDataMap.get(stockCode).get(oneMonthBeforeDate);
+				ArrayList<Double> oneMontBeofore_SBData = new ArrayList<Double> ();
+				if(sbDataMap_oneStock != null)
+					oneMontBeofore_SBData = sbDataMap_oneStock.get(oneMonthBeforeDate);
 				if(oneMontBeofore_SBData != null && oneMontBeofore_SBData.size() > 0) {
 					stock.SB_1MBefore_holding = oneMontBeofore_SBData.get(0);
 					stock.SB_1MBefore_holdingValue = oneMontBeofore_SBData.get(1);
@@ -148,10 +156,11 @@ public class PortfolioScreening {
 						webbDownload.outstanding.DataGetter.OutstandingDataField.OUTSTANDING_SHARES, date, dateFormat);
 				String todayOsValueStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
 						webbDownload.outstanding.DataGetter.OutstandingDataField.MKT_CAP, date, dateFormat);
-						*/
+						
 				String todayOsSharesStr =  "";
 				String todayOsValueStr = "";
-				ArrayList<String> todayOsLine = webbDownload.outstanding.DataGetter.getStockDataLine(stockCode, date, dateFormat);
+				ArrayList<String> todayOsLine = webbDownload.outstanding.DataGetter.getStockDataLine(stockCode, date, dateFormat);  //这个语句显著拖慢整体速度
+				
 				if(todayOsLine != null && todayOsLine.size() > 0) {
 					todayOsSharesStr = todayOsLine.get(1);
 					todayOsValueStr = todayOsLine.get(5);
@@ -186,16 +195,62 @@ public class PortfolioScreening {
 						stock.osValue_freefloat_today = stock.osValue_today * 1.0;
 					}
 				}
+				*/
+				
+				Map<Date,ArrayList<Double>> osDataMap_oneStock = osDataMap.get(stockCode);
+				if(osDataMap_oneStock != null) {
+					ArrayList<Double> osData_today = osDataMap_oneStock.get(todayDate);
+					if(osData_today != null) {
+						stock.osShares_today = osData_today.get(0);
+						stock.osValue_today = osData_today.get(1);
+						
+						try {
+							stock.osShares_freefloat_today = stock.osShares_today * Double.parseDouble(ffPctMap.get(stockCode));
+						}catch(Exception e) {
+							stock.osShares_freefloat_today = stock.osShares_today * 1;
+						}
+						try {
+							stock.osValue_freefloat_today = stock.osValue_today * Double.parseDouble(ffPctMap.get(stockCode));
+						}catch(Exception e) {
+							stock.osValue_freefloat_today = stock.osValue_today * 1.0;
+						}
+					}else {
+						logger.error("[Today outstanding data not exist!!! date not exist!] stock=" + stockCode + " date=" + date);
+					}
+					
+					ArrayList<Double> osData_oneMonthBefore = osDataMap_oneStock.get(oneMonthBeforeDate);
+					if(osData_oneMonthBefore != null) {
+						stock.osShares_1MBefore = osData_oneMonthBefore.get(0);
+						stock.osValue_1MBefore = osData_oneMonthBefore.get(1);
+						
+						try {
+							stock.osShares_freefloat_1MBefore = stock.osShares_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
+						}catch(Exception e) {
+							stock.osShares_freefloat_1MBefore = stock.osShares_1MBefore * 1.0;
+						}
+						try {
+							stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
+						}catch(Exception e) {
+							stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * 1.0;
+						}
+					}else {
+						logger.error("[Today outstanding data not exist!!! oneMonthBeforeDate not exist!] stock=" + stockCode + " date=" + sdf.format(oneMonthBeforeDate));
+					}
+				}else {
+					logger.error("[Today outstanding data not exist!!! Stock not exist!] stock=" + stockCode + " date=" + date);
+				}
+				
 				/*
 				String oneMonthBefore_osShareStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
 						webbDownload.outstanding.DataGetter.OutstandingDataField.OUTSTANDING_SHARES, new SimpleDateFormat(dateFormat).format(oneMonthBefore.getTime()), dateFormat);
 				String oneMonthBefore_osValueStr = webbDownload.outstanding.DataGetter.getStockDataField(stockCode, 
 						webbDownload.outstanding.DataGetter.OutstandingDataField.MKT_CAP, new SimpleDateFormat(dateFormat).format(oneMonthBefore.getTime()), dateFormat);
-				*/
+				
 				String oneMonthBefore_osShareStr = "";
 				String oneMonthBefore_osValueStr = "";
 				ArrayList<String> oneMonthBefore_osLine = webbDownload.outstanding.DataGetter.getStockDataLine(stockCode, 
-						new SimpleDateFormat(dateFormat).format(oneMonthBefore.getTime()), dateFormat);
+						new SimpleDateFormat(dateFormat).format(oneMonthBeforeDate), dateFormat);
+				
 				if(oneMonthBefore_osLine != null && oneMonthBefore_osLine.size() > 0) {
 					oneMonthBefore_osShareStr = oneMonthBefore_osLine.get(1);
 					oneMonthBefore_osValueStr = oneMonthBefore_osLine.get(5);
@@ -225,7 +280,7 @@ public class PortfolioScreening {
 						stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * 1.0;
 					}
 				}
-				
+				*/
 				
 				// ========== set the ratio ==========
 				// southbound flow change vs. daily turnover
@@ -275,23 +330,24 @@ public class PortfolioScreening {
 					
 				// ========== add to the list ===========
 				stockList.add(stock);
+				stock=null;
 			} // end of for
 			
 			// =========== sorting stock list ============
 			if(true) {
 				Collections.sort(stockList, StockSingleDate.getComparator(1));  // first rank by SB_over_os_shares, then rank by SB_over_vol, then add the two ranks up and rank again
 				for(int i = 0; i < stockList.size(); i++) {
-					StockSingleDate stock = stockList.get(i);
-					stock.dummy1 = (double) i;
-					stock.sorting_indicator = stock.SB_over_vol;
+					StockSingleDate stock1 = stockList.get(i);
+					stock1.dummy1 = (double) i;
+					stock1.sorting_indicator = stock1.SB_over_vol;
 					//stock.sorting_indicator = stock.SB_over_turnover;
 					//stock.sorting_indicator = stock.db_SB_over_turnover; // DB's method
 				}
 				Collections.sort(stockList, StockSingleDate.getComparator(1));  
 				for(int i = 0; i < stockList.size(); i++) {
-					StockSingleDate stock = stockList.get(i);
-					stock.dummy2 = (double) i;
-					stock.sorting_indicator = stock.dummy1 + stock.dummy2;
+					StockSingleDate stock2 = stockList.get(i);
+					stock2.dummy2 = (double) i;
+					stock2.sorting_indicator = stock2.dummy1 + stock2.dummy2;
 					
 					//stock.sorting_indicator = (stock.SB_today_holding - stock.SB_1MBefore_holding) / stock.osShares_today;
 					//stock.sorting_indicator = stock.SB_over_os_shares;
@@ -304,7 +360,10 @@ public class PortfolioScreening {
 			e.printStackTrace();
 		}
 		
-		logger.info("======= Stocks Screening END - " + date + " ===============");
+		long endTime = System.currentTimeMillis(); 
+		logger.info("======= Stocks Screening END - " + date + " time=" + (endTime - startTime)/1000.0 + "s ===============");
+		
+		
 		return stockList;
 	}
 
@@ -328,6 +387,7 @@ public class PortfolioScreening {
 					String[] ff_lineArr = ff_line.split(",");
 					ffPctMap.put(ff_lineArr[0], ff_lineArr[1]);
 				}
+				ff_reader.close();
 			}
 			
 			// ============ apply filters ===========
@@ -469,7 +529,7 @@ public class PortfolioScreening {
             	String filePath = rootPath + "\\" + fileName	;
             	String dateStr = fileName.substring(0, fileName.length() - 4); // "2017-07-21"   
             	Date date = sdf.parse(dateStr);
-            	logger.debug("get all SB data - " + dateStr);
+            	logger.trace("get all SB data - " + dateStr);
             	
             	BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
             	String line ="";
@@ -501,19 +561,213 @@ public class PortfolioScreening {
             	bf.close();
             } // end of file for
            
+            logger.info("getAllSbData - Done!");
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public static void getAllTradingDate(String filePath) {
+	/**
+	 * get all trading dates
+	 * @param filePath
+	 */
+	public static ArrayList<Date> getAllTradingDate(String filePath) {
+		ArrayList<Date> dateArr = new ArrayList<Date>();
 		try {
 			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
-			//while()
+			ArrayList<String> dateStrArr = new ArrayList<String>();
+			dateStrArr.addAll(Arrays.asList(bf.readLine().split(",")));
+			 
+			SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+			for(int i = 0; i < dateStrArr.size(); i++) {
+				String dateStr = dateStrArr.get(i);
+				Date date = sdf.parse(dateStr);
+				dateArr.add(date);
+			}
 			
+			Collections.sort(dateArr);   // 从旧到新排序
+			
+			bf.close();
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+		
+		return dateArr;
+	}
+	
+	public static void getAllTradingDate() {
+		allTradingDate = getAllTradingDate(allTradingDatePath);
+	}
+	
+	/**
+	 * get the data of outstanding shares
+	 * @param outstandingFilePath
+	 * @param cutOffDateStr
+	 * @param dateFormat
+	 */
+	public static void getAllOsData_old(String outstandingFilePath,  Date cutOffDate) {
+		try {
+			if(allTradingDate == null || allTradingDate.size() == 0 )
+				getAllTradingDate();
+			
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+			//SimpleDateFormat sdf_temp = new SimpleDateFormat (dateFormat);
+			//Date cutOffDate = sdf_temp.parse(cutOffDateStr);
+			
+	        File allFile = new File(outstandingFilePath);
+	        for(File f : allFile.listFiles()) {
+	        	String fileName = f.getName();
+	        	if(fileName.substring(fileName.length() - 4, fileName.length()).equals(".csv")) {
+	        		logger.info("file=" + fileName);
+	        		String stock = fileName.substring(0, fileName.length() - 4);
+	        		
+	        		Map<Date,ArrayList<Double>> osData_oneStock = new HashMap<Date,ArrayList<Double>>();
+	        		
+	        		BufferedReader bf = utils.Utils.readFile_returnBufferedReader(outstandingFilePath + fileName);
+	        		int count = 0;
+	        		int indTradingDate = allTradingDate.size() - 1;   // 将会沿着allTradingDate从后往前进
+	        		//boolean hasMetCutOffDate = false;
+	        		String line = "";	
+	        		while((line = bf.readLine()) != null) {
+	        			if(count == 0) { // skip first line
+	        				count++;
+	        				continue;
+	        			}
+	        			
+	        			String[] lineArr = line.split(",");
+	        			String dataDateStr = lineArr[0];
+	        			String osShareStr= lineArr[1];
+	        			String osValueStr = lineArr[5];
+	        			Date dataDate = sdf.parse(dataDateStr);
+	        			Double osShare = Double.parseDouble(osShareStr);
+	        			Double osValue = Double.parseDouble(osValueStr);
+	        			
+	        			Date currentTradingDate = allTradingDate.get(indTradingDate);
+	        			while(!currentTradingDate.before(dataDate) && !currentTradingDate.before(cutOffDate)) {  //目前的考虑的trading date还在数据日期的后面
+	        				ArrayList<Double> data = new ArrayList<Double>();
+	        				data.add(osShare);
+	        				data.add(osValue);
+	        				osData_oneStock.put(currentTradingDate, data);
+	        				indTradingDate -- ;
+	        				currentTradingDate = allTradingDate.get(indTradingDate);
+	        				
+	        			}
+	        			
+	        			if(currentTradingDate.before(cutOffDate))
+	        				break;
+	        		}
+	        		bf.close();
+	        		
+	        		osDataMap.put(stock, osData_oneStock);
+	        	}
+	        }// end of for
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/**
+	 * 将outstanding shares的数据存到osDataMap2中
+	 * @param outstandingFilePath
+	 * @param cutOffDate
+	 */
+	public static void getAllOsData(String outstandingFilePath,  Date cutOffDate) {
+		try {
+			if(allTradingDate == null || allTradingDate.size() == 0 )
+				getAllTradingDate();
+			
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+			//SimpleDateFormat sdf_temp = new SimpleDateFormat (dateFormat);
+			//Date cutOffDate = sdf_temp.parse(cutOffDateStr);
+			
+	        File allFile = new File(outstandingFilePath);
+	        for(File f : allFile.listFiles()) {
+	        	String fileName = f.getName();
+	        	if(fileName.substring(fileName.length() - 4, fileName.length()).equals(".csv")) {
+	        		logger.info("file=" + fileName);
+	        		String stock = fileName.substring(0, fileName.length() - 4);
+	        		
+	        		ArrayList<Object> data = new ArrayList<Object>();
+	        		ArrayList<Date> dateArr = new ArrayList<Date>();
+	        		ArrayList<Double> shareArr = new ArrayList<Double>();
+	        		ArrayList<Double> valueArr = new ArrayList<Double>();
+	        		
+	        		BufferedReader bf = utils.Utils.readFile_returnBufferedReader(outstandingFilePath + fileName);
+	        		int count = 0;
+	        		
+	        		String line = "";	
+	        		while((line = bf.readLine()) != null) {
+	        			if(count == 0) { // skip first line
+	        				count++;
+	        				continue;
+	        			}
+	        			
+	        			String[] lineArr = line.split(",");
+	        			String dataDateStr = lineArr[0];
+	        			String osShareStr= lineArr[1];
+	        			String osValueStr = lineArr[5];
+	        			
+	        			Date dataDate = sdf.parse(dataDateStr);
+	        			if(cutOffDate.after(dataDate))
+	        				break;
+	        			
+	        			Double osShare = Double.parseDouble(osShareStr);
+	        			Double osValue = Double.parseDouble(osValueStr);
+	        			
+	        			dateArr.add(dataDate);
+	        			shareArr.add(osShare);
+	        			valueArr.add(osValue);
+	        			
+	        		} // end of while
+	        		bf.close();
+	        		
+	        		data.add(dateArr);
+	        		data.add(shareArr);
+	        		data.add(valueArr);
+	        		
+	        		osDataMap2.put(stock, data);
+	        	}
+	        }
+	        
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void getAllOsData(String outstandingFilePath,  String curOffDateStr, String dateFormat) {
+		try {
+			getAllOsData(outstandingFilePath, new SimpleDateFormat(dateFormat).parse(curOffDateStr));
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static ArrayList<Object> getSingleStockOsData(String stock, Date date) {
+		ArrayList<Object> data_return = new ArrayList<Object>();
+		try {
+			ArrayList<Object> allData = osDataMap2.get(stock);
+			if(allData == null || allData.size() == 0)
+				return data_return;
+			
+			ArrayList<Date> dateArr = (ArrayList<Date>) allData.get(0);
+    		ArrayList<Double> shareArr = (ArrayList<Double>) allData.get(1);
+    		ArrayList<Double> valueArr = (ArrayList<Double>) allData.get(2);
+    		
+    		final int size = dateArr.size();
+    		for(int i = 0; i < size; i++) {
+    			Date thisDate = dateArr.get(i);
+    			if(!thisDate.after(date)) {  //thisDate在date之前
+    				
+    			}
+    		}
+    		
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return data_return;
 	}
 
 }
