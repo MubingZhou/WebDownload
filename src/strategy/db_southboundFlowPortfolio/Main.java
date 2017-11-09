@@ -73,7 +73,11 @@ public class Main {
 				//String mvFilePath = "D:\\stock data\\southbound flow strategy - db\\" + sdf2.format(new Date());
 				File f = new File(portFilePath);
 				f.mkdir();
+				
+				// ----------- preparation before back-testing ------------
 				PortfolioScreening.outputPath = portFilePath;
+				PortfolioScreening.getAllSbData("D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined");
+				PortfolioScreening.getAllTradingDate();
 				
 				ArrayList<String> rebalDateArr = new ArrayList<String>();
 				
@@ -213,6 +217,7 @@ public class Main {
 						break;
 					}
 					int daysBetweenRelancingDate = 0;
+					PortfolioScreening.getAllOsData(PortfolioScreening.outstandingFilePath, allTradingDate.get(rebalStartInd-dayCalStart).getTime());
 					for(int i = rebalStartInd-dayCalStart; i <= rebalEndInd; i++) {   
 						daysBetweenRelancingDate++;
 						String todayDate = sdf_yyyyMMdd.format(allTradingDate.get(i).getTime());

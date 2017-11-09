@@ -26,6 +26,7 @@ import com.ib.client.Types.DurationUnit;
 import com.ib.client.Types.WhatToShow;
 import com.ib.controller.ApiConnection;
 import com.ib.controller.ApiController.IConnectionHandler;
+import com.ib.controller.ApiController.ITopMktDataHandler;
 
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
@@ -117,7 +118,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171103", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171108", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;
@@ -344,13 +345,21 @@ public class Main {
 			if(mode == 105) {
 				// A share
 				Contract con1 = new Contract();
-				con1.symbol("000001");
-				con1.exchange("SEHKSZSE");
+				con1.symbol("1");
+				con1.exchange("SEHK");
 				con1.secType("STK");
-				con1.currency("CNH");
+				con1.currency("HKD");
 				
-				//MyITopMktDataHandler myH = new MyITopMktDataHandler(); 
-				//myController.reqTopMktData(con1, null, false, false, myH);
+				SimpleDateFormat sdf_105 = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+				Date now = sdf_105.parse("2017-11-07 10:00:00");
+				
+				AvatRecordSingleStock a = new AvatRecordSingleStock(now.getTime(), con1.symbol(), con1, 100.0, 0.01, 10.0,10.0,"1");
+				AvatRecordSingleStock b = new AvatRecordSingleStock(now.getTime(), con1.symbol(), con1, 100.0, 0.01, 10.0,10.0,"1");
+				
+				ArrayList<AvatRecordSingleStock > arr = new ArrayList<AvatRecordSingleStock >();
+				arr.add(a);
+				arr.add(b);
+				AVAT.scanForOrders(arr, now);
 				
 			}
 			

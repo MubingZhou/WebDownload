@@ -83,6 +83,7 @@ public class AvatRecordSingleStock {
 	protected Object clone() throws CloneNotSupportedException {
 		AvatRecordSingleStock new_t = (AvatRecordSingleStock) super.clone();
 		//new_t.stockCode = String.valueOf(stockCode.toCharArray());
+		new_t.contract = contract.clone();
 		return new_t;
 	}
 	

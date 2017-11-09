@@ -59,46 +59,11 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			Map<String, Map<Date,Double>> sbDataMap = new HashMap<String, Map<Date,Double>>();
+			PortfolioScreening.getAllOsData(PortfolioScreening.outstandingFilePath, "20160101","yyyyMMdd");
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+			Date date = sdf.parse("20160106");
+			System.out.println(PortfolioScreening.osDataMap.get("700").get(date).get(0));
 			
-			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
-			String sbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
-            File allFile = new File(sbDataPath);
-            for(File f : allFile.listFiles()) {
-            	String fileName = f.getName();  // "2017-07-21.csv"
-            	String filePath = sbDataPath + "\\" + fileName	;
-            	String dateStr = fileName.substring(0, fileName.length() - 4); // "2017-07-21"   
-            	Date date = sdf.parse(dateStr);
-            	System.out.println(dateStr);
-            	
-            	BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
-            	String line ="";
-            	int count  = 0;
-            	while((line = bf.readLine()) != null) {
-            		if(count  == 0) {
-            			count ++;
-            			continue;
-            		}
-            		String[] lineArr = line.split(",");
-            		String stock = lineArr[0];
-            		String holding = lineArr[2];
-            		Double holdingD = Double.parseDouble(holding);
-            		
-            		Map<Date,Double> stockData = sbDataMap.get(stock);
-            		if(stockData == null)
-            			stockData = new HashMap<Date,Double>(); 
-            		stockData.put(date, holdingD);
-            		
-            		sbDataMap.put(stock, stockData);
-            		count++;
-            	} // end of while
-            } // end of file for
-			
-           System.out.println("123");
-           for(int i = 0; i < 100; i++) {
-        	   System.out.println(sbDataMap.get("700").get(sdf.parseObject("2017-11-02")));
-           }
-           
 		}catch(Exception e) {
 			e.printStackTrace();
 		}

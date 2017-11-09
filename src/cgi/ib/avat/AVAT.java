@@ -547,7 +547,7 @@ public class AVAT {
 		}
 	}
 	
-	private static void scanForOrders(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
+	public static void scanForOrders(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
 		try {
 			logger.info("---------- scanForOrders ---------");
 			
@@ -603,6 +603,7 @@ public class AVAT {
 					//int buyCond4 = 0; 
 					
 					double priceChg = singleRec.currentPrice / avatPrevClose.get(singleRec.stockCode) - 1;
+					//double priceChg = 0.02;
 					
 					if(singleRec.avatRatio5D > avatThld5D) {   // 如果股价变动是负的，则short
 						if(priceChg >= 0.015) {
@@ -634,6 +635,7 @@ public class AVAT {
 					Map<Integer, HoldingRecord> thisHoldingMap = holdingRecords.get(singleRec.stockCode);
 					// ---------- 是否出现buy signal------------
 					if((buyCond2_1 == 1 || buyCond2_2 == 1 || buyCond2_3 == 1) && priceChg > 0) {
+					
 						int thisHoldingBuyCond2_1 = 0;
 						int thisHoldingBuyCond2_2 = 0;
 						int thisHoldingBuyCond2_3 = 0;
@@ -737,21 +739,21 @@ public class AVAT {
 						holdingRecords.put(stockCode, thisHoldingMap);
 						
 						
-						
 						orderWriter.write(hld1.toString() + "\n");
 						orderWriter.write(hld2.toString() + "\n");
 						orderWriter.flush();
 						
 						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
-						buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + stockCode + "\n";
 						
+						SimpleDateFormat sdf_temp = new SimpleDateFormat ("dd/MM/yyyy hh:mm:ss");
+						buyOrdersToShow += "time=" + sdf_temp.format(now) + " stock=" + stockCode + " buyReason=" + buyReason + "\n";
+						
+						//buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + "222" + " buyReason=" + "123" + "\n";
 						Thread placingOrderAlert = new Thread(new Runnable(){
 							   public void run(){
 								   try {
 										//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
 									   PlayWAV.play("hahaha.wav");
-									   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
-								        
 										//logger.info("            logging holding records done!");
 									}catch(Exception e) {
 										logger.error("           Sound alert failed!");
@@ -761,20 +763,15 @@ public class AVAT {
 						placingOrderAlert.start();
 					}
 				}  // 买入信号的if结束
-				/*
-				 * --------------- 卖出信号 ---------------
-				 * 卖出条件：
-				 * 		1. 获利超过3%，以最优bid价卖出 （止盈）,这个可以在monitor execution时，事先place好sell order，即buy order成交了多少，就将这些filled 的qty挂限价单卖出去
-				 * 		2. 持股到当日15：00仍未卖出，以买入成本价（需要考虑交易成本）卖出
-				 * 		3. 持股到当日15：50仍未卖出，以市价卖出
-				 */
-			}
+
+			} // end of for
 			
 			Thread t = new Thread(new Runnable(){
 				   public void run(){
 					   try {
 							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
 						   saveHoldingRecords();
+						   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
 							//logger.info("            logging holding records done!");
 						}catch(Exception e) {
 							logger.error("           Can't log holding records!");
