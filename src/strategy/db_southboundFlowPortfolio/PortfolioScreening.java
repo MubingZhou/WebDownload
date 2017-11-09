@@ -196,11 +196,54 @@ public class PortfolioScreening {
 					}
 				}
 				*/
-				
-				Map<Date,ArrayList<Double>> osDataMap_oneStock = osDataMap.get(stockCode);
-				if(osDataMap_oneStock != null) {
-					ArrayList<Double> osData_today = osDataMap_oneStock.get(todayDate);
-					if(osData_today != null) {
+				int method = 1;
+				if(method == 1) {  //使用osDataMap
+					Map<Date,ArrayList<Double>> osDataMap_oneStock = osDataMap.get(stockCode);
+					if(osDataMap_oneStock != null) {
+						ArrayList<Double> osData_today = osDataMap_oneStock.get(todayDate);
+						if(osData_today != null) {
+							stock.osShares_today = osData_today.get(0);
+							stock.osValue_today = osData_today.get(1);
+							
+							try {
+								stock.osShares_freefloat_today = stock.osShares_today * Double.parseDouble(ffPctMap.get(stockCode));
+							}catch(Exception e) {
+								stock.osShares_freefloat_today = stock.osShares_today * 1;
+							}
+							try {
+								stock.osValue_freefloat_today = stock.osValue_today * Double.parseDouble(ffPctMap.get(stockCode));
+							}catch(Exception e) {
+								stock.osValue_freefloat_today = stock.osValue_today * 1.0;
+							}
+						}else {
+							logger.error("[Today outstanding data not exist!!! date not exist!] stock=" + stockCode + " date=" + date);
+						}
+						
+						ArrayList<Double> osData_oneMonthBefore = osDataMap_oneStock.get(oneMonthBeforeDate);
+						if(osData_oneMonthBefore != null) {
+							stock.osShares_1MBefore = osData_oneMonthBefore.get(0);
+							stock.osValue_1MBefore = osData_oneMonthBefore.get(1);
+							
+							try {
+								stock.osShares_freefloat_1MBefore = stock.osShares_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
+							}catch(Exception e) {
+								stock.osShares_freefloat_1MBefore = stock.osShares_1MBefore * 1.0;
+							}
+							try {
+								stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * Double.parseDouble(ffPctMap.get(stockCode)); 
+							}catch(Exception e) {
+								stock.osValue_freefloat_1MBefore = stock.osValue_1MBefore * 1.0;
+							}
+						}else {
+							logger.error("[Today outstanding data not exist!!! oneMonthBeforeDate not exist!] stock=" + stockCode + " date=" + sdf.format(oneMonthBeforeDate));
+						}
+					}else {
+						logger.error("[Today outstanding data not exist!!! Stock not exist!] stock=" + stockCode + " date=" + date);
+					}
+				}
+				if(method == 2) {//使用osDataMap2
+					ArrayList<Double> osData_today = getSingleStockOsData(stockCode, todayDate);
+					if(osData_today != null && osData_today.size() > 0) {
 						stock.osShares_today = osData_today.get(0);
 						stock.osValue_today = osData_today.get(1);
 						
@@ -218,8 +261,8 @@ public class PortfolioScreening {
 						logger.error("[Today outstanding data not exist!!! date not exist!] stock=" + stockCode + " date=" + date);
 					}
 					
-					ArrayList<Double> osData_oneMonthBefore = osDataMap_oneStock.get(oneMonthBeforeDate);
-					if(osData_oneMonthBefore != null) {
+					ArrayList<Double> osData_oneMonthBefore = getSingleStockOsData(stockCode, oneMonthBeforeDate);
+					if(osData_oneMonthBefore != null && osData_oneMonthBefore.size() > 0) {
 						stock.osShares_1MBefore = osData_oneMonthBefore.get(0);
 						stock.osValue_1MBefore = osData_oneMonthBefore.get(1);
 						
@@ -236,8 +279,6 @@ public class PortfolioScreening {
 					}else {
 						logger.error("[Today outstanding data not exist!!! oneMonthBeforeDate not exist!] stock=" + stockCode + " date=" + sdf.format(oneMonthBeforeDate));
 					}
-				}else {
-					logger.error("[Today outstanding data not exist!!! Stock not exist!] stock=" + stockCode + " date=" + date);
 				}
 				
 				/*
@@ -744,8 +785,16 @@ public class PortfolioScreening {
 		}
 	}
 	
-	public static ArrayList<Object> getSingleStockOsData(String stock, Date date) {
-		ArrayList<Object> data_return = new ArrayList<Object>();
+	/**
+	 * 从osDataMap2获取某只股票某个日期的outstanding的数据
+	 * @param stock
+	 * @param date
+	 * @return
+	 */
+	public static ArrayList<Double> getSingleStockOsData(String stock, Date date) {
+		ArrayList<Double> data_return = new ArrayList<Double>();
+		Double shares = 0.0;
+		Double value = 0.0;
 		try {
 			ArrayList<Object> allData = osDataMap2.get(stock);
 			if(allData == null || allData.size() == 0)
@@ -759,10 +808,18 @@ public class PortfolioScreening {
     		for(int i = 0; i < size; i++) {
     			Date thisDate = dateArr.get(i);
     			if(!thisDate.after(date)) {  //thisDate在date之前
-    				
+    				shares = shareArr.get(i);
+    				value = valueArr.get(i);
+    				break;
     			}
     		}
+    		if(shares == 0.0 || value == 0.0) {  //处理一些特殊情况，这个是说date要比数据的最早一个日期还早
+    			shares = shareArr.get(shareArr.size() - 1);
+    			value = valueArr.get(valueArr.size() - 1);
+    		}
     		
+    		data_return.add(shares);
+    		data_return.add(value);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

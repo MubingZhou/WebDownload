@@ -9,7 +9,7 @@ public class Southbound_Main {
 		
 		DataDownloader.dataDownloader();
 		
-		DataCombiner.dataCombiner(shPath, szPath, outputPath);
+		//DataCombiner.dataCombiner(shPath, szPath, outputPath);
 
 	}
 
