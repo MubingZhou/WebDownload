@@ -59,10 +59,18 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			PortfolioScreening.getAllOsData(PortfolioScreening.outstandingFilePath, "20160101","yyyyMMdd");
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-			Date date = sdf.parse("20160106");
-			System.out.println(PortfolioScreening.osDataMap.get("700").get(date).get(0));
+			for (int i = 0; i < 10000000; i++) {
+	            String str = new String("test");
+	            if (i % 1000000 == 0) {
+	            	System.gc();
+	                String memUsage = String.format("maxMemory=%d,totalMemory=%d,freeMemory=%d", Runtime.getRuntime().maxMemory(),
+	                        Runtime.getRuntime().totalMemory(), Runtime.getRuntime().freeMemory());
+	                System.out.println(memUsage);
+	            }
+	            //str = null;
+	        }
+
+
 			
 		}catch(Exception e) {
 			e.printStackTrace();

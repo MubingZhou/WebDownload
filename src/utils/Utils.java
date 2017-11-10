@@ -587,6 +587,7 @@ public class Utils {
 				SimpleDateFormat thisSdf = new SimpleDateFormat("dd/MM/yyyy");
 				ArrayList<Object> dataLine;
 				Calendar cal =Calendar.getInstance();
+				Date readDate;
 				while((line = bf.readLine())!= null) {
 					if(counter == 0) {
 						counter ++; // skip the first line
@@ -597,19 +598,22 @@ public class Utils {
 					String stockCode = thisLineArr[0];
 					String direction = thisLineArr[3];
 					String thisDate = thisLineArr[4];
+
 					// cal = ;
+					readDate = thisSdf.parse(thisDate);
 					cal.setTime(thisSdf.parse(thisDate));
 					
 					dataLine = new ArrayList<Object> ();
 					dataLine.add(stockCode);
 					dataLine.add(direction);
-					dataLine.add(cal);
+					//dataLine.add(cal);
+					dataLine.add(readDate);
 					
 					allData.add(dataLine);
 					dataLine = null;
 					//cal = null;
 				}
-				
+				/*
 				// sort data with date descending, latest date in the front
 				Comparator cp = new Comparator() {
 					public int compare(Object o0, Object o1) {
@@ -634,8 +638,8 @@ public class Utils {
 					}
 					
 				};
-				Collections.sort(allData, cp);
-				
+				//Collections.sort(allData, cp);
+				*/
 				// display [temp]
 				if(false)
 				for(int i = 0; i < 20; i++) {
@@ -648,16 +652,17 @@ public class Utils {
 				}
 				
 				//get the stock list
-				Calendar benchDate = Calendar.getInstance();
-				benchDate.setTime(new SimpleDateFormat(dateFormat).parse(date));
+				//Calendar benchDate = Calendar.getInstance();
+				//benchDate.setTime(new SimpleDateFormat(dateFormat).parse(date));
+				Date benchDate = new SimpleDateFormat(dateFormat).parse(date);
 				for(int i = allData.size()-1; i > -1; i--) {
 					ArrayList<Object> thisLine = allData.get(i);
 					
-					Calendar c = (Calendar) thisLine.get(2);
+					Date thisReadDate = (Date) thisLine.get(2);
 					String stockCode = (String) thisLine.get(0);
 					String dir = (String) thisLine.get(1);
 					
-					if(!c.after(benchDate)) {
+					if(!thisReadDate.after(benchDate)) {
 						if(dir.equals("1")) {
 							int ind = stockList.indexOf(stockCode);
 							if(ind == -1)

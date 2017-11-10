@@ -196,7 +196,7 @@ public class PortfolioScreening {
 					}
 				}
 				*/
-				int method = 1;
+				int method = 2;
 				if(method == 1) {  //使用osDataMap
 					Map<Date,ArrayList<Double>> osDataMap_oneStock = osDataMap.get(stockCode);
 					if(osDataMap_oneStock != null) {
@@ -726,7 +726,7 @@ public class PortfolioScreening {
 	        for(File f : allFile.listFiles()) {
 	        	String fileName = f.getName();
 	        	if(fileName.substring(fileName.length() - 4, fileName.length()).equals(".csv")) {
-	        		logger.info("file=" + fileName);
+	        		//logger.info("file=" + fileName);
 	        		String stock = fileName.substring(0, fileName.length() - 4);
 	        		
 	        		ArrayList<Object> data = new ArrayList<Object>();
@@ -750,15 +750,15 @@ public class PortfolioScreening {
 	        			String osValueStr = lineArr[5];
 	        			
 	        			Date dataDate = sdf.parse(dataDateStr);
-	        			if(cutOffDate.after(dataDate))
-	        				break;
-	        			
 	        			Double osShare = Double.parseDouble(osShareStr);
 	        			Double osValue = Double.parseDouble(osValueStr);
 	        			
 	        			dateArr.add(dataDate);
 	        			shareArr.add(osShare);
 	        			valueArr.add(osValue);
+	        			
+	        			if(cutOffDate.after(dataDate))
+	        				break;
 	        			
 	        		} // end of while
 	        		bf.close();
@@ -768,6 +768,11 @@ public class PortfolioScreening {
 	        		data.add(valueArr);
 	        		
 	        		osDataMap2.put(stock, data);
+	        		
+	        		data = null;
+	        		dateArr = null;
+	        		shareArr = null;
+	        		valueArr = null;
 	        	}
 	        }
 	        
@@ -795,6 +800,8 @@ public class PortfolioScreening {
 		ArrayList<Double> data_return = new ArrayList<Double>();
 		Double shares = 0.0;
 		Double value = 0.0;
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd"); 
 		try {
 			ArrayList<Object> allData = osDataMap2.get(stock);
 			if(allData == null || allData.size() == 0)
@@ -807,11 +814,18 @@ public class PortfolioScreening {
     		final int size = dateArr.size();
     		for(int i = 0; i < size; i++) {
     			Date thisDate = dateArr.get(i);
+    			//logger.info("date=" + sdf.format(thisDate));
+    			
     			if(!thisDate.after(date)) {  //thisDate在date之前
     				shares = shareArr.get(i);
     				value = valueArr.get(i);
     				break;
     			}
+    		}
+    		
+    		if(shareArr.size() == 0) {
+    			shares = 10000 * 10000 * 10000.0; //如果出现这种情况，就假设是10000亿的股本
+    			value = 100000 * 10000 * 10000.0; //如果出现这种情况，就假设是100000亿的市值
     		}
     		if(shares == 0.0 || value == 0.0) {  //处理一些特殊情况，这个是说date要比数据的最早一个日期还早
     			shares = shareArr.get(shareArr.size() - 1);
