@@ -88,6 +88,8 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
+				Date startDate = sdf.parse("20160704");
+				Date endDate = sdf.parse("20171027");
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" 
@@ -107,13 +109,17 @@ public class Main {
 					 * 
 					 */
 				int rebalancingStrategy = 1;
-					/*
-					 * 1 - monthly, rebal at month beginning
-					 * 2 - bi-weekly
-					 * 3 - weekly
-					 * 4 - every 40 trading days
-					 */
+				/*
+				 * rebalancingStrategy
+				 * 1 - monthly, rebal at month beginning
+				 * 2 - monthly, rebal at month end
+				 * 3 - bi-weekly
+				 * 4 - weekly
+				 * 5 - every 40 trading days
+				 */
 				
+				
+				boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change
 				// -------------------- path settings -------------------
 				String allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 				
@@ -123,86 +129,9 @@ public class Main {
 				PortfolioScreening.getAllTradingDate();
 				
 				ArrayList<String> rebalDateArr = new ArrayList<String>();
+				rebalDateArr = getRebalDate(startDate, endDate, dateFormat, rebalancingStrategy,allTradingDate);
 				
 				PortfolioScreening.oneMonthBeforeDays = 20;
-						
-				int rebalDate = 0;  
-				if(rebalDate == 0) { // please make sure that all rebalancing dates are trading date
-					rebalDateArr .add("20160704");
-					rebalDateArr .add("20160801");
-					rebalDateArr .add("20160901");
-					rebalDateArr .add("20161003");
-					rebalDateArr .add("20161101");
-					rebalDateArr .add("20161201");
-					rebalDateArr .add("20170104");
-					rebalDateArr .add("20170206");
-					rebalDateArr .add("20170301");
-					rebalDateArr .add("20170403");
-					rebalDateArr .add("20170502");
-					rebalDateArr .add("20170601");
-					rebalDateArr .add("20170703");
-					rebalDateArr .add("20170801");
-					rebalDateArr .add("20170929");
-					rebalDateArr .add("20171027");
-				}else if(rebalDate == 1) {
-					rebalDateArr .add("20160715");
-					rebalDateArr .add("20160815");
-					rebalDateArr .add("20160915");
-					rebalDateArr .add("20161014");
-					rebalDateArr .add("20161115");
-					rebalDateArr .add("20161215");
-					rebalDateArr .add("20170116");
-					rebalDateArr .add("20170215");
-					rebalDateArr .add("20170315");
-					rebalDateArr .add("20170413"); //4.14 is a holiday
-					rebalDateArr .add("20170515");
-					rebalDateArr .add("20170615");
-					rebalDateArr .add("20170714");
-					rebalDateArr .add("20170815");
-				}else if(rebalDate == 2) {
-					rebalDateArr .add("20160708");
-					rebalDateArr .add("20160810");
-					rebalDateArr .add("20160908");  // 9.9 is a holiday
-					rebalDateArr .add("20161010");
-					rebalDateArr .add("20161110");
-					rebalDateArr .add("20161209");
-					rebalDateArr .add("20170110");
-					rebalDateArr .add("20170210");
-					rebalDateArr .add("20170310");
-					rebalDateArr .add("20170410");
-					rebalDateArr .add("20170510");
-					rebalDateArr .add("20170609");
-					rebalDateArr .add("20170710");
-					rebalDateArr .add("20170810");
-					rebalDateArr .add("20170911");
-				}else if(rebalDate == 3) {
-					rebalDateArr .add("20160720");
-					rebalDateArr .add("20160819");
-					rebalDateArr .add("20160920");
-					rebalDateArr .add("20161020");
-					rebalDateArr .add("20161118");
-					rebalDateArr .add("20161220");
-					rebalDateArr .add("20170120");
-					rebalDateArr .add("20170220");
-					rebalDateArr .add("20170320");
-					rebalDateArr .add("20170420");
-					rebalDateArr .add("20170519");
-					rebalDateArr .add("20170620");
-					rebalDateArr .add("20170720");
-					rebalDateArr .add("20170818");
-					rebalDateArr .add("20170920");
-					rebalDateArr .add("20171020");
-				}
-				
-				
-				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();
-				
-				
-				boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change，只在idea1和idea2下有效
-				FileWriter fw_dailyCCASSChg ; // 仅仅是为了初始化
-				Map<String, Map<Date, Double>> dailyCCASSChg_map = new HashMap<String, Map<Date, Double>>();
-				Set<Date> dailyCCASSChg_allDates = new  HashSet<>();;
-				
 				
 				Calendar rebalStart = Calendar.getInstance();
 				rebalStart.setTime(sdf_yyyyMMdd.parse(rebalDateArr.get(0)));
@@ -216,6 +145,11 @@ public class Main {
 					logger.error("Rebalancing start date or end date is not a trading date! Cease running");
 					return;
 				}
+				
+				FileWriter fw_dailyCCASSChg ; // 仅仅是为了初始化
+				Map<String, Map<Date, Double>> dailyCCASSChg_map = new HashMap<String, Map<Date, Double>>();
+				Set<Date> dailyCCASSChg_allDates = new  HashSet<>();;
+				ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();   //用来存储每次rebal选出来的股票
 				
 				int rebalCount = 0;
 				ArrayList<ArrayList<StockSingleDate>> allPortfolioScreeningData = new ArrayList<ArrayList<StockSingleDate>>(); 
@@ -538,7 +472,7 @@ public class Main {
 				//bt.startDate = "20160630";
 				bt.startDate = rebalDateArr.get(0);
 				bt.endDate = rebalDateArr.get(rebalDateArr.size() - 1);
-				bt.tradingCost = 0.000;
+				bt.tradingCost = 0.0015;
 				
 				bt.rotationalTrading(dateArr, "yyyyMMdd", data);
 				
@@ -842,19 +776,108 @@ public class Main {
 	
 	/**
 	 * 返回rebalancing的date
+	 * 	rebalancingStrategy
+	 * 	 * 1 - monthly, rebal at month beginning
+		 * 2 - monthly, rebal at month end
+		 * 3 - bi-weekly
+		 * 4 - weekly
+		 * 5 - every 40 trading days
 	 * @param startDate
 	 * @param endDate
 	 * @param dateFormat
 	 * @param rebalancingStrategy
 	 * @return
 	 */
-	public static ArrayList<String> getRebalDate(Date startDate, Date endDate, String dateFormat, int rebalancingStrategy, ArrayList<Date> allTradingDate){
+	public static ArrayList<String> getRebalDate(Date startDate, Date endDate, String dateFormat, int rebalancingStrategy, ArrayList<Calendar> allTradingDate){
 		ArrayList<String> rebalArr = new ArrayList<String>();
-		try {
-			startDate = utils.Utils.getMostRecentDate(startDate, allTradingDate);
-			endDate = utils.Utils.getMostRecentDate(endDate, allTradingDate);
+		SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+		
+		/*
+		 * rebalancingStrategy
+		 * 1 - monthly, rebal at month beginning
+		 * 2 - monthly, rebal at month end
+		 * 3 - bi-weekly
+		 * 4 - weekly
+		 * 5 - every 40 trading days
+		 */
+	
+		try {	
+			Calendar endCal = Calendar.getInstance();
+			endCal.setTime(endDate);
+			endCal = utils.Utils.getMostRecentDate(endCal, allTradingDate);
 			
+			if(rebalancingStrategy == 1) {   // 1 - monthly, rebal at month beginning
+				//只需要得到每个月的month beginning
+				Calendar cal = Calendar.getInstance();
+				cal.setTime(startDate);
+				cal.set(Calendar.DATE, 1);  // 月初
+				
+				while(!cal.after(endCal)) {
+					Calendar firstTrdDate = utils.Utils.getMostRecentDate(cal, allTradingDate);
+					
+					String rebalStr = "";
+					if(firstTrdDate.before(cal)) {
+						int ind = allTradingDate.indexOf(firstTrdDate);
+						Calendar rebalDate = allTradingDate.get(ind + 1);
+						rebalStr = sdf.format(rebalDate.getTime());
+					}else {
+						rebalStr = sdf.format(firstTrdDate.getTime());
+					}
+					
+					rebalArr.add(rebalStr);
+					logger.info("rebalancingStrategy 1 - rebalDate=" + rebalStr);
+					
+					cal.add(Calendar.MONTH, 1);
+					cal.set(Calendar.DATE, 1);
+					
+				}
+				
+			}
 			
+			if(rebalancingStrategy == 2) {   // 2 - monthly, rebal at month end
+				//只需要得到每个月的month beginning
+				Calendar cal = Calendar.getInstance();
+				cal.setTime(startDate);
+				cal.set(Calendar.DATE, 1);  
+				cal.add(Calendar.MONTH, 1);
+				cal.add(Calendar.DATE, -1); // 月底
+				
+				while(!cal.after(endCal)) {
+					Calendar firstTrdDate = utils.Utils.getMostRecentDate(cal, allTradingDate);
+					
+					
+					String rebalStr = sdf.format(firstTrdDate.getTime());
+					rebalArr.add(rebalStr);
+					logger.info("rebalancingStrategy 1 - rebalDate=" + rebalStr);
+					
+					cal.add(Calendar.MONTH, 2);
+					cal.set(Calendar.DATE, 1);
+					cal.add(Calendar.DATE, -1);  //下个月月底
+					
+				}
+				
+			}
+			
+			if(rebalancingStrategy == 3 || rebalancingStrategy == 4 || rebalancingStrategy == 5) {   //3 - bi-weekly
+				Calendar cal = Calendar.getInstance();
+				cal.setTime(startDate);
+				
+				while(!cal.after(endCal)) {
+					Calendar firstTrdDate = utils.Utils.getMostRecentDate(cal, allTradingDate);
+					
+					String rebalStr = sdf.format(firstTrdDate.getTime());
+					rebalArr.add(rebalStr);
+					logger.info("rebalancingStrategy 1 - rebalDate=" + rebalStr);
+					
+					if(rebalancingStrategy == 3)
+						cal.add(Calendar.WEEK_OF_MONTH, 2);
+					if(rebalancingStrategy == 4)
+						cal.add(Calendar.WEEK_OF_MONTH, 1);
+					if(rebalancingStrategy == 5)
+						cal.add(Calendar.DATE, 40);
+				}
+				
+			}
 			
 		}catch(Exception e) {
 			e.printStackTrace();
