@@ -7,9 +7,14 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 import backtesting.portfolio.Portfolio;
+import backtesting.portfolio.Underlying;
 
 public class Backtesting {
+	public static Logger logger = Logger.getLogger(Backtesting.class);
+	
 	public static Integer orderNum = 0;
 	
 	public String startDate = "20170101";
@@ -23,7 +28,31 @@ public class Backtesting {
 	
 	public Portfolio portfolio = new Portfolio(initialFunding);
 	// at this stage, assume using equal-value method
-	public void rotationalTrading(ArrayList<String> date, String dateFormat, ArrayList<ArrayList<String>> rebalStocks) {
+	
+	/**
+	 * 这里用到的rebalStockData的数据形式如下
+	 * {
+	 * 	{
+	 * 		{stock1, stock2, ...},
+	 * 		{direction1, direction2, ...}, // 1 - buy, -1 - sell
+	 * 		{weighting1, weighting2, ...},	 // positive #: num of shares to buy/sell; negative #: percentage to buy/sell (e.g. if buy, -10 represents buying 10% of total portfolio value; if sell, -10 represents selling 10% of total holding value, that is, if holding 10000 shares, -10 means selling 1000 shares
+	 * 		{price1, price2, ...}
+	 * 	}
+	 * 	,
+	 * 	{
+	 * 		{stock1, stock2, ...},
+	 * 		{direction1, direction2, ...},
+	 * 		{weighting1, weighting2, ...},
+	 * 		{price1, price2, ...}
+	 * 	}
+	 * 	...
+	 * }
+	 * rebalStockData存储了每个需要调仓的日子的调仓数据，包括调仓的股票名称、方向、权重等
+	 * @param date
+	 * @param dateFormat
+	 * @param rebalStockData
+	 */
+	public void rotationalTrading(ArrayList<String> date, String dateFormat, ArrayList<ArrayList<ArrayList<Object>>> rebalStockData) {
 		System.out.println("*********** Backtesting - " + date + " ***********");
 		try {
 			//FileWriter fw =  new FileWriter("D:\\stock data\\southbound flow strategy - db\\backtesting.csv");
@@ -56,13 +85,72 @@ public class Backtesting {
 					
 					if(thisCal.equals(rotationalCal)) {  // date to rotation
 						System.out.println("********** rebal date = " + sdf.format(thisCal.getTime()) + " ***********");
-						// ========= re-balancing =========
-						ArrayList<String> thisAllStocks = rebalStocks.get(rotationalInd);
+						
+						// ========= re-balancing ========= 
+						ArrayList<ArrayList<Object>> thisAllStockData = rebalStockData.get(rotationalInd);  //在这个rebalancing date需要进行rebalancing的股票数据
 						ArrayList<Order> buyOrdersArr = new ArrayList<Order>();
 						ArrayList<Order> sellOrdersArr = new ArrayList<Order>();
 						
+						ArrayList<Object> thisAllStocks = thisAllStockData.get(0);  	// String
+						ArrayList<Object> thisAllDirections = thisAllStockData.get(1);  // Integer
+						ArrayList<Object> thisAllWeightings = thisAllStockData.get(2);	// Double
+						ArrayList<Object> thisAllPrices = thisAllStockData.get(3);		// Double
+						
+						// ======== sell first ===============						
+						final int size = thisAllStocks.size();
+						for(int j = 0; j < size; j++) {
+							String stock = (String) thisAllStocks.get(j);
+							Integer direction = (Integer) thisAllDirections.get(j);
+							Double weighting = (Double) thisAllWeightings.get(j);
+							Double price = (Double) thisAllPrices.get(j);
+							
+							if(direction.equals(-1)) { // sell order
+								double amt = 0.0;
+								if(weighting > 0)
+									amt = weighting;
+								else if(weighting >= -100 && weighting <= 0){
+									Underlying uly = portfolio.stockHeld.get(stock);
+									if(uly != null) {  // uly == null表示当前无持仓
+										Double currentAmt = uly.amount;
+										amt = currentAmt * weighting / -100.0;
+										Order order = new Order(OrderType.SELL, thisCal, stock, price, amt, orderNum++);
+										sellOrdersArr.add(order);
+									}
+								}else {
+									logger.error("[Backtesting - Sell Amt Not Correct!] stock=" + stock + " date=" + thisDateStr + " amt=" + weighting);
+								}
+							}
+							
+						}  // 过完一遍sell order
+						portfolio.sellStocks(sellOrdersArr);
+						
+						// ======== then buy ===============		
+						portfolio.commitDayEndValue();
+						for(int j = 0; j < size; j++) {
+							String stock = (String) thisAllStocks.get(j);
+							Integer direction = (Integer) thisAllDirections.get(j);
+							Double weighting = (Double) thisAllWeightings.get(j);
+							Double price = (Double) thisAllPrices.get(j);
+							
+							
+							if(direction.equals(1)) { // buy order
+								double amt = 0.0;
+								if(weighting > 0)
+									amt = weighting;
+								else if(weighting >= -100 && weighting <= 0){
+									amt = portfolio.marketValue * weighting / -100 / price;
+									Order order = new Order(OrderType.BUY, thisCal, stock, price, amt, orderNum++);
+								}else {
+									logger.error("[Backtesting - Buy Amt Not Correct!] stock=" + stock + " date=" + thisDateStr + " amt=" + weighting);
+								}
+								
+							}
+						}
+						portfolio.buyStocks(buyOrdersArr);
+						
+						/*
 						if(rotationalInd > 0) { // not the first time to buy
-							ArrayList<String> prevAllStocks = rebalStocks.get(rotationalInd-1);
+							ArrayList<String> prevAllStocks = rebalStockData.get(rotationalInd-1);
 							ArrayList<String> prevAllStocksCopy = prevAllStocks; 
 							ArrayList<String> stocksToSell = new ArrayList<String>();
 							
@@ -96,9 +184,9 @@ public class Backtesting {
 					
 						// update amt to buy
 						Double cashRemained = portfolio.availableCash*0.99;
-						Double equalValue = cashRemained / thisAllStocks.size();
-						for(int j = 0; j < thisAllStocks.size(); j++) {
-							String stock = thisAllStocks.get(j);
+						Double equalValue = cashRemained / thisAllStockData.size();
+						for(int j = 0; j < thisAllStockData.size(); j++) {
+							String stock = thisAllStockData.get(j);
 							
 							// deal with price
 							String priceStr = stockPrice.DataGetter.getStockDataField(stock,stockPrice.DataGetter.StockDataField.adjclose, thisDateStr, "yyyyMMdd");
@@ -123,7 +211,7 @@ public class Backtesting {
 							Order order = new Order(OrderType.BUY, thisCal, stock, price, amt, orderNum++);
 							buyOrdersArr .add(order);
 						}
-						portfolio.buyStocks(buyOrdersArr );
+						portfolio.buyStocks(buyOrdersArr );*/
 						System.out.println("After buying - Cash Remained = " + portfolio.availableCash);
 				
 						

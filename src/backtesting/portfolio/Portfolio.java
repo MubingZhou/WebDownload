@@ -49,7 +49,7 @@ public class Portfolio implements Serializable {
 	public Double shortMarginReq = 1.0;
 	
 	// variables
-	public Double marketValue;
+	public Double marketValue;   //持仓的市值 + 现金
 	public Double availableCash;
 	public Double totalCash;
 	public Map<String, Underlying> stockHeld = new HashMap();  // String = date string, Underlying = only contains current holdings
@@ -333,7 +333,7 @@ public class Portfolio implements Serializable {
 			// ======= core action ========
 			Underlying uly = stockHeld.get(stockCode);
 			Double prevAmt = uly.amount;
-			if(amt == 0.0) {
+			if(amt == -1.0) {
 				amt = prevAmt;
 			}
 			double cashToReceive = price * amt * (1 - tradingCost);

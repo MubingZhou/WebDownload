@@ -129,7 +129,7 @@ public class Main {
 				PortfolioScreening.getAllTradingDate();
 				
 				ArrayList<String> rebalDateArr = new ArrayList<String>();
-				rebalDateArr = getRebalDate(startDate, endDate, dateFormat, rebalancingStrategy,allTradingDate);
+				rebalDateArr = BacktestFrame.getRebalDate(startDate, endDate, dateFormat, rebalancingStrategy,allTradingDate);
 				
 				PortfolioScreening.oneMonthBeforeDays = 20;
 				
@@ -169,7 +169,8 @@ public class Main {
 					allPortfolioScreeningData.add(todaySel );
 					
 					int todayInd = allPortfolioScreeningData.size() - 1;
-					// ===================== idea == 2 || idea == 3 ===================
+					
+					
 					if(todayInd > 0) {  //比较昨天south bound的数据，update filter
 						
 						ArrayList<StockSingleDate> lastDateSel = allPortfolioScreeningData.get(todayInd - 1);
@@ -465,8 +466,8 @@ public class Main {
 				
 		
 				
-				ArrayList<String> dateArr = new ArrayList<String>();
-				dateArr.addAll(rebalDateArr);
+				//ArrayList<String> dateArr = new ArrayList<String>();
+				//dateArr.addAll(rebalDateArr);
 				
 				Backtesting bt = new Backtesting();
 				//bt.startDate = "20160630";
@@ -474,7 +475,7 @@ public class Main {
 				bt.endDate = rebalDateArr.get(rebalDateArr.size() - 1);
 				bt.tradingCost = 0.0015;
 				
-				bt.rotationalTrading(dateArr, "yyyyMMdd", data);
+				//bt.rotationalTrading(rebalDateArr, "yyyyMMdd", data);
 				
 				Portfolio pf = bt.portfolio;
 				Map<Calendar, PortfolioOneDaySnapshot> histSnap = pf.histSnap;
@@ -773,117 +774,6 @@ public class Main {
 			e.printStackTrace();
 		}
 	}
-	
-	/**
-	 * 返回rebalancing的date
-	 * 	rebalancingStrategy
-	 * 	 * 1 - monthly, rebal at month beginning
-		 * 2 - monthly, rebal at month end
-		 * 3 - bi-weekly
-		 * 4 - weekly
-		 * 5 - every 40 trading days
-	 * @param startDate
-	 * @param endDate
-	 * @param dateFormat
-	 * @param rebalancingStrategy
-	 * @return
-	 */
-	public static ArrayList<String> getRebalDate(Date startDate, Date endDate, String dateFormat, int rebalancingStrategy, ArrayList<Calendar> allTradingDate){
-		ArrayList<String> rebalArr = new ArrayList<String>();
-		SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
-		
-		/*
-		 * rebalancingStrategy
-		 * 1 - monthly, rebal at month beginning
-		 * 2 - monthly, rebal at month end
-		 * 3 - bi-weekly
-		 * 4 - weekly
-		 * 5 - every 40 trading days
-		 */
-	
-		try {	
-			Calendar endCal = Calendar.getInstance();
-			endCal.setTime(endDate);
-			endCal = utils.Utils.getMostRecentDate(endCal, allTradingDate);
-			
-			if(rebalancingStrategy == 1) {   // 1 - monthly, rebal at month beginning
-				//只需要得到每个月的month beginning
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(startDate);
-				cal.set(Calendar.DATE, 1);  // 月初
-				
-				while(!cal.after(endCal)) {
-					Calendar firstTrdDate = utils.Utils.getMostRecentDate(cal, allTradingDate);
-					
-					String rebalStr = "";
-					if(firstTrdDate.before(cal)) {
-						int ind = allTradingDate.indexOf(firstTrdDate);
-						Calendar rebalDate = allTradingDate.get(ind + 1);
-						rebalStr = sdf.format(rebalDate.getTime());
-					}else {
-						rebalStr = sdf.format(firstTrdDate.getTime());
-					}
-					
-					rebalArr.add(rebalStr);
-					logger.info("rebalancingStrategy 1 - rebalDate=" + rebalStr);
-					
-					cal.add(Calendar.MONTH, 1);
-					cal.set(Calendar.DATE, 1);
-					
-				}
-				
-			}
-			
-			if(rebalancingStrategy == 2) {   // 2 - monthly, rebal at month end
-				//只需要得到每个月的month beginning
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(startDate);
-				cal.set(Calendar.DATE, 1);  
-				cal.add(Calendar.MONTH, 1);
-				cal.add(Calendar.DATE, -1); // 月底
-				
-				while(!cal.after(endCal)) {
-					Calendar firstTrdDate = utils.Utils.getMostRecentDate(cal, allTradingDate);
-					
-					
-					String rebalStr = sdf.format(firstTrdDate.getTime());
-					rebalArr.add(rebalStr);
-					logger.info("rebalancingStrategy 1 - rebalDate=" + rebalStr);
-					
-					cal.add(Calendar.MONTH, 2);
-					cal.set(Calendar.DATE, 1);
-					cal.add(Calendar.DATE, -1);  //下个月月底
-					
-				}
-				
-			}
-			
-			if(rebalancingStrategy == 3 || rebalancingStrategy == 4 || rebalancingStrategy == 5) {   //3 - bi-weekly
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(startDate);
-				
-				while(!cal.after(endCal)) {
-					Calendar firstTrdDate = utils.Utils.getMostRecentDate(cal, allTradingDate);
-					
-					String rebalStr = sdf.format(firstTrdDate.getTime());
-					rebalArr.add(rebalStr);
-					logger.info("rebalancingStrategy 1 - rebalDate=" + rebalStr);
-					
-					if(rebalancingStrategy == 3)
-						cal.add(Calendar.WEEK_OF_MONTH, 2);
-					if(rebalancingStrategy == 4)
-						cal.add(Calendar.WEEK_OF_MONTH, 1);
-					if(rebalancingStrategy == 5)
-						cal.add(Calendar.DATE, 40);
-				}
-				
-			}
-			
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
-		
-		return rebalArr;
-	}
+
 
 }

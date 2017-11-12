@@ -62,7 +62,7 @@ public class Test {
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-			strategy.db_southboundFlowPortfolio.Main.getRebalDate(sdf.parse("20170101"), sdf.parse("20171109"), "yyyyMMdd", 5, allTradingDate);
+			//strategy.db_southboundFlowPortfolio.Main.getRebalDate(sdf.parse("20170101"), sdf.parse("20171109"), "yyyyMMdd", 5, allTradingDate);
 
 
 			
