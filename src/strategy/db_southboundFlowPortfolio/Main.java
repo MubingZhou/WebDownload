@@ -90,6 +90,8 @@ public class Main {
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
 				Date startDate = sdf.parse("20160704");
 				Date endDate = sdf.parse("20171027");
+				Double initialFunding = 1000000.0;
+				BacktestFrame.initialFunding = initialFunding;
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" 
@@ -123,6 +125,16 @@ public class Main {
 				// -------------------- path settings -------------------
 				String allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 				
+				BacktestFrame.init();
+				ArrayList<Object> data = BacktestFrame.getRebalancingSelection();
+				Portfolio pf = BacktestFrame.backtesting( data);
+				ArrayList<Object> marketValueData = pf.getMarketValue("20000101","20200101","yyyyMMdd");
+				ArrayList<Double> marketValue = (ArrayList<Double>) marketValueData.get(0);
+				
+				
+				
+				
+				/*
 				// ----------- preparation before back-testing ------------
 				PortfolioScreening.outputPath = portFilePath;
 				PortfolioScreening.getAllSbData(allSbDataPath);
@@ -483,6 +495,7 @@ public class Main {
 				List<Calendar> keysArr = new ArrayList<Calendar>(keys);
 				Collections.sort(keysArr);
 				
+				
 				// ==== output market value & portfolio ======
 				FileWriter fw = new FileWriter(portFilePath + "\\portfolio.csv");
 				FileWriter fw2 = new FileWriter(portFilePath + "\\market value.csv");
@@ -586,6 +599,7 @@ public class Main {
 				XMLUtil.convertToXml(pf, portFilePath + "\\portfolio.xml");
 				// save the every data
 				//XMLUtil.convertToXml(allPortfolioScreeningData, portFilePath + "\\allPortfolioScreeningData.xml");
+				*/
 			}
 			
 			if(mode == 2) {
