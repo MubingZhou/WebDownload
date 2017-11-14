@@ -105,6 +105,8 @@ public class Backtesting {
 							Double price = (Double) thisAllPrices.get(j);
 							
 							if(direction.equals(-1)) { // sell order
+								logger.trace("[Sell] stock=" + stock + " direction=" + direction + " weighting=" + weighting + " price=" + price);
+								
 								double amt = 0.0;
 								if(weighting > 0)
 									amt = weighting;
@@ -134,12 +136,15 @@ public class Backtesting {
 							
 							
 							if(direction.equals(1)) { // buy order
+								logger.trace("[Buy] stock=" + stock + " direction=" + direction + " weighting=" + weighting + " price=" + price);
+								
 								double amt = 0.0;
 								if(weighting > 0)
 									amt = weighting;
 								else if(weighting >= -100 && weighting <= 0){
 									amt = portfolio.marketValue * weighting / -100 / price;
 									Order order = new Order(OrderType.BUY, thisCal, stock, price, amt, orderNum++);
+									buyOrdersArr.add(order);
 								}else {
 									logger.error("[Backtesting - Buy Amt Not Correct!] stock=" + stock + " date=" + thisDateStr + " amt=" + weighting);
 								}

@@ -1,6 +1,7 @@
 package utils;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 //import java.net.URL;
@@ -21,29 +22,71 @@ import org.apache.log4j.Logger;
 public class PlayWAV {
 	private static Logger logger = Logger.getLogger(PlayWAV.class);
 	
-	public static void play(String fileName) {
+	public static void play(String fileName, int playBackSpeed) {
 		try {
 			File file = new File(fileName);
 			if(!file.exists()) {
 				logger.error("[Playing Sound File] File not existing!");
 				return;
 			}
+			//Sound s = new Sound(fileName);
+			
+			//int playBackSpeed = 1;  // play speed
 			
 			AudioInputStream ais = AudioSystem.getAudioInputStream(file);
-            Clip test = AudioSystem.getClip();  
+			AudioFormat af = ais.getFormat();
+			int frameSize = af.getFrameSize();
+			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte[] b = new byte[2^16];
+	        int read = 1;
+	        while( read>-1 ) {
+	            read = ais.read(b);
+	            if (read>0) {
+	                baos.write(b, 0, read);
+	            }
+	        }
+	        
+	        byte[] b1 = baos.toByteArray();
+	        System.out.println("b1.len=" + b1.length);
+	        byte[] b2 = new byte[b1.length/playBackSpeed];
+	        
+	        int b2_ind = 0;
+	        int b1_start = 0;
+	        if(playBackSpeed == 1)
+	        	b1_start = 0;
+	        if(playBackSpeed == 2)
+	        	b1_start = 1;
+	        for(int i = b1_start; i < b1.length; i+=playBackSpeed) {
+	        	b2[b2_ind] = b1[i];
+	        	b2_ind++;
+	        }
+	        
+	        ByteArrayInputStream bais = new ByteArrayInputStream(b2);
+	        AudioInputStream aisAccelerated =
+	            new AudioInputStream(bais, af, b2.length);
+	        Clip clip = AudioSystem.getClip();
+	        clip.open(aisAccelerated);
+	        
+            //clip.open(ais);
+            clip.start();
+            
 
-            test.open(ais);
-            test.start();
+            while (!clip.isRunning())
+                Thread.sleep(1);
+            while (clip.isRunning())
+                Thread.sleep(1);
 
-            while (!test.isRunning())
-                Thread.sleep(10);
-            while (test.isRunning())
-                Thread.sleep(10);
-
-            test.close();
+//            clip.close();
+//            ais.close();
+//            bais.close();
 			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void play(String fileName) {
+		play(fileName, 1);
 	}
 }

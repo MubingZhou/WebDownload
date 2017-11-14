@@ -90,4 +90,28 @@ public class MyMath {
 		
 	}
 
+	/**
+	 * Calculate the volatility of a portfolio. Please input the portfolio value, not the return array
+	 * @param portfolioArr
+	 * @return
+	 */
+	public static double volatility(ArrayList<Double> portfolioArr) {
+		double vol = 0.0;
+		
+		double retSum = 0.0;
+		ArrayList<Double> retArr = new ArrayList<Double>();
+		
+		for(int i = 1; i < portfolioArr.size(); i++) {
+			double ret = Math.log(portfolioArr.get(i) / portfolioArr.get(i-1));
+			
+			retArr.add(ret);
+		}
+		
+		double std = std(retArr);
+		
+		vol = std * Math.sqrt(252);
+		return vol;
+		
+	}
+
 }

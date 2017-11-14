@@ -12,6 +12,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -576,6 +577,7 @@ public class AVAT {
 			Set<String> holdingStocks = holdingRecords.keySet();
 			
 			// --------- 浏览各个AvatRecordSingleStock ----------- 
+			Set<String> thisBuyStocksSet = new HashSet<String>();
 			for(AvatRecordSingleStock singleRec : avatRecord) {
 				/*
 				 * ------- 先看是否有买入信号 ---------
@@ -747,8 +749,10 @@ public class AVAT {
 						
 						SimpleDateFormat sdf_temp = new SimpleDateFormat ("dd/MM/yyyy hh:mm:ss");
 						buyOrdersToShow += "time=" + sdf_temp.format(now) + " stock=" + stockCode + " buyReason=" + buyReason + "\n";
+						thisBuyStocksSet.add(stockCode);
 						
 						//buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + "222" + " buyReason=" + "123" + "\n";
+						/*
 						Thread placingOrderAlert = new Thread(new Runnable(){
 							   public void run(){
 								   try {
@@ -760,7 +764,8 @@ public class AVAT {
 									}
 							   }
 							});
-						placingOrderAlert.start();
+						//placingOrderAlert.start();
+						*/
 					}
 				}  // 买入信号的if结束
 
@@ -771,8 +776,71 @@ public class AVAT {
 					   try {
 							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
 						   saveHoldingRecords();
-						   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
-							//logger.info("            logging holding records done!");
+						   
+						   ArrayList<String> thisBuyStocks = new ArrayList<String>(thisBuyStocksSet);
+						   if(thisBuyStocks.size() > 0) {
+							   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
+								
+							   for(int i = 0; i < 2; i++) {
+								   for(int j = 0; j < thisBuyStocks.size(); j++) {
+									   String stock = thisBuyStocks.get(j);
+									   char[] c = stock.toCharArray();
+										for(int k = 0; k < c.length; k++) {
+											switch(c[k]) {
+											case '1':
+												PlayWAV.play("1.wav");
+												break;
+											case '2':
+												PlayWAV.play("2.wav");
+												break;
+											case '3':
+												PlayWAV.play("3.wav");
+												break;
+											case '4':
+												PlayWAV.play("4.wav");
+												break;
+											case '5':
+												PlayWAV.play("5.wav");
+												break;
+											case '6':
+												PlayWAV.play("6.wav");
+												break;
+											case '7':
+												PlayWAV.play("7.wav");
+												break;
+											case '8':
+												PlayWAV.play("8.wav");
+												break;
+											case '9':
+												PlayWAV.play("9.wav");
+												break;
+											case '0':
+												PlayWAV.play("0.wav");
+												break;
+											default:
+												break;
+											}
+										}
+										
+										Thread.sleep(10);
+										if(j < thisBuyStocks.size()-1) {
+											PlayWAV.play("tungLF.wav");
+											PlayWAV.play("maiLF.wav");
+										}
+										Thread.sleep(10);
+										
+								   }
+								   
+								   if(i == 0) {
+									   PlayWAV.play("chungLT.wav");
+										PlayWAV.play("fukHT.wav");
+										PlayWAV.play("1.wav");
+										PlayWAV.play("chiMR.wav");
+								   }
+								   	
+							   }
+						   }
+						   //logger.info("            logging holding records done!");
 						}catch(Exception e) {
 							logger.error("           Can't log holding records!");
 						}

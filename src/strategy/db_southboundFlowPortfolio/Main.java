@@ -24,6 +24,7 @@ import backtesting.backtesting.Trade;
 import backtesting.portfolio.Portfolio;
 import backtesting.portfolio.PortfolioOneDaySnapshot;
 import backtesting.portfolio.Underlying;
+import math.MyMath;
 import utils.XMLUtil;
 
 public class Main {
@@ -88,23 +89,23 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				Date startDate = sdf.parse("20160704");
-				Date endDate = sdf.parse("20171027");
+				String startDateStr = "20160729";  // 20160729
+				String endDateStr = "20171109";
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" 
-						+ sdf2.format(new Date()) + " - idea3 - bactesting四 - 15stocks";
+						+ sdf2.format(new Date()) + " earlyUnwindStrategy";
 				File f = new File(portFilePath);
 				f.mkdir();
 				
 				int rankingStrategy = 1;
-				PortfolioScreening.avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
-				PortfolioScreening.topNStocks = 15;   // 每次选多少只股票进行买入卖出
+				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
+				int topNStocks = 20;   // 每次选多少只股票进行买入卖出
 				double minInflowPct = 0.7;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
-				int weightingStrategy = 1;
+				int weightingStrategy = 2;
 					/*
 					 * 1 - Equally weighted
 					 * 2 - 按照排名分成四组，每组所有股票的加起来的weights分别是40%，30%，20%，10%
@@ -120,16 +121,132 @@ public class Main {
 				 * 5 - every 40 trading days
 				 */
 				
+				int earlyUnwindStrategy  = 1;
+				/*
+				 * 1 - 正常，不会提前卖出某只股票
+				 * 2 - 如果一只股票的southbound holding连续5天减少，则提前全部卖掉，并不再补充其他股票
+				 * 3 - 如果一只股票的southbound holding连续三天减少，则提前卖掉一半，并不再补充其他股票
+				 */
 				
-				boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change
+				boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change  (should always be true)
+				
 				// -------------------- path settings -------------------
-				String allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
+				BacktestFrame.allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 				
-				BacktestFrame.init();
-				ArrayList<Object> data = BacktestFrame.getRebalancingSelection();
-				Portfolio pf = BacktestFrame.backtesting( data);
-				ArrayList<Object> marketValueData = pf.getMarketValue("20000101","20200101","yyyyMMdd");
-				ArrayList<Double> marketValue = (ArrayList<Double>) marketValueData.get(0);
+				// ----------- performance profile pre-settings -----------
+				ArrayList<String> performanceItems = new ArrayList<String>();
+				performanceItems.add("Start Market Value");
+				performanceItems.add("End Market Value");
+				performanceItems.add("Total Return");
+				performanceItems.add("Annualized Return");
+				performanceItems.add("# of years");
+				performanceItems.add("Max DD Pct");
+				performanceItems.add("Annualized Return / Max DD");
+				performanceItems.add("Sharpe");
+				performanceItems.add("Std");
+				performanceItems.add("Annualized Volatility");
+				
+				ArrayList<Map<String, Double>> allPerformanceData = new ArrayList<Map<String, Double>>();
+				ArrayList<String> allPerformanceDataTitle = new ArrayList<String>();
+				
+				//-----------------------------------------
+				int[] topNStocksArr = {10,15,20,25,30};
+				int[] weightingStrategyArr = {1,2};
+				int[] earlyUnwindStrategyArr = {1,2};
+				
+				int size1 = topNStocksArr.length;
+				//size1 = 1;
+				int size2 = weightingStrategyArr.length;
+				size2 = earlyUnwindStrategyArr.length;
+				for(int i = 0; i < size1; i++) {
+					topNStocks = topNStocksArr[i];
+					for(int j = 0; j < size2; j++) {
+						earlyUnwindStrategy = earlyUnwindStrategyArr[j];
+						
+						String title = topNStocks + "stocks earlyUnwindStrategy" + earlyUnwindStrategy;
+						allPerformanceDataTitle.add(title);
+						
+						// ------------------- main settings -------------
+						BacktestFrame.portFilePath = portFilePath + "\\" + title;
+						BacktestFrame.rankingStrategy = rankingStrategy;
+						BacktestFrame.avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USD; 
+						BacktestFrame.topNStocks = topNStocks;
+						BacktestFrame. minInflowPct =  minInflowPct;
+						BacktestFrame.weightingStrategy = weightingStrategy;
+						BacktestFrame.rebalancingStrategy = rebalancingStrategy;
+						BacktestFrame.isOutputDailyCCASSChg = isOutputDailyCCASSChg;  
+						BacktestFrame.earlyUnwindStrategy = earlyUnwindStrategy;
+						
+						BacktestFrame.startDateStr = startDateStr;
+						BacktestFrame.endDateStr = endDateStr;
+						
+						// -------------- Main body -----------
+						BacktestFrame.init();
+						ArrayList<Object> data = BacktestFrame.getRebalancingSelection();
+						Portfolio pf = BacktestFrame.backtesting( data);
+						ArrayList<Object> marketValueData = pf.getMarketValue("20000101","20200101","yyyyMMdd");
+						ArrayList<Double> marketValue = (ArrayList<Double>) marketValueData.get(0);
+						
+						// ------------- performance profile -----------
+						double startMarketValue  = initialFunding;
+						double endMarketValue = marketValue.get(marketValue.size() - 1);
+						double totalReturn = endMarketValue / startMarketValue - 1;  
+						
+						ArrayList<Double> maxDrawdownData = backtesting.analysis.DrawDownAnalysis.maxDrawdown(marketValue);
+						/*
+						double maxDrawdownValue = maxDrawdownData.get(0);
+						int maxDD_beginInd = maxDrawdownData.get(1).intValue();
+						double maxDD_beginValue = marketValue.get(maxDD_beginInd);
+						int maxDD_endInd = maxDrawdownData.get(2).intValue();
+						double maxDD_endValue = marketValue.get(maxDD_endInd);
+						double maxDDPct = (maxDD_beginValue -  maxDD_endValue) / maxDD_beginValue;
+						*/
+						double maxDDPct = maxDrawdownData.get(0);
+						
+						// calculate annuliazed return
+						Date startDate = sdf_yyyyMMdd.parse(startDateStr);
+						Date endDate = sdf_yyyyMMdd.parse(endDateStr);
+						double days = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+						double numYears = days/365.0;
+						double annualizedReturn = Math.log(endMarketValue/startMarketValue) / numYears;
+						
+						
+						double sharpe = backtesting.analysis.DrawDownAnalysis.sharpeRatio(marketValue, 0.0);
+						double std = MyMath.std(marketValue);
+						
+						double volatility = math.MyMath.volatility(marketValue);
+						
+						Map<String, Double> thisPerformanceData = new HashMap<String, Double>();
+						thisPerformanceData.put("Start Market Value", startMarketValue);
+						thisPerformanceData.put("End Market Value", endMarketValue);
+						thisPerformanceData.put("Total Return", totalReturn);
+						thisPerformanceData.put("Annualized Return",annualizedReturn);
+						thisPerformanceData.put("# of years",numYears);
+						thisPerformanceData.put("Max DD Pct", maxDDPct);  // negative number
+						thisPerformanceData.put("Annualized Return / Max DD", annualizedReturn / -maxDDPct);
+						thisPerformanceData.put("Sharpe", sharpe);
+						thisPerformanceData.put("Std", std);
+						thisPerformanceData.put("Annualized Volatility",volatility);
+						allPerformanceData.add(thisPerformanceData);
+						
+					}
+				}
+				
+				FileWriter fw = new FileWriter(portFilePath+"\\performance overview.csv");
+				for(int i = 0; i < allPerformanceDataTitle.size(); i++)
+					fw.write("," + allPerformanceDataTitle.get(i));
+				fw.write("\n");
+				for(int i = 0; i < performanceItems.size(); i++) {
+					//Map<String, Double> thisPerformanceData = allPerformanceData.get(i);
+					String thisPerformanceItem = performanceItems.get(i); 
+					fw.write(thisPerformanceItem);
+					for(int j = 0; j < allPerformanceDataTitle.size(); j++) {
+						Double d = allPerformanceData.get(j).get(thisPerformanceItem);
+						fw.write("," + d.toString());
+					}
+					fw.write("\n");
+				}
+				fw.close();
 				
 				
 				

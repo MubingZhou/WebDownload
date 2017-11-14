@@ -1,6 +1,7 @@
 package backtesting.portfolio;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -47,6 +48,8 @@ public class Portfolio implements Serializable {
 	// configuration
 	public Double tradingCost = 0.001;
 	public Double shortMarginReq = 1.0;
+	public int minNumOfDigit_forShares = 0;   //   0 - 只能持仓整数股
+	public int roundingMode_forShares = BigDecimal.ROUND_FLOOR;
 	
 	// variables
 	public Double marketValue;   //持仓的市值 + 现金
@@ -250,12 +253,19 @@ public class Portfolio implements Serializable {
 		try {
 			String stockCode = order.stock;
 			Double price = order.price;
-			Double amt = Math.abs(order.amount);
+			BigDecimal AMT = new BigDecimal(order.amount);
+			order.amount = AMT.setScale(minNumOfDigit_forShares, roundingMode_forShares).doubleValue();
+			double amt = order.amount;
 			Calendar date = order.date;
 			
 			if(price <= 0) {
 				System.out.println("[Buy stock - price not positive] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
 				msg = MsgType.PriceNotPositive;
+				return msg;
+			}
+			if(amt < 0) {
+				System.out.println("[Buy stock - amt not positive] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
+				msg = MsgType.BuyAmountNotPositive;
 				return msg;
 			}
 			
@@ -735,7 +745,7 @@ public class Portfolio implements Serializable {
 	}
 	
 	enum MsgType{
-		Successful("Successful"),InsufficientFund("InsufficientFund"),
+		Successful("Successful"),InsufficientFund("InsufficientFund"),BuyAmountNotPositive("BuyAmountNotPositive"),
 		PriceNotPositive("PriceNotPositive"),Unknown("Unknown"),
 		AmountExceedTotal("AmountExceedTotal"),OrderTypeIncorrect("OrderTypeIncorrect"),StockNotExist("StockNotExist"),
 		
