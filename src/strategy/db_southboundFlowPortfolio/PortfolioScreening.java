@@ -22,7 +22,13 @@ public class PortfolioScreening {
 	public static int topNStocks = 20;
 	public static ArrayList<StockSingleDate> stockList = new ArrayList<StockSingleDate>();
 	public static double avgDailyValueThreshHold_USD = 7000000.0;
-	public static int oneMonthBeforeDays = 20; // 正常而言这应该是 ind - 20，表示考虑20天前的数据
+	public static int oneMonthBeforeDays = 20; // 正常而言这应该是 ind - 20，表示考虑20天前的数据\
+	public static int stockUniverse = 1;
+		/*
+		 * 1 - all southbound stocks
+		 * 2 - all HSI stocks
+		 * 3 - all HSCEI stocks
+		 */
 	
 	public static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
 	public static Map<String, String> ffPctMap = new HashMap();
@@ -101,7 +107,20 @@ public class PortfolioScreening {
 			bf_avgVol.close();
 			
 			// get southbound stock list at the specified date
-			ArrayList<String> stockListStrArr = utils.Utils.getSouthboundStocks(date, dateFormat, true, true);
+			ArrayList<String> stockListStrArr = new ArrayList<String>();
+			if(stockUniverse == 1)
+				stockListStrArr= utils.Utils.getSouthboundStocks(date, dateFormat, true, true);
+			if(stockUniverse == 2) {
+				stockListStrArr= utils.Utils.getHSCEI_HSIStocks(date, dateFormat, false, true);
+				stockListStrArr.remove("823");
+			}
+			if(stockUniverse == 3)
+				stockListStrArr= utils.Utils.getHSCEI_HSIStocks(date, dateFormat, true, false);
+			if(stockUniverse == 4) {
+				stockListStrArr= utils.Utils.getHSCEI_HSIStocks(date, dateFormat, true, true);
+				stockListStrArr.remove("823");
+			}
+			
 			final int size = stockListStrArr.size();
 			StockSingleDate stock;
 			for(int i = 0; i < size; i++) {

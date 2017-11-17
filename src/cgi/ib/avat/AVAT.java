@@ -39,9 +39,12 @@ public class AVAT {
 	public static Map<String, Contract> conMap = new HashMap<String, Contract>();
 	public static MyAPIController myController;
 	public static String AVAT_ROOT_PATH = "";
+	public static String AVAT_ORDER_PATH = "";
+	public static String AVAT_REALTIME_DATA_PATH = "";
 	public static ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
 	public static int numOfTopMktDataStock = 0;
 	public static double bilateralTrdCost = 0.003;
+	public static int isTestRun = 0;
 	
 	// -------- auxiliar variables ----------
 	public static Map<String, Map<Date,ArrayList<Double>>> avatHist = new HashMap<String, Map<Date,ArrayList<Double>>> ();
@@ -95,7 +98,13 @@ public class AVAT {
 		String avatRecordRootPath = AVAT_ROOT_PATH + "\\avat record\\";
 		String avatParaRootPath = AVAT_ROOT_PATH + "\\avat para\\";
 		String avatRtDataRootPath = AVAT_ROOT_PATH + "\\realtime data\\";
+		if(isTestRun == 1) {
+			avatRtDataRootPath = AVAT_ROOT_PATH + "\\test\\realtime data\\";
+		}
 		String avatOrdersRootPath = AVAT_ROOT_PATH + "\\orders\\";
+		if(isTestRun == 1) {
+			avatOrdersRootPath = AVAT_ROOT_PATH + "\\test\\orders\\";
+		}
 		File f1 = new File(avatRecordRootPath);  if(!f1.exists()) f1.mkdirs();
 		File f2 = new File(avatParaRootPath ); if(!f2.exists()) f2.mkdirs();
 		File f3 = new File(avatRtDataRootPath); if(!f3.exists()) f3.mkdirs();
@@ -112,6 +121,9 @@ public class AVAT {
 		
 		
 		holdingRecordsPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\holdingRecords.csv";
+		if(isTestRun == 1) {
+			holdingRecordsPath = AVAT_ROOT_PATH + "\\test\\orders\\" + todayDate + "\\holdingRecords.csv";
+		}
 	}
 	
 	public static void start() {
@@ -147,6 +159,9 @@ public class AVAT {
 				
 				// 初始化记录orders的filewriter
 				orderWriterPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\";
+				if(isTestRun == 1) {
+					orderWriterPath = AVAT_ROOT_PATH + "\\test\\orders\\" + todayDate + "\\";
+				}
 				File f = new File(orderWriterPath);
 				if(!f.exists())
 					f.mkdir();
@@ -771,17 +786,28 @@ public class AVAT {
 
 			} // end of for
 			
-			Thread t = new Thread(new Runnable(){
+			ArrayList<String> thisBuyStocks = new ArrayList<String>(thisBuyStocksSet);
+			
+			Thread t_save = new Thread(new Runnable(){
 				   public void run(){
 					   try {
 							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
 						   saveHoldingRecords();
-						   
-						   ArrayList<String> thisBuyStocks = new ArrayList<String>(thisBuyStocksSet);
-						   if(thisBuyStocks.size() > 0) {
-							   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
-								
-							   for(int i = 0; i < 2; i++) {
+						   //logger.info("            logging holding records done!");
+						}catch(Exception e) {
+							e.printStackTrace();
+							logger.error("           Can't log holding records!");
+						}
+				   }
+				});
+			t_save.start();
+			
+			Thread t_sound = new Thread(new Runnable() {
+				public void run() {
+					try {
+						if(thisBuyStocks.size() > 0) {
+							int repeatTimes = 1;
+							for(int i = 0; i < repeatTimes; i++) {
 								   for(int j = 0; j < thisBuyStocks.size(); j++) {
 									   String stock = thisBuyStocks.get(j);
 									   char[] c = stock.toCharArray();
@@ -822,16 +848,16 @@ public class AVAT {
 											}
 										}
 										
-										Thread.sleep(10);
-										if(j < thisBuyStocks.size()-1) {
+										Thread.sleep(500);
+										if(false && j < thisBuyStocks.size()-1) {
 											PlayWAV.play("tungLF.wav");
 											PlayWAV.play("maiLF.wav");
 										}
-										Thread.sleep(10);
+										//Thread.sleep(1);
 										
 								   }
 								   
-								   if(i == 0) {
+								   if(i == 0 && repeatTimes > 1) {
 									   PlayWAV.play("chungLT.wav");
 										PlayWAV.play("fukHT.wav");
 										PlayWAV.play("1.wav");
@@ -839,14 +865,30 @@ public class AVAT {
 								   }
 								   	
 							   }
+						}
+						 
+					}catch(Exception e) {
+						e.printStackTrace();
+						logger.error("           Can't sound!");
+					}
+				}
+			});
+			t_sound.start();
+			
+			Thread t_show = new Thread(new Runnable(){
+				   public void run(){
+					   try {
+						   if(thisBuyStocks.size() > 0) {
+							   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
 						   }
 						   //logger.info("            logging holding records done!");
 						}catch(Exception e) {
-							logger.error("           Can't log holding records!");
+							e.printStackTrace();
+							logger.error("           Can't show orders!");
 						}
 				   }
 				});
-			t.start();
+			t_show.start();
 			
 			logger.info("---------- scanForOrders ENDS ---------");
 		}catch(Exception e) {
@@ -1122,7 +1164,7 @@ public class AVAT {
 	public static void saveHoldingRecords() {
 		try {
 			//Map<String, Map<Integer, HoldingRecord>> holdingRecords
-			FileWriter fw = new FileWriter (AVAT_ROOT_PATH + "orders\\" + todayDate + "\\holdingRecords.csv");
+			FileWriter fw = new FileWriter (holdingRecordsPath);
 			
 			for(String stock : holdingRecords.keySet()) {
 				String toWrite = "";

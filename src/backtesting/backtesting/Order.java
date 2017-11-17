@@ -1,6 +1,7 @@
 package backtesting.backtesting;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -61,6 +62,17 @@ public class Order implements Serializable,Cloneable {
 		new_t.date = (Calendar) date.clone();
 		
 		return new_t;
+	}
+	
+	public String toString() {
+		//String str = "";
+		
+		String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(date.getTime());
+		
+		return "stock=" + stock + " date=" + dateStr 
+				+ " type=" + type + " price=" + String.valueOf(price) 
+				+ " amt=" + String.valueOf(amount) 
+				+ " orderId=" + String.valueOf(orderId);
 	}
 
 }

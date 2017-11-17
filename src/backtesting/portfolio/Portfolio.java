@@ -32,7 +32,7 @@ import backtesting.backtesting.TradeType;
      "availableCash",   
      "totalCash",
      "tradingCost",
-     "shortMarginReq",
+     //"shortMarginReq",
      "stockHeld",   
      "todayCal",   
      "histSnap",
@@ -47,7 +47,7 @@ public class Portfolio implements Serializable {
 	
 	// configuration
 	public Double tradingCost = 0.001;
-	public Double shortMarginReq = 1.0;
+	//public Double shortMarginReq = 1.0;    // let it be 1 
 	public int minNumOfDigit_forShares = 0;   //   0 - 只能持仓整数股
 	public int roundingMode_forShares = BigDecimal.ROUND_FLOOR;
 	
@@ -243,7 +243,7 @@ public class Portfolio implements Serializable {
 	 * @param order
 	 * @return
 	 */
-	protected MsgType buyStock(Order order) {
+	public MsgType buyStock(Order order) {
 		MsgType msg = MsgType.Successful;
 		Double _tradingCost = 0.0;
 		
@@ -313,7 +313,7 @@ public class Portfolio implements Serializable {
 	 * @param order
 	 * @return
 	 */
-	protected MsgType sellStock(Order order) {
+	public MsgType sellStock(Order order) {
 		MsgType msg = MsgType.Successful;
 		Double _tradingCost = 0.0;
 		
@@ -352,7 +352,7 @@ public class Portfolio implements Serializable {
 			_tradingCost = price * amt * tradingCost;
 			
 			Double postAmt = prevAmt - amt;
-			Double thisRealizedPnL = amt * (price - uly.average_price) - _tradingCost;
+			Double thisRealizedPnL = amt * (price - uly.average_price) - _tradingCost;  //sell不会改变avg price
 			uly.realized_PnL = uly.realized_PnL + thisRealizedPnL;
 			
 			if(postAmt.equals(0.0)) {
@@ -381,7 +381,7 @@ public class Portfolio implements Serializable {
 	 * @param order
 	 * @return
 	 */
-	protected MsgType shortStock(Order order) {
+	public MsgType shortStock(Order order) {
 		MsgType msg = MsgType.Successful;
 		Double _tradingCost = 0.0;
 		
@@ -405,34 +405,48 @@ public class Portfolio implements Serializable {
 				return msg;
 			}
 			
+			logger.debug("----------- short order ----------------");
 			//======== the core action ========
 			Underlying uly;
 			if(stockHeld.containsKey(stockCode)) {  
 				uly = stockHeld.get(stockCode);
 				if(uly.amount <= 0.0) {// normal condition - the underlying amout is zero or negative before this short
-					Double cashToOccupy = price * (-amt) * (1 + tradingCost) / shortMarginReq;
+					Double cashToOccupy = price * (-amt) * (1 + tradingCost) ;
+					//Double cashToOccupy_MR1 = price * (-amt) * (1 + tradingCost) / 1;  // cash to occupy assuming Margin Requirement = 1
 					_tradingCost = price * (-amt) * tradingCost;
 					
 					// enough cash to be collateral
 					if(cashToOccupy.compareTo(availableCash) < 0) {
-						availableCash = availableCash - cashToOccupy;
+						//availableCash = availableCash;
 						totalCash = totalCash + price * (-amt) * (1- tradingCost);
-						uly.average_price = (uly.amount * uly.average_price + amt * price + _tradingCost) / (uly.amount + amt);
+						uly.average_price = (uly.amount * uly.average_price + price * amt) / (uly.amount + amt);
 						
-						uly.marginOccupied = uly.marginOccupied + cashToOccupy + price * (-amt) * (1- tradingCost);
+						//uly.marginOccupied = uly.marginOccupied + cashToOccupy ;
 						
 						stockHeld.put(stockCode, uly);
+						logger.debug("  " + order.toString());
+						logger.debug("  postAmt=" + uly.amount + " avgPrice=" + uly.average_price + " rPnL=" + uly.realized_PnL);
+						
 					}else {
 						System.out.println("[Short stock - insufficient margin] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
 						msg = MsgType.ShortInsufficientMargin;
 						return msg;
 					}
 				}else { // if we have positive positions before we short, this short is actually a sell order
-					Order sellOrder = (Order) order.clone();
+					double sellAmt = - uly.amount;
+					double shortAmt = - (uly.amount + amt);
+					
+					Order sellOrder = (Order) order.clone();   //当前的就算short，也只是把当前的股票卖掉一部分
 					sellOrder.type = OrderType.SELL;
-					sellOrder.amount = - sellOrder.amount;
+					sellOrder.amount = sellAmt;
 					sellStock(order);
-					return MsgType.ShortOrderToSellOrder;
+					
+					if(shortAmt < 0) {    // 继续short
+						Order shortOrder = (Order) order.clone();
+						shortOrder.type = OrderType.SHORT;
+						shortOrder.amount = shortAmt;
+						shortStock(shortOrder);
+					}
 				}
 					
 			}else {
@@ -459,7 +473,7 @@ public class Portfolio implements Serializable {
 	 * @param order
 	 * @return
 	 */
-	protected MsgType coverStock(Order order) {
+	public MsgType coverStock(Order order) {
 		MsgType msg = MsgType.Successful;
 		Double _tradingCost = 0.0;
 		
@@ -484,33 +498,45 @@ public class Portfolio implements Serializable {
 			}
 			
 			// ========= core action =====
+			Underlying uly;
 			if(stockHeld.containsKey(stockCode)) {  
-				Underlying uly = stockHeld.get(stockCode);
+				uly = stockHeld.get(stockCode);
 				Double prevAmt = uly.amount;
 				
-				if(prevAmt > 0.0) { // if prev amount is > 0, then the cover order is failed
+				if(prevAmt >= 0.0) { // if prev amount is > 0, then the cover order is failed
 					System.out.println("[Cover stock - previous amount not negative] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
 					msg = MsgType.CoverPrevAmountNotNegative;
 					return msg;
 				}
-				
-				if(amt == 0.0) {
-					amt = prevAmt;
+				if(Math.abs(prevAmt) < amt) { // 如果cover的数量超出了当前的short的数量，则不允许
+					System.out.println("[Cover stock - cover exceeds the short amt, will only cover the shorted amt] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
+					//msg = MsgType.CoverPrevAmountNotNegative;
+					//return msg;
+					amt = Math.abs(prevAmt);
 				}
 				
+				double prevAvgPrice = uly.average_price ;
 				Double cashToUse = price * amt * (1 + tradingCost);
-				if(cashToUse < uly.marginOccupied) { // if there is enough cash to buyback the stock
-					totalCash = totalCash - cashToUse;
-					availableCash = availableCash + uly.marginOccupied - cashToUse;
-					// to be completed......
+				_tradingCost = -price * amt * tradingCost;
+				double pnl = amt * (price - prevAvgPrice) - _tradingCost;   // 本次short的收益=当时short收到的钱 - 现在cover需要的钱
+				availableCash += pnl;
+				uly.realized_PnL += pnl;
+				totalCash -=  cashToUse;
+				
+				
+				uly.amount = uly.amount + amt;  // cover不改变avg price
+				if(uly.amount == 0.0) {
+					uly.average_price = 0.0;
 				}
 				
+				stockHeld.put(stockCode, uly);
 				
 			}else {
 				System.out.println("[Cover stock - stock not exist] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
 				msg = MsgType.StockNotExist;
 				return msg;
 			}
+			/*
 			// ========= core action =====
 			Underlying uly = stockHeld.get(stockCode);
 			Double prevAmt = uly.amount;
@@ -533,6 +559,7 @@ public class Portfolio implements Serializable {
 			uly.amount = postAmt;
 			
 			stockHeld.put(stockCode, uly);
+			*/
 			
 		}catch(Exception e) {
 			e.printStackTrace();

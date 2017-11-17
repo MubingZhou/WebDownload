@@ -60,15 +60,59 @@ public class Test {
 			
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
 		try {			
-			ArrayList<String> thisBuyStocks = new ArrayList<String>();
-			Set<String> thisBuyStocksSet = new HashSet<String>();
-			thisBuyStocksSet.add("111");
-			thisBuyStocksSet.add("111");
-			System.out.println(thisBuyStocksSet.size());
 			
+			Portfolio pf = new Portfolio(1000000.0);
+			
+			backtesting.backtesting.Order s1 = new backtesting.backtesting.Order();
+			s1.type = OrderType.SHORT;
+			Calendar cal1 = Calendar.getInstance();
+			cal1.setTime(sdf.parse("20171115"));
+			s1.date = (Calendar) cal1.clone();
+			s1.price = 10.;
+			s1.stock  = "1"	;
+			s1.amount = -100.0;
+			s1.orderId = 1;
+			
+			backtesting.backtesting.Order s2 = new backtesting.backtesting.Order();
+			s2 = (backtesting.backtesting.Order) s1.clone();
+			cal1.setTime(sdf.parse("20171116"));
+			s2.date = (Calendar) cal1.clone();
+			s2.price = 8.0;
+			s2.orderId = 2;
+			
+			backtesting.backtesting.Order s3 = new backtesting.backtesting.Order();
+			s3 = (backtesting.backtesting.Order) s1.clone();
+			s3.type = OrderType.COVER;
+			cal1.setTime(sdf.parse("20171117"));
+			s3.date = (Calendar) cal1.clone();
+			s3.price = 7.0;
+			s3.amount = 100.0;
+			s3.orderId = 3;
+			
+			backtesting.backtesting.Order s4 = new backtesting.backtesting.Order();
+			s4 = (backtesting.backtesting.Order) s3.clone();
+			cal1.setTime(sdf.parse("20171120"));
+			s4.date = (Calendar) cal1.clone();
+			s4.price = 7.0;
+			s4.amount = 100.0;
+			s4.orderId = 4;
+			
+			ArrayList<backtesting.backtesting.Order> soArr = new ArrayList<backtesting.backtesting.Order>();
+			soArr.add(s1);
+			soArr.add(s2);
+			//ArrayList<backtesting.backtesting.Order> coArr = new ArrayList<backtesting.backtesting.Order>();
+			soArr.add(s3);
+			soArr.add(s4);
+			
+			pf.executeOrders(soArr);
+			pf.commitDayEndValue();
+			
+			/*
+			ArrayList<String> thisBuyStocks = new ArrayList<String>();
 			//Thread.sleep(100000000000000l);
-			thisBuyStocks.add("1234567890");
+			thisBuyStocks.add("1898");
 			thisBuyStocks.add("1928");
 			thisBuyStocks.add("700");
 			
@@ -114,8 +158,8 @@ public class Test {
 								}
 							}
 							
-							//Thread.sleep(1);
-							if(j < thisBuyStocks.size()-1) {
+							Thread.sleep(300);
+							if(false && j < thisBuyStocks.size()-1) {
 								PlayWAV.play("tungLF.wav",2);
 								PlayWAV.play("maiLF.wav",2);
 							}
@@ -125,14 +169,14 @@ public class Test {
 					   
 					   if(i == 0) {
 						   PlayWAV.play("chungLT.wav",2);
-							PlayWAV.play("fukHT.wav",2);
-							PlayWAV.play("1.wav",2);
-							PlayWAV.play("chiMR.wav",2);
+							//PlayWAV.play("fukHT.wav",2);
+							//PlayWAV.play("1.wav",2);
+							//PlayWAV.play("chiMR.wav",2);
 					   }
 					   	
 				   }
 			   }
-	
+		*/
 			
 		}catch(Exception e) {
 			e.printStackTrace();

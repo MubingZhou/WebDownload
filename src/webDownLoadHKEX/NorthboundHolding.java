@@ -22,16 +22,21 @@ import org.jsoup.select.Elements;
 //import webDownLoadHKEX.Utils;
 
 public class NorthboundHolding {
-	public static String OUTPUT_PATH = "Z:\\Mubing\\stock data\\A share data\\northbound holding";
-	public static String OUTPUT_PATH_COMBINE = OUTPUT_PATH + "\\combined";
+	public static String OUTPUT_PATH = "Z:\\Mubing\\stock data\\A share data\\northbound holding\\sh sz data";
+	public static String OUTPUT_PATH_COMBINE = "Z:\\Mubing\\stock data\\A share data\\northbound holding\\combined";
 	public static String ASHARE_TRADING_DATE_FILE = "Z:\\Mubing\\stock data\\A share data\\all trading date a share.csv";
 	
 	public static String SH_HOLDING_URL = "http://www.hkexnews.hk/sdw/search/mutualmarket.aspx?t=sh";
-	public static String SZ_HOLDING_URL = "http://www.hkexne	ws.hk/sdw/search/mutualmarket.aspx?t=sz";
+	public static String SZ_HOLDING_URL = "http://www.hkexnews.hk/sdw/search/mutualmarket.aspx?t=sz";
 	public static StringBuilder params = new StringBuilder();
 	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd"); 
 	
 	private static Logger logger = Logger.getLogger(NorthboundHolding.class);
+	
+	public static void main(String[] args) {
+		downloader("20171116","20171116","yyyyMMdd");
+		combiner("20171116","20171116","yyyyMMdd");
+	}
 	
 	public static void downloader(Date startDate, Date endDate, boolean isSH, boolean isSZ) {
 		try {
@@ -39,7 +44,7 @@ public class NorthboundHolding {
 			boolean[] urlPathDownload = {isSH, isSZ};
 			
 			ArrayList<Calendar> allTrdCal = utils.Utils.getAllTradingDate(ASHARE_TRADING_DATE_FILE);
-			final int allTrdCal_size = allTrdCal.size();
+			int allTrdCal_size = allTrdCal.size();
 			
 			//SimpleDateFormat sdf = new SimpleDateFormat(Utils.DATE_FORMAT); 
             SimpleDateFormat sdf_year = new SimpleDateFormat("yyyy"); 
@@ -65,53 +70,84 @@ public class NorthboundHolding {
 	            }
 	            
 	            // ------------- 每个日期都download --------------
-				for(int j = 0; j < allTrdCal_size; j++) {
-					Date thisDate = allTrdCal.get(j).getTime();
-					if(thisDate.before(startDate))
-						continue;
-					if(thisDate.after(endDate))
-						continue;
-					
-					logger.debug("   date=" + sdf.format(thisDate));
-					
-					URL realUrl = new URL(url);
-		            
-		            //System.out.println("params = \n" + params);
-		        	
-		        	HttpURLConnection conn = (HttpURLConnection) realUrl.openConnection();
-		            // set properties
-		            conn.setRequestProperty("accept", "*/*");
-		            conn.setRequestProperty("connection", "Keep-Alive");
-		            conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
-		            conn.setRequestMethod("POST");
-		            conn.setReadTimeout(30 * 1000); // set timeout
-		            
-					setParams("ddlShareholdingDay", sdf_day.format(thisDate));
-		            setParams("ddlShareholdingMonth", sdf_month.format(thisDate));
-		            setParams("ddlShareholdingYear", sdf_year.format(thisDate));
-		            
-		            conn.setRequestProperty( "Content-Length", Integer.toString( params.toString().getBytes("utf-8").length ));
-		            conn.setRequestProperty("Cookie", getCookie("http://www.hkexnews.hk"));
-		            
-		            // for POST
-		            conn.setDoOutput(true);
-		            conn.setDoInput(true);
-		            
-		            // sent parameters
-		            DataOutputStream dataOutputStream = new DataOutputStream( conn.getOutputStream()); 
-		            dataOutputStream.write(params.toString().getBytes("utf-8"));
-		            dataOutputStream.flush();
-		            
-		            //write out the response
-		            Utils.writeFile(conn.getInputStream(), OUTPUT_PATH + "\\" + sdf.format(thisDate) + s + ".html");
-		            
-		            conn.disconnect();
-		            
-		            //params.delete(0, params.length());
-		            params = null;
-		            params = new StringBuilder();
-					
-				}
+	            ArrayList<Calendar> tempFailedList = new ArrayList<Calendar>();
+	            ArrayList<Calendar> failedList = new ArrayList<Calendar>();
+	            failedList.addAll(allTrdCal);
+	            while(failedList != null && failedList.size() > 0) {
+	            	for(int j = 0; j < allTrdCal_size; j++) {
+						Date thisDate = allTrdCal.get(j).getTime();
+						if(thisDate.before(startDate))
+							continue;
+						if(thisDate.after(endDate))
+							continue;
+						
+						//logger.info("   date=" + sdf.format(thisDate));
+						try {
+							URL realUrl = new URL(url);
+				            
+				            //System.out.println("params = \n" + params);
+				        	
+				        	HttpURLConnection conn = (HttpURLConnection) realUrl.openConnection();
+				            // set properties
+				            conn.setRequestProperty("accept", "*/*");
+				            conn.setRequestProperty("connection", "Keep-Alive");
+				            conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+				            conn.setRequestMethod("POST");
+				            conn.setReadTimeout(30 * 1000); // set timeout
+				            
+				            Document doc = Jsoup.connect("http://www.hkexnews.hk/sdw/search/mutualmarket.aspx?t=sz").get();	
+				            setParams("__VIEWSTATE", doc.select("input#__VIEWSTATE").first().val());
+				            setParams("__VIEWSTATEGENERATOR", doc.select("input#__VIEWSTATEGENERATOR").first().val());
+				            setParams("__EVENTVALIDATION", doc.select("input#__EVENTVALIDATION").first().val());
+				            
+				            String day = sdf_day.format(thisDate);
+				            String month = sdf_month.format(thisDate);
+				            String year = sdf_year.format(thisDate);
+							setParams("ddlShareholdingDay", day);
+				            setParams("ddlShareholdingMonth", month);
+				            setParams("ddlShareholdingYear", year);
+				            setParams("btnSearch.y", "15");
+				            setParams("btnSearch.x", "15");
+				            logger.info("   date = " + year + "-" + month + "-" + day);
+				            
+				            conn.setRequestProperty( "Content-Length", Integer.toString( params.toString().getBytes("utf-8").length ));
+				            conn.setRequestProperty("Cookie", getCookie("http://www.hkexnews.hk"));
+				            
+				            // for POST
+				            conn.setDoOutput(true);
+				            conn.setDoInput(true);
+				            
+				            // sent parameters
+				            DataOutputStream dataOutputStream = new DataOutputStream( conn.getOutputStream()); 
+				            dataOutputStream.write(params.toString().getBytes("utf-8"));
+				            dataOutputStream.flush();
+				            
+				            //write out the response
+				            Utils.writeFile(conn.getInputStream(), OUTPUT_PATH + "\\" + sdf.format(thisDate) + s + ".html");
+				            
+				            conn.disconnect();
+				            
+				            //params.delete(0, params.length());
+				            params = null;
+				            params = new StringBuilder();
+				            
+				            logger.info("    ------------ Done -----------");
+						}catch(Exception e) {
+		            		e.printStackTrace();
+		            		logger.info("    ------------ Failed -----------");
+		            		tempFailedList.add(allTrdCal.get(j));
+		            	}
+						
+					} // end of for
+	            	failedList = null;
+	            	failedList = new ArrayList<Calendar>();
+	            	failedList.addAll(tempFailedList);
+	            	tempFailedList = null;
+	            	tempFailedList = new ArrayList<Calendar>();	
+	            	
+	            }
+	            
+				
 				
 			}
 			
@@ -172,8 +208,9 @@ public class NorthboundHolding {
 					continue;
 				
 				FileWriter fw = new FileWriter(OUTPUT_PATH_COMBINE + "\\" + dateStr + ".csv");
+				logger.info("Writer: " + OUTPUT_PATH_COMBINE + "\\" + dateStr + ".csv");
 				fw.write("code,name,shareholding,holding pct (as of total issued A shares)\n");
-				for(int i = 0; i < suffixArr.length; i++) {
+				for(int i = 0; i < suffixArr.length; i++) {  // sh & sz
 					String suffix = suffixArr[i];
 					
 					String fileName = dateStr + suffix;
@@ -181,10 +218,13 @@ public class NorthboundHolding {
 					// parse html
 					Document doc = (Document) Jsoup.parse(new File(OUTPUT_PATH + "\\" + fileName), "utf-8", "");
 					
+					
 					Elements resultTables = doc.getElementsByClass("result-table");  
 					if(resultTables == null || resultTables.size() == 0) {
 						continue;
 					}
+					logger.info("   Read: " + OUTPUT_PATH + "\\" + fileName);
+					
 					Element resultTable = resultTables.get(0);  // 肯定只有一个element
 					Elements tr_rows = resultTable.getElementsByTag("tr");
 					final int tr_size = tr_rows.size();

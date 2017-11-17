@@ -57,6 +57,8 @@ public class Main {
 			 * 
 			 * 100 or larger - testing
 			 */
+			int isTestRun = 0;
+			AVAT.isTestRun = isTestRun;
 			
 			logger.info("today date=" + todayDate);
 			
@@ -65,6 +67,9 @@ public class Main {
 								// 7496 - real account
 			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
 			int clientId = 1;
+			if(isTestRun == 1)
+				clientId = 53;
+			
 			
 			//[start] 
 			MyLogger inLogger = new MyLogger();
@@ -118,7 +123,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171113", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171116", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;

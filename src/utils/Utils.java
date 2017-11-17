@@ -47,7 +47,9 @@ public class Utils {
 	
 	public static final String SH_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SSE Southbound Stocks.csv";
 	public static final String SZ_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SZSE Southbound Stocks.csv";
-	
+	public static final String HSI_STOCKLIST_PATH = "Z:\\Mubing\\stock data\\HSI HSCEI index\\HSI history from 2012.csv";
+	public static final String HSCEI_STOCKLIST_PATH = "Z:\\Mubing\\stock data\\HSI HSCEI index\\HSCEI history from 2012.csv";
+			
 	private static Logger logger = Logger.getLogger(Utils.class.getName());
 	
 	/**
@@ -548,14 +550,14 @@ public class Utils {
 			ArrayList<String> allStockList = new ArrayList<String>();
 			try {
 				if(isSH && !isSZ)
-					return getSouthboundStocks_support(SH_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+					return getStocksFromStockAdjHistory(SH_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
 				if(!isSH && isSZ)
-					return getSouthboundStocks_support(SZ_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+					return getStocksFromStockAdjHistory(SZ_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
 				if(!isSH && !isSZ)
 					return null;
 				
-				ArrayList<String> shStockList = getSouthboundStocks_support(SH_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
-				ArrayList<String> szStockList = getSouthboundStocks_support(SZ_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+				ArrayList<String> shStockList = getStocksFromStockAdjHistory(SH_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
+				ArrayList<String> szStockList = getStocksFromStockAdjHistory(SZ_SOUTHBOUND_STOCKLIST_PATH, date, dateFormat);
 				
 				allStockList = shStockList;
 				for(int i = 0; i < szStockList.size(); i++) {
@@ -569,11 +571,58 @@ public class Utils {
 			
 			return allStockList;
 		}
-		private static ArrayList<String> getSouthboundStocks_support(String filePath, String date, String dateFormat) {
+		
+		/**
+		 * to get the HSI/HSCEI stock list for some specified date
+		 * @param date
+		 * @param dateFormat
+		 * @param isHSCEI
+		 * @param isHSI
+		 * @return
+		 */
+		public static ArrayList<String> getHSCEI_HSIStocks(String date, String dateFormat, boolean isHSCEI, boolean isHSI){
+			ArrayList<String> allStockList = new ArrayList<String>();
+			try {
+				if(isHSCEI && !isHSI)
+					return getStocksFromStockAdjHistory(HSCEI_STOCKLIST_PATH, date, dateFormat);
+				if(!isHSCEI && isHSI)
+					return getStocksFromStockAdjHistory(HSI_STOCKLIST_PATH, date, dateFormat);
+				if(!isHSCEI && !isHSI)
+					return null;
+				
+				ArrayList<String> hsiStockList = getStocksFromStockAdjHistory(HSI_STOCKLIST_PATH, date, dateFormat);
+				ArrayList<String> hsceiStockList = getStocksFromStockAdjHistory(HSCEI_STOCKLIST_PATH, date, dateFormat);
+				
+				allStockList = hsiStockList;
+				for(int i = 0; i < hsceiStockList.size(); i++) {
+					if(allStockList.indexOf(hsceiStockList.get(i)) == -1) {
+						allStockList.add(hsceiStockList.get(i));
+					}
+				}
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+			
+			return allStockList;
+		}
+		
+		/**
+		 * 从某个指数的调整历史中获取stock list，比如可以是获取HSI的成分股，所输入的文件需要符合以下格式：
+		 * 	Code,	Chinese,	Eng,		Change,	Date (dd/MM/yyyy)
+			288,	萬洲國際,		WH Group,	1,		4/9/2017
+			700,	腾讯,			Tencent,	-1,		4/9/2017
+			...
+			
+		 * @param filePath
+		 * @param date
+		 * @param dateFormat
+		 * @return
+		 */
+		private static ArrayList<String> getStocksFromStockAdjHistory(String filePath, String date, String dateFormat) {
 			BufferedReader bf = null;
 			ArrayList<String> stockList = new ArrayList<String>();
 			try {
-				String special = "2969";  // it seems that this code always represents a temporary code, so if it appears in the list, it should be mapped back to its original code
+				//String special = "2969";  // it seems that this code always represents a temporary code, so if it appears in the list, it should be mapped back to its original code
 				
 				// allData is in the following form:
 				// stock code1, direction, date
@@ -672,7 +721,7 @@ public class Utils {
 							if(ind != -1)
 								stockList.remove(ind);
 						}else {
-							System.out.println("[Get Southbound Data] direction not correct! " + stockCode + benchDate.getTime());
+							System.out.println("[Get Stock List Data] direction not correct! " + stockCode + benchDate.getTime());
 						}
 					}else
 						break;

@@ -48,7 +48,7 @@ public class PlayWAV {
 	        }
 	        
 	        byte[] b1 = baos.toByteArray();
-	        System.out.println("b1.len=" + b1.length);
+	        //System.out.println("b1.len=" + b1.length);
 	        byte[] b2 = new byte[b1.length/playBackSpeed];
 	        
 	        int b2_ind = 0;

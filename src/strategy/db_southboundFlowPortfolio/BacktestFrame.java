@@ -35,6 +35,7 @@ public class BacktestFrame {
 	public static Date endDate ;
 	public static String endDateStr ="";
 	public static Double initialFunding = 1000000.0;
+	public static double tradingCost = 0.0;
 	
 	public static String portFilePath="";    // 最终输出的root path
 	public static String allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";  // 
@@ -47,6 +48,14 @@ public class BacktestFrame {
 	public static double avgDailyValueThreshHold_USD = 7000000.0;
 	public static int topNStocks = 20;
 	public static double minInflowPct = 0.7;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
+	
+	public static int stockUniverse = 1;
+	/*
+	 * 1 - south bound 
+	 * 2 - HSI
+	 * 3 - HSCEI
+	 * 4 - HSCEI + HSI
+	 */
 	
 	public static int weightingStrategy = 1;
 		/*
@@ -108,6 +117,7 @@ public class BacktestFrame {
 			
 			PortfolioScreening.avgDailyValueThreshHold_USD =  avgDailyValueThreshHold_USD;  // 每天的平均成交额需要超过这个数才能入选
 			PortfolioScreening.topNStocks = topNStocks;   // 每次选多少只股票进行买入卖出
+			PortfolioScreening.stockUniverse = stockUniverse;
 			
 			rebalDateArr = getRebalDate(startDate, endDate, dateFormat, rebalancingStrategy,allTradingDate);
 			
@@ -469,7 +479,14 @@ public class BacktestFrame {
 							String thisStockToSell = stocksToBuy_str.get(j);
 							direction_sell.add(-1);
 							weighting_sell.add(-100.0);
-							price_sell.add(Double.parseDouble(stockPrice.DataGetter.getStockDataField(thisStockToSell,stockPrice.DataGetter.StockDataField.adjclose, todayDate, "yyyyMMdd")));
+							
+							String priceToSell = stockPrice.DataGetter.getStockDataField(
+									thisStockToSell,
+									stockPrice.DataGetter.StockDataField.adjclose, 
+									todayDate, "yyyyMMdd");
+							if(priceToSell == null)
+								priceToSell ="0";
+							price_sell.add(Double.parseDouble(priceToSell));
 						}
 						
 						// stocks to buy，此时stocksToBuy已经update了，但是stocksToBuy_str还没update。。。
@@ -633,7 +650,7 @@ public class BacktestFrame {
 			//bt.startDate = "20160630";
 			bt.startDate = rebalDateArr.get(0);
 			bt.endDate = rebalDateArr.get(rebalDateArr.size() - 1);
-			bt.tradingCost = 0.0015;
+			bt.tradingCost = tradingCost;
 			
 			ArrayList<ArrayList<ArrayList<Object>>> allRebalData = (ArrayList<ArrayList<ArrayList<Object>>>) data.get(1);
 			ArrayList<Date> rebalDates = (ArrayList<Date>) data.get(0);
@@ -691,32 +708,48 @@ public class BacktestFrame {
 			// ======= output stock picks =========
 			Map<String, ArrayList<String>> data_trans = new HashMap();
 			FileWriter fw_stockPicks1 = new FileWriter(portFilePath + "\\stock picks1.csv");
-			for(int i = 0; i < rebalDateArr.size(); i++) {
+			for(int i = 0; i < rebalDatesStr.size(); i++) {
 				if(i > 0)
 					fw_stockPicks1.write(",");
-				fw_stockPicks1.write(rebalDateArr.get(i));
+				fw_stockPicks1.write(rebalDatesStr.get(i));
 			}
 			fw_stockPicks1.write("\n");
 			for(int i = 0; i < PortfolioScreening.topNStocks; i++) { //第几只股票
-				for(int j = 0; j < rebalDateArr.size(); j++) {
+				for(int j = 0; j < rebalDatesStr.size(); j++) {
 					if(j > 0)
 						fw_stockPicks1.write(",");
 					
 					ArrayList<Object> todayStocks = allRebalData.get(j).get(0);
+					ArrayList<Object> todayDirections = allRebalData.get(j).get(1);
+					
 					String stock = "";
 					if(todayStocks == null || todayStocks.size() == 0) {
 						continue;
 					}
 					if( i > (todayStocks.size() - 1))
 						continue;
-					stock = (String) todayStocks.get(i);
+					
+					int numOfBuysFound = 0;
+					for(int k = 0; k < todayDirections.size(); k++) {   //因为allRebalData既有buy的股票也有sell的，所以每次都要找到buy的股票才行
+						Integer direction = (Integer) todayDirections.get(k);
+						if(direction == null || direction < 0)
+							continue;  //  these are sell orders
+						if(numOfBuysFound == i) {
+							stock = (String) todayStocks.get(k);
+							break;
+						}
+						numOfBuysFound ++;
+					}
+					
+					
+					
 					fw_stockPicks1.write(stock);
 					
 					//======= transform "data" ====
 					ArrayList<String> thisStockData = data_trans.get(stock);
 					if(thisStockData == null || thisStockData.size() == 0) {
 						thisStockData = new ArrayList<String>();
-						for(int k = 0; k < rebalDateArr.size(); k ++) {
+						for(int k = 0; k < rebalDatesStr.size(); k ++) {
 							thisStockData.add("");
 						}
 					}
@@ -729,8 +762,8 @@ public class BacktestFrame {
 			
 			// === write "stock picks2.csv" ====
 			FileWriter fw_stockPicks2 = new FileWriter(portFilePath + "\\stock picks2.csv");
-			for(int i = 0; i < rebalDateArr.size(); i++) {
-				fw_stockPicks2.write("," + rebalDateArr.get(i));
+			for(int i = 0; i < rebalDatesStr.size(); i++) {
+				fw_stockPicks2.write("," + rebalDatesStr.get(i));
 			}
 			fw_stockPicks2.write(",Total\n");
 			
@@ -790,6 +823,7 @@ public class BacktestFrame {
 		 * 3 - bi-weekly
 		 * 4 - weekly
 		 * 5 - every 40 trading days
+		 * 100 - self defined
 		 */
 	
 		try {	
@@ -868,6 +902,11 @@ public class BacktestFrame {
 						cal.add(Calendar.DATE, 40);
 				}
 				
+			}
+			
+			if(rebalancingStrategy == 100) {
+				rebalArr.add("20171017");
+				rebalArr.add("20171115");
 			}
 			
 		}catch(Exception e) {

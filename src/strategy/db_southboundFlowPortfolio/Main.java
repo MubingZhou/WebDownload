@@ -93,10 +93,11 @@ public class Main {
 				String endDateStr = "20171109";
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
+				BacktestFrame.tradingCost = 0.001;
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" 
-						+ sdf2.format(new Date()) + " earlyUnwindStrategy";
+						+ sdf2.format(new Date()) + " HSI+HSCEI";
 				File f = new File(portFilePath);
 				f.mkdir();
 				
@@ -105,13 +106,20 @@ public class Main {
 				int topNStocks = 20;   // 每次选多少只股票进行买入卖出
 				double minInflowPct = 0.7;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
+				int stockUniverse = 1;
+				/*
+				 * 1 - south bound 
+				 * 2 - HSI
+				 * 3 - HSCEI
+				 * 4 - HSCEI + HSI
+				 */
 				int weightingStrategy = 2;
 					/*
 					 * 1 - Equally weighted
 					 * 2 - 按照排名分成四组，每组所有股票的加起来的weights分别是40%，30%，20%，10%
 					 * 
 					 */
-				int rebalancingStrategy = 1;
+				int rebalancingStrategy = 3;
 				/*
 				 * rebalancingStrategy
 				 * 1 - monthly, rebal at month beginning
@@ -119,6 +127,7 @@ public class Main {
 				 * 3 - bi-weekly
 				 * 4 - weekly
 				 * 5 - every 40 trading days
+				 * 100 - self defined
 				 */
 				
 				int earlyUnwindStrategy  = 1;
@@ -150,20 +159,45 @@ public class Main {
 				ArrayList<String> allPerformanceDataTitle = new ArrayList<String>();
 				
 				//-----------------------------------------
-				int[] topNStocksArr = {10,15,20,25,30};
+				int[] topNStocksArr = {20,25};
 				int[] weightingStrategyArr = {1,2};
 				int[] earlyUnwindStrategyArr = {1,2};
+				double[] avgDailyValueThreshHold_USDArr = {
+					5000000 /*5 mil USD*/,  7000000 /*7 mil USD*/, 10000000 /*10 mil USD*/, 15000000 /*15 mil USD*/ 	
+				};
+				int[] stockUniverseArr = {1,2,3,4};
 				
 				int size1 = topNStocksArr.length;
-				//size1 = 1;
+				size1 = 1;
+				
 				int size2 = weightingStrategyArr.length;
 				size2 = earlyUnwindStrategyArr.length;
+				size2 = avgDailyValueThreshHold_USDArr.length;
+				size2 = stockUniverseArr.length;
+				size2 =1;
 				for(int i = 0; i < size1; i++) {
 					topNStocks = topNStocksArr[i];
 					for(int j = 0; j < size2; j++) {
-						earlyUnwindStrategy = earlyUnwindStrategyArr[j];
+						//earlyUnwindStrategy = earlyUnwindStrategyArr[j];
+						//avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USDArr[j];
+						//stockUniverse = stockUniverseArr[j];
 						
-						String title = topNStocks + "stocks earlyUnwindStrategy" + earlyUnwindStrategy;
+						String fileSubName = "";
+						switch(stockUniverse) {
+						case 1:
+							fileSubName = "southbound";
+							break;
+						case 2:
+							fileSubName = "HSI";   // excluding LINK REIT (823 HK Equity)
+							break;
+						case 3:
+							fileSubName = "HSCEI";
+							break;
+						case 4:
+							fileSubName = "HSI HSCEI";  // excluding LINK REIT (823 HK Equity)
+							break;
+						}
+						String title = topNStocks + " " + fileSubName;  // 每个case的文件夹名称
 						allPerformanceDataTitle.add(title);
 						
 						// ------------------- main settings -------------
@@ -172,6 +206,7 @@ public class Main {
 						BacktestFrame.avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USD; 
 						BacktestFrame.topNStocks = topNStocks;
 						BacktestFrame. minInflowPct =  minInflowPct;
+						BacktestFrame.stockUniverse = stockUniverse; 
 						BacktestFrame.weightingStrategy = weightingStrategy;
 						BacktestFrame.rebalancingStrategy = rebalancingStrategy;
 						BacktestFrame.isOutputDailyCCASSChg = isOutputDailyCCASSChg;  
@@ -186,6 +221,27 @@ public class Main {
 						Portfolio pf = BacktestFrame.backtesting( data);
 						ArrayList<Object> marketValueData = pf.getMarketValue("20000101","20200101","yyyyMMdd");
 						ArrayList<Double> marketValue = (ArrayList<Double>) marketValueData.get(0);
+						
+						// ---------- test --------------
+						ArrayList<ArrayList<ArrayList<Object>>> allRebalData = (ArrayList<ArrayList<ArrayList<Object>>>) data.get(1);
+						ArrayList<Date> rebalDates = (ArrayList<Date>) data.get(0);
+						ArrayList<String> rebalDatesStr = new ArrayList<String>();
+						final int size = rebalDates.size();
+						for(int k = 0;k < size; k ++) {
+							rebalDatesStr.add(sdf.format(rebalDates.get(k)));
+						}
+						FileWriter fw_t = new FileWriter("D:\\test.csv");
+						for(int k = 0; k < size; k++) {
+							fw_t.write(rebalDatesStr.get(k));
+							ArrayList<Object> todayStocks = allRebalData.get(k).get(0);
+							ArrayList<Object> todayDirections = allRebalData.get(k).get(1);
+							for(int kk = 0; kk < todayStocks.size(); kk++) {
+								if((Integer) todayDirections.get(kk) > 0)
+									fw_t.write("," + todayStocks.get(kk));
+							}
+							fw_t.write("\n");
+						}
+						fw_t.close();
 						
 						// ------------- performance profile -----------
 						double startMarketValue  = initialFunding;
@@ -770,8 +826,16 @@ public class Main {
 				File f = new File(stockDirPath );
 				String[] fileList = f.list();
 				for(int i = 0; i < fileList.length; i++) {
-					logger.debug("File = " + fileList[i]);
-					String stock = fileList[i].substring(0, fileList[i].length() - 4);
+					String fileName = fileList[i];
+					logger.debug("File = " + fileName);
+					String stock = fileName.substring(0, fileName.length() - 4);
+					
+					try {
+						Double d = Double.parseDouble(stock);
+					}catch(Exception e) {
+						logger.debug("Non stock data file! - " + fileList[i]);
+						continue;
+					}
 					
 					BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockDirPath + fileList[i]);
 					
