@@ -25,16 +25,14 @@ public class DataDownloader { // downloading southbound CCASS data
 	public static String WEBB_URL_SOUTHBOUND_SZ = "https://webb-site.com/ccass/cholder.asp?part=1456";
 	public static String FILE_OUTPUT_PATH = "D:\\stock data\\HK CCASS - WEBB SITE";
 	
-	public static void dataDownloader() {
+	public static void dataDownloader(String startDate, String endDate, String dateFormat, boolean toDownloadSH, boolean toDownloadSZ) {
 		try{
-			Boolean toDownloadSH = true;
-			Boolean toDownloadSZ = true;
 			
 			// get tradings dates
 			String startDate_sz = "2016-12-07";
 			String startDate_sh = "2014-11-19";
 			
-			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates("2017-11-16", "2017-11-16", "yyyy-MM-dd");
+			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate, endDate, dateFormat);
 			//ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate_sz, "2017-08-25", "yyyy-MM-dd");
 			
 			utils.Utils.trustAllCertificates();

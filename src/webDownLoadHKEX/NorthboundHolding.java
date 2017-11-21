@@ -34,8 +34,9 @@ public class NorthboundHolding {
 	private static Logger logger = Logger.getLogger(NorthboundHolding.class);
 	
 	public static void main(String[] args) {
-		downloader("20171116","20171116","yyyyMMdd");
-		combiner("20171116","20171116","yyyyMMdd");
+		String dateStr = "20171120";
+		downloader(dateStr,dateStr,"yyyyMMdd");
+		combiner(dateStr,dateStr,"yyyyMMdd");
 	}
 	
 	public static void downloader(Date startDate, Date endDate, boolean isSH, boolean isSZ) {

@@ -38,7 +38,8 @@ public class BacktestFrame {
 	public static double tradingCost = 0.0;
 	
 	public static String portFilePath="";    // 最终输出的root path
-	public static String allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";  // 
+	public static String allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";  // 存储所有southbound data的文件夹
+	public static String allPriceDataPath = "Z:\\Mubing\\stock data\\stock hist data - webb";  //存储所有stock price的data的文件夹
 	
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar> ();  
 	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
@@ -122,10 +123,18 @@ public class BacktestFrame {
 			rebalDateArr = getRebalDate(startDate, endDate, dateFormat, rebalancingStrategy,allTradingDate);
 			
 			PortfolioScreening.outputPath = portFilePath;
-			if(PortfolioScreening.sbDataMap == null || PortfolioScreening.sbDataMap.size() == 0)
-				PortfolioScreening.getAllSbData(allSbDataPath);
 			if(PortfolioScreening.allTradingDate == null || PortfolioScreening.allTradingDate.size() == 0)
 				PortfolioScreening.getAllTradingDate();
+			if(PortfolioScreening.sbDataMap == null || PortfolioScreening.sbDataMap.size() == 0)
+				PortfolioScreening.getAllSbData(allSbDataPath);
+			
+			/*
+			Calendar rebalStart = Calendar.getInstance();
+			rebalStart.setTime(sdf_yyyyMMdd.parse(rebalDateArr.get(0)));
+			int rebalStartInd = allTradingDate .indexOf(rebalStart);
+			if(PortfolioScreening.priceDataMap == null || PortfolioScreening.priceDataMap.size() == 0)
+				PortfolioScreening.getAllPriceData(allPriceDataPath, allTradingDate.get(rebalStartInd - 30).getTime());
+			*/
 			
 			PortfolioScreening.oneMonthBeforeDays = 20;
 		} catch (Exception e) {
@@ -397,7 +406,7 @@ public class BacktestFrame {
 										+ thisStock.rank2 
 										+ thisStock.rank3 
 										)/2;   // 这个句子决定了最后的排序
-							thisStock.rank5 = thisStock.sorting_indicator;
+							thisStock.rank7 = thisStock.sorting_indicator;
 						}
 						Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
 						
@@ -575,7 +584,7 @@ public class BacktestFrame {
 							fw.write(thisStock.stockCode + "," + _3MADV + "," 
 									+ monthlySBChg_FF + "," + thisStock.rank1 + ","
 									+ monthlySBChg_vol + "," + thisStock.rank2 + ","
-									+ thisStock.rank3 + "," + thisStock.rank4 + "," + thisStock.rank5 + ","
+									+ thisStock.rank3 + "," + thisStock.rank4 + "," + thisStock.rank7 + ","
 									+ thisStock.filter2 + "," + thisStock.filter3 + "," + thisStock.filter4 + "\n");
 						}
 						fw.close();

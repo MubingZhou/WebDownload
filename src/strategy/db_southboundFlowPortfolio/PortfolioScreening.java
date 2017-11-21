@@ -17,6 +17,8 @@ import java.util.Map;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import stockPrice.DataGetter.StockDataField;
+
 public class PortfolioScreening {
 	public static String outputPath = "";
 	public static int topNStocks = 20;
@@ -29,6 +31,12 @@ public class PortfolioScreening {
 		 * 2 - all HSI stocks
 		 * 3 - all HSCEI stocks
 		 */
+	public static boolean isToCalNotional = true; 
+	/*
+	 * 是否计算notional的value的chg
+	 * 计算方法：	因为T日得到的southbound的CCASS change其实只是T-2日的数据，而且只有股数，所以要计算T日得到的数据和T-1日的数据的chg，其实
+	 * 			计算方式为：(T-2的股数 - T-3日的股数) * T-2的股价
+	 */
 	
 	public static Logger logger = LogManager.getLogger(PortfolioScreening.class.getName());
 	public static Map<String, String> ffPctMap = new HashMap();
@@ -36,6 +44,8 @@ public class PortfolioScreening {
 	public static Map<String, Map<Date,ArrayList<Double>>> osDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {outstanding shares, outstanding value}
 	public static Map<String, ArrayList<Object>> osDataMap2 = new HashMap<String, ArrayList<Object>>();  // String - stock, ArrayList<Object> - 三个元素，一个是ArrayList<Date>，一个是ArrayList<Double>，一个是ArrayList<Double>，第一个是股本有变化的日期，第二个是当日的股本，第三个当日的市值
 	public static String outstandingFilePath = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
+	public static Map<String, Map<Date,ArrayList<Double>>> priceDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {unadjusted price, adjusted price}
+	public static String priceFilePath = "Z:\\Mubing\\stock data\\stock hist data - webb\\";
 	
 	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
 	public static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
@@ -342,6 +352,59 @@ public class PortfolioScreening {
 				}
 				*/
 				
+				// ============= get the notional change ==============
+				if(isToCalNotional) {
+					Date twoDaysBefore = allTradingDate.get(ind - 2);
+					Double T_2Price = 0.0;
+					/*
+					String T_2Price_str = stockPrice.DataGetter.getStockDataField(stockCode, StockDataField.close, sdf_yyyyMMdd.format(twoDaysBefore), "yyyyMMdd");
+					try {
+						T_2Price = Double.parseDouble(T_2Price_str);
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
+					*/
+					
+					Map<Date, ArrayList<Double>> thisStockPriceMap = priceDataMap.get(stockCode);
+					if(thisStockPriceMap == null) {
+						logger.info("[get price data] stock=" + stockCode + " date=" + sdf.format(twoDaysBefore));
+						getPriceData(stockCode, priceFilePath, twoDaysBefore);
+						thisStockPriceMap = priceDataMap.get(stockCode);
+					}
+					ArrayList<Double> priceData = thisStockPriceMap.get(twoDaysBefore);
+					if(priceData == null || priceData.size() == 0) {
+						T_2Price = 0.0;
+					}else {
+						T_2Price = priceData.get(0);
+					}
+					
+					
+					Date yesterday = allTradingDate.get(ind - 1);
+					// ----------- get yesterday's holding -------------
+					double yesterday_holding = 0.0;
+					if(oneMonthBeforeDays == 1) {   //这里可以偷个懒
+						yesterday_holding = stock.SB_1MBefore_holding;
+					}else {
+						ArrayList<Double> yesterday_SBData = new ArrayList<Double> ();
+						if(sbDataMap_oneStock != null)
+							yesterday_SBData = sbDataMap_oneStock.get(yesterday);
+						//Double today_holding = 0.0;
+						if(yesterday_SBData != null && yesterday_SBData.size() > 0) {
+							yesterday_holding = today_SBData.get(0);
+						}else {
+							yesterday_holding = 0.0;
+						}
+					}
+					
+					double holdingChg = (stock.SB_today_holding -  yesterday_holding);
+					stock.SB_notional_chg = holdingChg *  T_2Price;
+					
+					if(stock.stockCode.equals("700")) {
+						logger.info("[Notional Chg] stock=" + stock.stockCode + " date=" + date + " holdingChg=" + holdingChg + " T-2 price=" + T_2Price + " notionalChg=" + stock.SB_notional_chg);
+					}
+				}
+				
+				
 				// ========== set the ratio ==========
 				// southbound flow change vs. daily turnover
 				if(stock.Turnover_3M_avg != null && !stock.Turnover_3M_avg.equals(0.0))
@@ -621,7 +684,7 @@ public class PortfolioScreening {
             	bf.close();
             } // end of file for
            
-            logger.info("getAllSbData - Done!");
+            logger.info("Get All Sb Data - Done!");
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -798,6 +861,8 @@ public class PortfolioScreening {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+		
+		logger.info("Get All Outstanding Data - Done!");
 	}
 	
 	public static void getAllOsData(String outstandingFilePath,  String curOffDateStr, String dateFormat) {
@@ -860,4 +925,143 @@ public class PortfolioScreening {
 		return data_return;
 	}
 
+	/**
+	 * 得到所有股票的价格数据
+	 * @param priceFilePath
+	 * @param cutOffDate
+	 */
+	public static void getAllPriceData(String priceFilePath,  Date cutOffDate) {
+		try {
+			if(allTradingDate == null || allTradingDate.size() == 0 )
+				getAllTradingDate();
+			
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+			//SimpleDateFormat sdf_temp = new SimpleDateFormat (dateFormat);
+			//Date cutOffDate = sdf_temp.parse(cutOffDateStr);
+			
+	        File allFile = new File(priceFilePath);
+	        for(File f : allFile.listFiles()) {
+	        	String fileName = f.getName();
+	        	if(fileName.substring(fileName.length() - 4, fileName.length()).equals(".csv")) {
+	        		//logger.info("file=" + fileName);
+	        		String stock = fileName.substring(0, fileName.length() - 4);
+	        		Double isStockFile = 0.0;
+	        		try {
+	        			isStockFile = Double.parseDouble(stock);
+	        		}catch(Exception e) {
+	        			isStockFile = -1.0;
+	        		}
+	        		if(isStockFile < 0)
+	        			continue;
+	        		
+	        		
+	        		BufferedReader bf = utils.Utils.readFile_returnBufferedReader(priceFilePath + "\\" + fileName);
+	        		int count = 0;
+	        		
+	        		Map<Date, ArrayList<Double>> thisStockMap = priceDataMap.get(stock);
+	        		String line = "";	
+	        		while((line = bf.readLine()) != null) {
+	        			if(count == 0) { // skip first line
+	        				count++;
+	        				continue;
+	        			}
+	        			
+	        			String[] lineArr = line.split(",");
+	        			String dateStr = lineArr[0];
+	        			String closeStr = lineArr[3];
+	        			String adjCloseStr= lineArr[11];
+	        			
+	        			Date date = sdf.parse(dateStr);
+	        			if(date.before(cutOffDate))
+	        				continue;
+	        			
+	        			Double close = Double.parseDouble(closeStr);
+	        			Double adjClose = Double.parseDouble(adjCloseStr);
+	        			
+	        			ArrayList<Double> closeArr = new ArrayList<Double>();
+	        			closeArr.add(close);
+	        			closeArr.add(adjClose);
+	        			
+	        			
+	        			if(thisStockMap == null	) {
+	        				thisStockMap = new HashMap<Date, ArrayList<Double>>(); 
+	        			}
+	        			thisStockMap.put(date, closeArr);
+	        			
+	        			
+	        			
+	        		} // end of while
+	        		bf.close();
+	        		
+	        		priceDataMap.put(stock, thisStockMap);
+	        		
+	        	}
+	        }
+	        
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		logger.info("Get All Price Data - Done!");
+	}
+	
+	public static void getPriceData(String stock, String priceFilePath,  Date cutOffDate) {
+		try {
+			if(allTradingDate == null || allTradingDate.size() == 0 )
+				getAllTradingDate();
+			
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+			//SimpleDateFormat sdf_temp = new SimpleDateFormat (dateFormat);
+			//Date cutOffDate = sdf_temp.parse(cutOffDateStr);
+			
+    		BufferedReader bf = utils.Utils.readFile_returnBufferedReader(priceFilePath + "\\" + stock + ".csv");
+    		int count = 0;
+    		
+    		Map<Date, ArrayList<Double>> thisStockMap = priceDataMap.get(stock);
+    		String line = "";	
+    		while((line = bf.readLine()) != null) {
+    			if(count == 0) { // skip first line
+    				count++;
+    				continue;
+    			}
+    			
+    			String[] lineArr = line.split(",");
+    			String dateStr = lineArr[0];
+    			String closeStr = lineArr[3];
+    			String adjCloseStr= lineArr[11];
+    			
+    			Date date = sdf.parse(dateStr);
+    			if(date.before(cutOffDate))
+    				continue;
+    			
+    			Double close = Double.parseDouble(closeStr);
+    			Double adjClose = Double.parseDouble(adjCloseStr);
+    			
+    			ArrayList<Double> closeArr = new ArrayList<Double>();
+    			closeArr.add(close);
+    			closeArr.add(adjClose);
+    			
+    			
+    			if(thisStockMap == null	) {
+    				thisStockMap = new HashMap<Date, ArrayList<Double>>(); 
+    			}
+    			thisStockMap.put(date, closeArr);
+    			
+    			
+    			
+    		} // end of while
+    		bf.close();
+    		
+    		priceDataMap.put(stock, thisStockMap);
+    		
+    	
+	        
+	        
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		logger.info("Get All Price Data - Done!");
+	}
+	
 }

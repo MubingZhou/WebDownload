@@ -50,7 +50,7 @@ public class Main {
 			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
 			// ------------ MODE -----------
-			int mode = 1;
+			int mode = 0;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
@@ -70,7 +70,8 @@ public class Main {
 			if(isTestRun == 1)
 				clientId = 53;
 			
-			
+
+
 			//[start] 
 			MyLogger inLogger = new MyLogger();
 			MyLogger outLogger = new MyLogger();
@@ -123,7 +124,7 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171116", "yyyyMMdd");
+				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171121", "yyyyMMdd");
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.trace("prepare ends...");
 				return;

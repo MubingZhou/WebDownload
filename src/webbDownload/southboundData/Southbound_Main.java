@@ -7,7 +7,11 @@ public class Southbound_Main {
 		String szPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\sz";
 		String outputPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 		
-		DataDownloader.dataDownloader();
+		String startDate = "2017-11-21";
+		String endDate = startDate;
+		String dateFormat = "yyyy-MM-dd";
+		
+		DataDownloader.dataDownloader(startDate, endDate, dateFormat, true, true);
 		
 		DataCombiner.dataCombiner(shPath, szPath, outputPath);
 

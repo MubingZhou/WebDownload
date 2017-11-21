@@ -25,6 +25,7 @@ import backtesting.portfolio.Portfolio;
 import backtesting.portfolio.PortfolioOneDaySnapshot;
 import backtesting.portfolio.Underlying;
 import math.MyMath;
+import utils.Utils;
 import utils.XMLUtil;
 
 public class Main {
@@ -37,15 +38,19 @@ public class Main {
 			SimpleDateFormat sdf_yyyyMMdd = new SimpleDateFormat("yyyyMMdd");
 			SimpleDateFormat sdf_yyyy_MM_dd = new SimpleDateFormat("yyyy-MM-dd");
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			String MAIN_ROOT_PATH = "D:\\stock data\\southbound flow strategy - db";
+			String ALL_STOCK_LIST_PATH = "D:\\stock data\\all stock list.csv";
+			String STOCK_PRICE_PATH = "Z:\\Mubing\\stock data\\stock hist data - webb";
+			String SOUTHBOUND_DATA_PATH = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 			
-			
-			int mode = 1;
+			int mode = 5;
 			/*
 			 * 0 - downloading data
 			 * 1 - full backtesting
 			 * 2 - drawdown analysis
 			 * 3 - reshape & calculate avg volume & turnover
 			 * 4 - reshape stock outstanding shares info - undone
+			 * 5 - 计算每只股票在每一天相对于前一天的notional chg
 			 * 先download数据（包括outstanding shares的数据和southbound的数据），再run mode 3，然后再run mode 1
 			 */
 			
@@ -72,7 +77,7 @@ public class Main {
 				 * 6. 所有的股票是equally weighted，还是根据排名，赋予的权重不同
 				 * 7. 是short HSI还是HSCEI，还是只从HSI或者HSCEI的成分股中选择
 				 * 8. rebalancing的frequency，1周、2周、1个月rebalance一次？
-				 * 
+				 * 9. 是否使用inflow的金额，而不是inflow占freefloat的百分比做ranking
 				 * 
 				 * Notes:
 				 * 关于factor 1，目前有四种ranking：
@@ -85,6 +90,7 @@ public class Main {
 				 * 		2) 最终的ranking是：先按照rank1 + rank2进行ranking，得到rank5，再按照rank3 + rank4进行ranking，得到rank6，最后按照rank5 + rank6进行ranking
 				 * 		3) 最终的ranking是 (rank1 + rank4) / 2
 				 * 		4) 最终的ranking是 (rank2 + rank3) / 2
+				 * 		5) 最终的ranking是 (rank1 + rank2 + rank3 + rank4) / 4，但是使用inflow的notional amt
 				 */
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
@@ -94,6 +100,9 @@ public class Main {
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.001;
+				// -------------------- path settings -------------------
+				BacktestFrame.allSbDataPath =SOUTHBOUND_DATA_PATH ;
+				BacktestFrame.allPriceDataPath = STOCK_PRICE_PATH;
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" 
@@ -113,13 +122,13 @@ public class Main {
 				 * 3 - HSCEI
 				 * 4 - HSCEI + HSI
 				 */
-				int weightingStrategy = 2;
+				int weightingStrategy = 1;
 					/*
 					 * 1 - Equally weighted
 					 * 2 - 按照排名分成四组，每组所有股票的加起来的weights分别是40%，30%，20%，10%
 					 * 
 					 */
-				int rebalancingStrategy = 3;
+				int rebalancingStrategy = 100;
 				/*
 				 * rebalancingStrategy
 				 * 1 - monthly, rebal at month beginning
@@ -138,9 +147,6 @@ public class Main {
 				 */
 				
 				boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change  (should always be true)
-				
-				// -------------------- path settings -------------------
-				BacktestFrame.allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 				
 				// ----------- performance profile pre-settings -----------
 				ArrayList<String> performanceItems = new ArrayList<String>();
@@ -962,6 +968,159 @@ public class Main {
 				}
 				
 			}
+			
+			if(mode == 5) {
+				logger.info("============== notional chg ===============");
+				
+				String filePath = MAIN_ROOT_PATH + "\\southbound notional chg\\";
+				ArrayList<String> allStockList = new ArrayList<String>();
+				BufferedReader bf_0 = utils.Utils.readFile_returnBufferedReader(ALL_STOCK_LIST_PATH);
+				String line  = bf_0.readLine();
+				allStockList.addAll(Arrays.asList(line.split(",")));
+				
+				
+				Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
+				Calendar startCal = Calendar.getInstance();
+				startCal.setTime(sdf_yyyyMMdd.parse("20141120"));
+				Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingDate);
+				
+				int start_ind = allTradingDate.indexOf(startCal2);
+				Calendar dataStartCal = allTradingDate.get(start_ind);
+				startCal = (Calendar) startCal2.clone();
+				Date startDate = startCal.getTime();
+				
+				// create these filewriters
+				for(int i = 0; i < allTradingDate.size(); i++) {
+					Calendar thisCal = allTradingDate.get(i);
+					if(!thisCal.before(startCal)) {
+						String thisCal_str = sdf_yyyyMMdd.format(thisCal.getTime());
+
+						FileWriter fw = new FileWriter(filePath + thisCal_str + ".csv");
+						fw.write("stock,1D notional chg\n");
+						
+						fwMap.put(thisCal_str, fw);
+					}
+				}
+				
+				Map<String, Map<Date,ArrayList<Double>>> priceDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();
+				Map<String, Double> oneDaySbDataMap = new HashMap<String, Double>();	// 存储一天的sb data，String是stock code
+				Map<String, Double> lastDaySbDataMap = new HashMap<String, Double>();
+				//先读取lastDaySbDataMap
+				BufferedReader bf = Utils.readFile_returnBufferedReader(
+						SOUTHBOUND_DATA_PATH + "\\"  +
+						sdf_yyyy_MM_dd.format(allTradingDate.get(start_ind).getTime()) + ".csv" );
+				line = "";
+				int count = 0;
+				while((line = bf.readLine()) != null) {
+					if(count == 0) {
+						count ++;
+						continue;
+					}
+					String[] lineArr = line.split(",");
+					String hldStr = lineArr[2];
+					Double hld = 0.0;
+					try {
+						hld = Double.parseDouble(hldStr);
+					}catch(Exception e) {
+						
+					}
+					lastDaySbDataMap.put(lineArr[0], hld);
+				} // end of while
+				bf.close();
+				
+				
+				for(int i = start_ind + 1; i < allTradingDate.size(); i++) {
+					String todayDateStr = sdf_yyyy_MM_dd.format(allTradingDate.get(i).getTime());
+					logger.debug("-- todayDateStr = " + todayDateStr );
+					
+					// ------- 获取当天 southbound的数据 ----------
+					String sbDataFilePath = SOUTHBOUND_DATA_PATH + "\\" + todayDateStr + ".csv";
+					BufferedReader bfi = Utils.readFile_returnBufferedReader(sbDataFilePath);
+					line = "";
+					count = 0;
+					while((line = bfi.readLine()) != null) {
+						if(count == 0) {
+							count ++;
+							continue;
+						}
+						String[] lineArr = line.split(",");
+						String hldStr = lineArr[2];
+						Double hld = 0.0;
+						try {
+							hld = Double.parseDouble(hldStr);
+						}catch(Exception e) {
+							
+						}
+						String stock = lineArr[0];
+						oneDaySbDataMap.put(stock, hld);
+						
+						// ---------- 找price的数据 ----------
+						Map<Date,ArrayList<Double>> thisStockPriceMap = priceDataMap.get(stock);
+						if(thisStockPriceMap == null || thisStockPriceMap.size() == 0) {
+							logger.debug("   -- find price, stock=" + stock);
+							String priceDataFile = STOCK_PRICE_PATH + "\\" + stock + ".csv";
+							BufferedReader bf_price = Utils.readFile_returnBufferedReader(priceDataFile);
+							int c = 0;
+							String lineP = "";
+							while((lineP = bf_price.readLine()) != null) {
+								if(c == 0) {
+									c++;
+									continue;
+								}
+								String[] linePArr = lineP.split(",");
+								String tempDateStr = linePArr[0];
+								String tempPriceStr = linePArr[3];
+								//logger.debug("    line=" + c);
+								String tempPriceStrAdj = linePArr[11];
+								
+								Date tempDate = sdf_yyyy_MM_dd.parse(tempDateStr);
+								if(tempDate.before(allTradingDate.get(start_ind).getTime()))
+									break;
+								
+								Double tempPrice = Double.parseDouble(tempPriceStr);
+								Double tempPriceAdj = Double.parseDouble(tempPriceStrAdj);
+								ArrayList<Double> tempData = new ArrayList<Double>();
+								tempData.add(tempPrice);
+								tempData.add(tempPriceAdj);
+								
+								thisStockPriceMap = new HashMap<Date,ArrayList<Double>>();
+								thisStockPriceMap.put(tempDate, tempData);
+								c++;
+							}
+							bf_price.close();
+							priceDataMap.put(stock, thisStockPriceMap);
+						}
+						
+					} // end of while
+					bfi.close();
+					
+					// --------- 计算两天holding之间的diff ----------
+					Set<String> todayAllStock = oneDaySbDataMap.keySet();
+					for(String stock : todayAllStock) {
+						Double todayHld = oneDaySbDataMap.get(stock);
+						Double yestHld = lastDaySbDataMap.get(stock);
+						Date todayDate = allTradingDate.get(i).getTime();
+						Double todayPrice = priceDataMap.get(stock)
+								.get(todayDate)
+								.get(0);
+						Double notionalChg = (todayHld - yestHld) * todayPrice;
+						
+						FileWriter fw = fwMap.get(sdf_yyyyMMdd.format(todayDate));
+						fw.write(stock + "," + notionalChg + "\n");
+					}
+					
+					// ------- updating -------
+					lastDaySbDataMap = null;
+					lastDaySbDataMap.putAll(oneDaySbDataMap);
+					oneDaySbDataMap.clear();
+				}
+				
+				//-------- close all ------------
+				Set<String> fwSet = fwMap.keySet();
+				for(String stock : fwSet) {
+					fwMap.get(stock).close();
+				}
+			}  // end of mode 5
 			
 			
 		} catch (Exception e) {

@@ -71,6 +71,8 @@ import javax.xml.bind.annotation.XmlType;
    "rank3",
    "rank4",
    "rank5",
+   "rank6",
+   "rank7",
 })  
 public class StockSingleDate {
 	public Calendar cal = Calendar.getInstance();
@@ -80,6 +82,7 @@ public class StockSingleDate {
 	public Double SB_today_holdingValue = 0.0;
 	public Double SB_1MBefore_holding = 0.0;
 	public Double SB_1MBefore_holdingValue = 0.0;
+	public Double SB_notional_chg = 0.0;   // notional change wrt yesterday
 	
 	public Double Vol_1M_avg = 0.0;
 	public Double Vol_3M_avg = 0.0;
@@ -134,6 +137,8 @@ public class StockSingleDate {
 	public Double rank3 = 0.0;
 	public Double rank4 = 0.0;
 	public Double rank5 = 0.0;
+	public Double rank6 = 0.0;
+	public Double rank7 = 0.0;
 	
 	public StockSingleDate(String stockCode, String date, String dateFormat) {
 		this.stockCode = stockCode;
