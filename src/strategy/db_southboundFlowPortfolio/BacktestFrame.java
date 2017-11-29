@@ -336,13 +336,13 @@ public class BacktestFrame {
 						Map<String, StockSingleDate> rebalStock_map = new HashMap<String, StockSingleDate>();  // 想要在rebal那天将每只股票的rank都列出来
 						for(int j = 0; j < todaySel .size(); j++) { // 先将rebalStock的框架搭出来
 							StockSingleDate stock = todaySel.get(j);
-							stock.dummy3 = stock.dummy1;  // dummy1是按照freefloat的排序排出来的
-							stock.dummy4 = stock.dummy2;  // dummy1是按照3M ADV的排序排出来的
-							stock.dummy5 = 1.0;    // 有效天数
+							//stock.dummy3 = stock.dummy1;  // dummy1是按照freefloat的排序排出来的
+							//stock.dummy4 = stock.dummy2;  // dummy1是按照3M ADV的排序排出来的
+							//stock.dummy5 = 1.0;    // 有效天数
 							rebalStock_map.put(stock.stockCode, stock);
 						}
 						
-						for(int j = 1; j < daysBetweenRelancingDate; j++) { // 寻找最近20天的数据，不用循环j=0的情况了
+						for(int j = 0; j < daysBetweenRelancingDate; j++) { // 寻找最近20天的数据
 							ArrayList<StockSingleDate> rebal_thisDateSel = allPortfolioScreeningData.get(allPortfolioScreeningData.size() - 1 - j) ;
 							//String rebal_thisDate = sdf_yyMMdd.format(allTradingDate.get(i-j).getTime());
 							for(int k = 0; k < rebal_thisDateSel.size(); k++) {
@@ -350,9 +350,29 @@ public class BacktestFrame {
 								StockSingleDate findStock =rebalStock_map.get(thisStock.stockCode);
 								if(findStock != null) { // 只考虑能找到的情况
 									findStock.dummy3 = findStock.dummy3 + thisStock.dummy1; // dummy1是每只股票在当天的按照southbound的变化除以freefloat的排名，dummy3来存储20天内这个排名的总值  
-									findStock.dummy4 = findStock.dummy4 + thisStock.dummy2;
+									findStock.dummy4 = findStock.dummy4 + thisStock.dummy2; // dummy2是每只股票在当天的按照southbound的变化除以3M ADV的排名，dummy4来存储20天内这个排名的总值  
 									findStock.dummy5 = findStock.dummy5 + 1;  // dummy4 来存储有多少天是有效的
+									
+									
+									
+									if(findStock.SB_notional_chg == null) {
+										//logger.info("   notional chg null! stock=" + findStock.stockCode + " ");
+										findStock.SB_notional_chg = 0.0;
+									}
+									if(findStock.SB_cum_notional_chg == null) {
+										findStock.SB_cum_notional_chg = 0.0;
+									}
+									if(thisStock.SB_notional_chg == null)
+										thisStock.SB_notional_chg = 0.0;
+									
+									findStock.SB_cum_notional_chg = findStock.SB_cum_notional_chg 
+											+ thisStock.SB_notional_chg;
 									rebalStock_map.put(thisStock.stockCode, findStock);
+									
+									Date testDate = sdf_yyyyMMdd.parse("20170801");
+									if(false && findStock.stockCode.equals("700") && testDate.equals(sdf_yyyyMMdd.parseObject(todayDate))) {
+										logger.info("    date=" + sdf_yyyyMMdd.format(thisStock.cal.getTime()) + " cum notional =" + findStock.SB_cum_notional_chg);
+									}
 								}
 							}
 						}
@@ -374,11 +394,23 @@ public class BacktestFrame {
 						}
 						
 						// score assigning
-						// 将每只股票最近20天的ranking加总，然后求平均值，再排序
+						
 						ArrayList<StockSingleDate> todaySel2 = new ArrayList<StockSingleDate>();
 						todaySel2.addAll(rebalStock_map.values());
 						logger.debug("\t\trebalStock_map.values().size() = " + rebalStock_map.values().size());
 						logger.debug("\t\ttodaySel2.size() = " + todaySel2 .size());
+						
+						// 按照SB_cum_notional_chg进行排序，然后对rank5进行赋值
+						for(StockSingleDate singleStock : todaySel2) {
+							singleStock.sorting_indicator = singleStock.SB_cum_notional_chg;
+						}
+						Collections.sort(todaySel2, StockSingleDate.getComparator(1));   // 升序排列，即cum notional chg越低的越靠前，这样cum notional chg越高的得分就越高
+						for(int kk = 0; kk < todaySel2.size(); kk++) {
+							StockSingleDate singleStock =  todaySel2.get(kk);
+							singleStock.rank5 = (double) kk;
+						}
+						
+						// 将每只股票最近20天的ranking加总，然后求平均值，再排序
 						for(int j = 0; j < todaySel2 .size(); j++) {
 							StockSingleDate thisStock = todaySel2.get(j);
 							thisStock.rank3 = thisStock.dummy3 / thisStock.dummy5;
@@ -406,6 +438,9 @@ public class BacktestFrame {
 										+ thisStock.rank2 
 										+ thisStock.rank3 
 										)/2;   // 这个句子决定了最后的排序
+							if(rankingStrategy == 5) {
+								thisStock.sorting_indicator = thisStock.rank5;
+							}
 							thisStock.rank7 = thisStock.sorting_indicator;
 						}
 						Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
@@ -425,6 +460,7 @@ public class BacktestFrame {
 								StockSingleDate thisStock = todaySel2.get(j);
 								thisStock.dummy2 = (double) j;
 								thisStock.sorting_indicator = ( thisStock.dummy1 + thisStock.dummy2) /  2;
+								thisStock.rank7 = thisStock.sorting_indicator;
 							}
 							Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
 						}
@@ -571,7 +607,9 @@ public class BacktestFrame {
 						FileWriter fw = new FileWriter(portFilePath + "\\stock ranking " + todayDate + ".csv");
 						fw.write("stock,"
 								+ "3M ADV (USD mm),SB/FF,rank1,SB/3M ADV,rank2,"
-								+ "rank3(avg daily SB/FF ranking),rank4(avg daily SB/3M ADV ranking),Total Ranking,"
+								+ "rank3(avg daily SB/FF ranking),rank4(avg daily SB/3M ADV ranking),"
+								+ "cum notional chg (HKD mm),rank5,"
+								+ "Total Ranking,"
 								+ "filter2,filter3,filter4\n");
 						for(int j = 0; j < todaySel2 .size(); j++) {
 							StockSingleDate thisStock = todaySel2.get(j);
@@ -584,7 +622,9 @@ public class BacktestFrame {
 							fw.write(thisStock.stockCode + "," + _3MADV + "," 
 									+ monthlySBChg_FF + "," + thisStock.rank1 + ","
 									+ monthlySBChg_vol + "," + thisStock.rank2 + ","
-									+ thisStock.rank3 + "," + thisStock.rank4 + "," + thisStock.rank7 + ","
+									+ thisStock.rank3 + "," + thisStock.rank4 + ","
+									+ thisStock.SB_cum_notional_chg / 1000000 + "," + thisStock.rank5 + ","
+									+ thisStock.rank7 + ","
 									+ thisStock.filter2 + "," + thisStock.filter3 + "," + thisStock.filter4 + "\n");
 						}
 						fw.close();
@@ -914,8 +954,16 @@ public class BacktestFrame {
 			}
 			
 			if(rebalancingStrategy == 100) {
-				rebalArr.add("20171017");
-				rebalArr.add("20171115");
+				/*
+				rebalArr.add("20171031");
+				rebalArr.add("20171124");
+				*/
+				
+				rebalArr.add("20171027");
+				//rebalArr.add("20171103");
+				//rebalArr.add("20171110");
+				//rebalArr.add("20171117");
+				rebalArr.add("20171124");
 			}
 			
 		}catch(Exception e) {

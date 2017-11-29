@@ -9,7 +9,9 @@ import java.util.Arrays;
 public class DataConversion {
 	
 	public static void main(String[] args) {
-		convertToSingleFile_fundamentalDdata("","");
+		//convertToSingleFile_fundamentalDdata("","");
+		convertToSingleFile_priceData("Z:\\Mubing\\stock data\\A share data\\historical data\\201710\\201710.csv",
+				"Z:\\Mubing\\stock data\\A share data\\historical data\\201710\\");
 	}
 	
 	/**
@@ -19,6 +21,8 @@ public class DataConversion {
 	 */
 	public static void convertToSingleFile_priceData(String inputFileName, String outputRootPath) {
 		int count = 1;  
+		if(!outputRootPath.substring(outputRootPath.length() - 1, outputRootPath.length()).equals("\\"))
+			outputRootPath = outputRootPath + "\\";
 		
 		try {
 			// inputFileName = "T:\\Mubing\\stock data\\A share data\\northbound stock data.csv"

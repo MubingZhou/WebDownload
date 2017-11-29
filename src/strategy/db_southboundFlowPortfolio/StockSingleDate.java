@@ -83,6 +83,7 @@ public class StockSingleDate {
 	public Double SB_1MBefore_holding = 0.0;
 	public Double SB_1MBefore_holdingValue = 0.0;
 	public Double SB_notional_chg = 0.0;   // notional change wrt yesterday
+	public Double SB_cum_notional_chg = 0.0;   // 一段时间内的cumulative notional chg，至于是多少时间，由用户自己判断
 	
 	public Double Vol_1M_avg = 0.0;
 	public Double Vol_3M_avg = 0.0;

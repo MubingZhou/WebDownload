@@ -44,8 +44,12 @@ public class PortfolioScreening {
 	public static Map<String, Map<Date,ArrayList<Double>>> osDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {outstanding shares, outstanding value}
 	public static Map<String, ArrayList<Object>> osDataMap2 = new HashMap<String, ArrayList<Object>>();  // String - stock, ArrayList<Object> - 三个元素，一个是ArrayList<Date>，一个是ArrayList<Double>，一个是ArrayList<Double>，第一个是股本有变化的日期，第二个是当日的股本，第三个当日的市值
 	public static String outstandingFilePath = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
-	public static Map<String, Map<Date,ArrayList<Double>>> priceDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {unadjusted price, adjusted price}
-	public static String priceFilePath = "Z:\\Mubing\\stock data\\stock hist data - webb\\";
+	//public static Map<String, Map<Date,ArrayList<Double>>> priceDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {unadjusted price, adjusted price}
+	//public static String priceFilePath = "Z:\\Mubing\\stock data\\stock hist data - webb\\";
+	public static Map<Date, Map<String, Double>> notionalChgData = new HashMap<Date, Map<String, Double>>();	// 每一天，所有港股通股票相对于前一天的flow的notional chg（
+											// CCASS是T+2的，举个例子，比如某只股票15号得到的CCASS holding是1000股，14号的CCASS holding是900股，则从数据上看是增加了100股
+											// 但其实15号得到的数据是13号的实际holding，14号是12号的实际holding，所以计算notional的时候，应该用 （15号的数据 - 14号的数据）*13号的股价
+	public static String notionalChgDataRootPath = "D:\\stock data\\southbound flow strategy - db\\southbound notional chg\\";
 	
 	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
 	public static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
@@ -115,6 +119,12 @@ public class PortfolioScreening {
 				avgTur_map.put(stock, Double.parseDouble(avgTur));
 			}
 			bf_avgVol.close();
+			
+			// ----------- get notional chg data ------------
+			if(notionalChgData == null || notionalChgData.size() == 0) {
+				getNotionalChgData(notionalChgDataRootPath);
+			}
+			
 			
 			// get southbound stock list at the specified date
 			ArrayList<String> stockListStrArr = new ArrayList<String>();
@@ -354,54 +364,8 @@ public class PortfolioScreening {
 				
 				// ============= get the notional change ==============
 				if(isToCalNotional) {
-					Date twoDaysBefore = allTradingDate.get(ind - 2);
-					Double T_2Price = 0.0;
-					/*
-					String T_2Price_str = stockPrice.DataGetter.getStockDataField(stockCode, StockDataField.close, sdf_yyyyMMdd.format(twoDaysBefore), "yyyyMMdd");
-					try {
-						T_2Price = Double.parseDouble(T_2Price_str);
-					}catch(Exception e) {
-						e.printStackTrace();
-					}
-					*/
-					
-					Map<Date, ArrayList<Double>> thisStockPriceMap = priceDataMap.get(stockCode);
-					if(thisStockPriceMap == null) {
-						logger.info("[get price data] stock=" + stockCode + " date=" + sdf.format(twoDaysBefore));
-						getPriceData(stockCode, priceFilePath, twoDaysBefore);
-						thisStockPriceMap = priceDataMap.get(stockCode);
-					}
-					ArrayList<Double> priceData = thisStockPriceMap.get(twoDaysBefore);
-					if(priceData == null || priceData.size() == 0) {
-						T_2Price = 0.0;
-					}else {
-						T_2Price = priceData.get(0);
-					}
-					
-					
-					Date yesterday = allTradingDate.get(ind - 1);
-					// ----------- get yesterday's holding -------------
-					double yesterday_holding = 0.0;
-					if(oneMonthBeforeDays == 1) {   //这里可以偷个懒
-						yesterday_holding = stock.SB_1MBefore_holding;
-					}else {
-						ArrayList<Double> yesterday_SBData = new ArrayList<Double> ();
-						if(sbDataMap_oneStock != null)
-							yesterday_SBData = sbDataMap_oneStock.get(yesterday);
-						//Double today_holding = 0.0;
-						if(yesterday_SBData != null && yesterday_SBData.size() > 0) {
-							yesterday_holding = today_SBData.get(0);
-						}else {
-							yesterday_holding = 0.0;
-						}
-					}
-					
-					double holdingChg = (stock.SB_today_holding -  yesterday_holding);
-					stock.SB_notional_chg = holdingChg *  T_2Price;
-					
-					if(stock.stockCode.equals("700")) {
-						logger.info("[Notional Chg] stock=" + stock.stockCode + " date=" + date + " holdingChg=" + holdingChg + " T-2 price=" + T_2Price + " notionalChg=" + stock.SB_notional_chg);
-					}
+					stock.SB_notional_chg = notionalChgData.get(todayDate)
+							.get(stockCode);
 				}
 				
 				
@@ -925,11 +889,7 @@ public class PortfolioScreening {
 		return data_return;
 	}
 
-	/**
-	 * 得到所有股票的价格数据
-	 * @param priceFilePath
-	 * @param cutOffDate
-	 */
+/*
 	public static void getAllPriceData(String priceFilePath,  Date cutOffDate) {
 		try {
 			if(allTradingDate == null || allTradingDate.size() == 0 )
@@ -1062,6 +1022,62 @@ public class PortfolioScreening {
 		}
 		
 		logger.info("Get All Price Data - Done!");
+	}
+	*/
+	
+	/**
+	 * 得到每个日期的所有股票的notional chg
+	 * @param rootFilePath
+	 */
+	public static void getNotionalChgData(String rootFilePath) {
+		try {
+			SimpleDateFormat sdf_yyyyMMdd = new SimpleDateFormat("yyyyMMdd");
+			
+			//得到合格的file list
+			File f = new File(rootFilePath);
+			ArrayList<String> fileNameList = new ArrayList<String>();
+			for(File file : f.listFiles()) {
+				String fileName = file.getName();
+				String dateStr = fileName.substring(0, fileName.length() - 4);
+				try {
+					Date d = sdf_yyyyMMdd.parse(dateStr);
+					fileNameList.add(fileName);
+				}catch(Exception ee) {
+					
+				}
+			}
+			
+			// read data
+			for(String fileName : fileNameList) {
+				String filePath = rootFilePath + fileName;
+				String dateStr = fileName.substring(0, fileName.length() - 4);
+				
+				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
+				int count = 0;
+				String line = "";
+				Map<String, Double> todayDataMap = new HashMap<String, Double>(); 
+				while((line = bf.readLine()) != null) {
+					if(count == 0) {
+						count ++;
+						continue;
+					}
+					
+					String[] lineArr = line.split(",");
+					String stock = lineArr[0];
+					Double notionalChg = Double.parseDouble(lineArr[1]);
+					
+					todayDataMap.put(stock, notionalChg);
+				}
+				bf.close();
+				
+				Date date = sdf_yyyyMMdd.parse(dateStr);
+				notionalChgData.put(date, todayDataMap);
+			}
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 }

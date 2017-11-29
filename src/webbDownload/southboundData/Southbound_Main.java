@@ -7,7 +7,7 @@ public class Southbound_Main {
 		String szPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\sz";
 		String outputPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 		
-		String startDate = "2017-11-21";
+		String startDate = "2017-11-27";
 		String endDate = startDate;
 		String dateFormat = "yyyy-MM-dd";
 		

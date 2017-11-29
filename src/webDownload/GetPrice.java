@@ -25,7 +25,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 		try {
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
-			//Thread.sleep(1000 * 3600 * 6);
+			Thread.sleep(1000 * 3600 * 4);
 			
 			
 			downloadData_2()	;

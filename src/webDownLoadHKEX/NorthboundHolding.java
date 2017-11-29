@@ -34,7 +34,7 @@ public class NorthboundHolding {
 	private static Logger logger = Logger.getLogger(NorthboundHolding.class);
 	
 	public static void main(String[] args) {
-		String dateStr = "20171120";
+		String dateStr = "20171127";
 		downloader(dateStr,dateStr,"yyyyMMdd");
 		combiner(dateStr,dateStr,"yyyyMMdd");
 	}
