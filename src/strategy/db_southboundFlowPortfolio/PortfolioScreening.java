@@ -31,6 +31,7 @@ public class PortfolioScreening {
 		 * 2 - all HSI stocks
 		 * 3 - all HSCEI stocks
 		 */
+	public static ArrayList<String>  blackList = new ArrayList<String>() ;   //股票黑名单，在这上面的股票都不会被买入
 	public static boolean isToCalNotional = true; 
 	/*
 	 * 是否计算notional的value的chg
@@ -50,6 +51,7 @@ public class PortfolioScreening {
 											// CCASS是T+2的，举个例子，比如某只股票15号得到的CCASS holding是1000股，14号的CCASS holding是900股，则从数据上看是增加了100股
 											// 但其实15号得到的数据是13号的实际holding，14号是12号的实际holding，所以计算notional的时候，应该用 （15号的数据 - 14号的数据）*13号的股价
 	public static String notionalChgDataRootPath = "D:\\stock data\\southbound flow strategy - db\\southbound notional chg\\";
+	public static String avgVolMainPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\stock avg trd vol - 1M\\";
 	
 	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
 	public static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
@@ -62,7 +64,7 @@ public class PortfolioScreening {
 	 * @return
 	 */
 	public static ArrayList<StockSingleDate> assignValue_singleDate(String date, String dateFormat){
-		logger.info("======= Stocks Screening - " + date + " ===============");
+		logger.trace("======= Stocks Screening - " + date + " ===============");
 		long startTime = System.currentTimeMillis(); 
 		
 		ArrayList<StockSingleDate> stockList = new ArrayList<StockSingleDate>();
@@ -101,7 +103,7 @@ public class PortfolioScreening {
 			// 经过处理后的average volume：每天一个file，存储所有股票前三个月的avg vol
 			Map<String, Double> avgVol_map = new HashMap<String, Double>();
 			Map<String, Double> avgTur_map = new HashMap<String, Double>();
-			String avgVolPath = "D:\\stock data\\southbound flow strategy - db\\stock avg trd vol\\" + date + ".csv";
+			String avgVolPath = avgVolMainPath  + date + ".csv";
 			BufferedReader bf_avgVol = utils.Utils.readFile_returnBufferedReader(avgVolPath);
 			String avgVolLine = "";
 			int counter1 = 0;
@@ -128,8 +130,11 @@ public class PortfolioScreening {
 			
 			// get southbound stock list at the specified date
 			ArrayList<String> stockListStrArr = new ArrayList<String>();
-			if(stockUniverse == 1)
+			if(stockUniverse == 1) {
 				stockListStrArr= utils.Utils.getSouthboundStocks(date, dateFormat, true, true);
+				stockListStrArr.remove("607");
+				stockListStrArr.remove("1250");
+			}
 			if(stockUniverse == 2) {
 				stockListStrArr= utils.Utils.getHSCEI_HSIStocks(date, dateFormat, false, true);
 				stockListStrArr.remove("823");
@@ -139,6 +144,9 @@ public class PortfolioScreening {
 			if(stockUniverse == 4) {
 				stockListStrArr= utils.Utils.getHSCEI_HSIStocks(date, dateFormat, true, true);
 				stockListStrArr.remove("823");
+			}
+			for(String blStock : blackList) {
+				stockListStrArr.remove(blStock);
 			}
 			
 			final int size = stockListStrArr.size();
@@ -364,8 +372,15 @@ public class PortfolioScreening {
 				
 				// ============= get the notional change ==============
 				if(isToCalNotional) {
-					stock.SB_notional_chg = notionalChgData.get(todayDate)
-							.get(stockCode);
+					try {
+						stock.SB_notional_chg = notionalChgData.get(todayDate)
+								.get(stockCode);
+					}
+					catch(Exception ee) {
+						ee.printStackTrace();
+						logger.error("  notional data null! stock=" + stock.stockCode + " date=" + date);
+					}
+					
 				}
 				
 				
@@ -448,7 +463,7 @@ public class PortfolioScreening {
 		}
 		
 		long endTime = System.currentTimeMillis(); 
-		logger.info("======= Stocks Screening END - " + date + " time=" + (endTime - startTime)/1000.0 + "s ===============");
+		logger.trace("======= Stocks Screening END - " + date + " time=" + (endTime - startTime)/1000.0 + "s ===============");
 		
 		
 		return stockList;

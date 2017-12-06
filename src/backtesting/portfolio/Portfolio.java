@@ -691,6 +691,11 @@ public class Portfolio implements Serializable {
 		
 	}
 	
+	public void addCash(Double cash) {
+		this.totalCash += cash;
+		this.availableCash += cash;
+		this.marketValue += cash;
+	}
 	/**
 	 * 
 	 * @return the historical market value so far. 0th: Market value ArrayList<Double>; 1st: corresponding date ArrayList<Calendar>

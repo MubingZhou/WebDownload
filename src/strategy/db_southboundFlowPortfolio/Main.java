@@ -41,8 +41,8 @@ public class Main {
 			String allTradingDatePath = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("Z:\\Mubing\\stock data\\all trading date - hk.csv");
 			//ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("T:\\Mubing\\stock data\\all trading date - hk.csv");
-			String MAIN_ROOT_PATH = "D:\\stock data\\southbound flow strategy - db";
-			MAIN_ROOT_PATH = "Z:\\Mubing\\stock data\\southbound flow strategy - db";
+			//String MAIN_ROOT_PATH = "D:\\stock data\\southbound flow strategy - db";
+			String MAIN_ROOT_PATH = "Z:\\Mubing\\stock data\\southbound flow strategy - db";
 			String ALL_STOCK_LIST_PATH = "Z:\\Mubing\\stock data\\all stock list.csv";
 			String STOCK_PRICE_PATH = "Z:\\Mubing\\stock data\\stock hist data - webb";
 			String SOUTHBOUND_DATA_PATH = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
@@ -80,12 +80,12 @@ public class Main {
 				logger.info("============ Backtesting ============");
 				/*
 				 * Factors to consider:
-				 * 1. ranking methodology
-				 * 2. avg turnover threshold
-				 * 3. # of stocks to be selected on each rebalancing date
-				 * 4. filter: 在两次调仓之间，至少有70%的日子的flow是流入的
-				 * 5. 提前结束某只股票position的条件：连续X天出现净outflow
-				 * 6. 所有的股票是equally weighted，还是根据排名，赋予的权重不同
+				 * 1. ranking methodology (√)
+				 * 2. avg turnover threshold (√)
+				 * 3. # of stocks to be selected on each rebalancing date (√)
+				 * 4. filter: 在两次调仓之间，至少有70%的日子的flow是流入的 
+				 * 5. 提前结束某只股票position的条件：连续X天出现净outflow  (√)
+				 * 6. 所有的股票是equally weighted，还是根据排名，赋予的权重不同 (√)
 				 * 7. 是short HSI还是HSCEI，还是只从HSI或者HSCEI的成分股中选择
 				 * 8. rebalancing的frequency，1周、2周、1个月rebalance一次？
 				 * 9. 是否使用inflow的金额，而不是inflow占freefloat的百分比做ranking
@@ -107,26 +107,33 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String startDateStr = "20160701";  // 20160729
-				String endDateStr = "20171124";		// "20171109"
+				String startDateStr = "20171101";  // 20160729
+				String endDateStr = "20171205";		// "20171109"
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
-				BacktestFrame.tradingCost = 0.000;
+				BacktestFrame.tradingCost = 0.0012;
+				ArrayList<String>  blackList = new ArrayList<String>() ;
+				blackList.add("607");
+				blackList.add("1250");
+				
+				
 				// -------------------- path settings -------------------
 				BacktestFrame.allSbDataPath =SOUTHBOUND_DATA_PATH ;
 				BacktestFrame.allPriceDataPath = STOCK_PRICE_PATH;
 				BacktestFrame.allTradingDatePath = allTradingDatePath;
+				PortfolioScreening.avgVolMainPath = MAIN_ROOT_PATH + "\\stock avg trd vol - 1M\\";
 				
 				// -------------------- Configurations -----------------------
-				String portFilePath = "D:\\stock data\\southbound flow strategy - db\\" 
-						+ sdf2.format(new Date()) + " rebal weekly";
+				String portFilePath = MAIN_ROOT_PATH + "\\" 
+						+ sdf2.format(new Date()) + " rolling 15days - 12bps - 20171205";
 				File f = new File(portFilePath);
 				f.mkdir();
 				
 				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
-				int topNStocks = 20;   // 每次选多少只股票进行买入卖出
-				double minInflowPct = 0.7;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
+				int topNStocks = 15;   // 每次选多少只股票进行买入卖出
+				double minInflowPct = 0.0;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
+				// 现在rebalancing时使用的数据是固定15天的   daysBetweenRelancingDate
 				int rankingStrategy = 1;
 				/*
 				 * 1 - (rank1 + rank2 + rank3 + rank4) / 4
@@ -149,7 +156,7 @@ public class Main {
 					 * 2 - 按照排名分成四组，每组所有股票的加起来的weights分别是40%，30%，20%，10%
 					 * 
 					 */
-				int rebalancingStrategy = 4;
+				int rebalancingStrategy = 100;
 				/*
 				 * rebalancingStrategy
 				 * 1 - monthly, rebal at month beginning
@@ -185,8 +192,13 @@ public class Main {
 				ArrayList<Map<String, Double>> allPerformanceData = new ArrayList<Map<String, Double>>();
 				ArrayList<String> allPerformanceDataTitle = new ArrayList<String>();
 				
+				if(rankingStrategy == 5)
+					BacktestFrame.isToCalNotional = true;
+				else
+					BacktestFrame.isToCalNotional = false;
+				
 				//-----------------------------------------
-				int[] topNStocksArr = {10, 15, 20, 25};
+				int[] topNStocksArr = {15};
 				int[] weightingStrategyArr = {1,2};
 				int[] earlyUnwindStrategyArr = {1,2};
 				double[] avgDailyValueThreshHold_USDArr = {
@@ -196,20 +208,21 @@ public class Main {
 				int[] rebalancingStrategyArr = {1,2,3,4};
 				
 				int size1 = topNStocksArr.length;
-				//size1 = 1;
+				size1 = 1;
 				
 				int size2 = weightingStrategyArr.length;
-				size2 = earlyUnwindStrategyArr.length;
-				size2 = avgDailyValueThreshHold_USDArr.length;
-				size2 = stockUniverseArr.length;
-				size2 = rebalancingStrategyArr.length;
+				//size2 = earlyUnwindStrategyArr.length;
+				//size2 = avgDailyValueThreshHold_USDArr.length;
+				//size2 = stockUniverseArr.length;
+				//size2 = rebalancingStrategyArr.length;
+				size2 = 1;
 				for(int i = 0; i < size1; i++) {
 					topNStocks = topNStocksArr[i];
 					for(int j = 0; j < size2; j++) {
 						//earlyUnwindStrategy = earlyUnwindStrategyArr[j];
 						//avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USDArr[j];
 						//stockUniverse = stockUniverseArr[j];
-						rebalancingStrategy = rebalancingStrategyArr[j];
+						//rebalancingStrategy = rebalancingStrategyArr[j];
 						
 						// -------------- file sub name ----------
 						String fileSubName = "rebal - ";
@@ -853,11 +866,11 @@ public class Main {
 				logger.info("============== calculating stock volume and save ===============");
 				Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
 				Calendar startCal = Calendar.getInstance();
-				startCal.setTime(sdf_yyyyMMdd.parse("20171027"));
+				startCal.setTime(sdf_yyyyMMdd.parse("20150101"));
 				Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingDate);
 				
 				int start_ind = allTradingDate.indexOf(startCal2);
-				Calendar dataStartCal = allTradingDate.get(start_ind - 60);
+				Calendar dataStartCal = allTradingDate.get(start_ind - 20);
 				startCal = (Calendar) startCal2.clone();
 				
 				// create these filewriters
@@ -866,7 +879,8 @@ public class Main {
 					if(!thisCal.before(startCal)) {
 						String thisCal_str = sdf_yyyyMMdd.format(thisCal.getTime());
 						
-						String path = MAIN_ROOT_PATH + "\\stock avg trd vol\\";
+						String path = MAIN_ROOT_PATH + "\\stock avg trd vol - 1M\\";
+						//path = "D:\\stock data\\southbound flow strategy - db\\stock avg trd vol\\";
 						FileWriter fw = new FileWriter(path + thisCal_str + ".csv");
 						fw.write("stock,3M avg vol(shares),3M avg turnover(value)\n");
 						
@@ -1017,10 +1031,10 @@ public class Main {
 			}
 			
 			if(mode == 5) {
+				//目前有点小问题
 				logger.info("============== notional chg ===============");
-				String startDateStr = "20171113";
-				String endDateStr = "20171124";
-				
+				String startDateStr = "20171110";
+				String endDateStr = "20171129";
 				String filePath = MAIN_ROOT_PATH + "\\southbound notional chg\\";
 				ArrayList<String> allStockList = new ArrayList<String>();
 				BufferedReader bf_0 = utils.Utils.readFile_returnBufferedReader(ALL_STOCK_LIST_PATH);

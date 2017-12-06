@@ -966,5 +966,19 @@ public class Utils {
 		return r;
 	}
 	*/
+		
+	public static String addBackSlashToPath(String path) {
+		if(!path.substring(path.length()-1, path.length()).equals("\\"))
+			return path + "\\";
+		else
+			return path;
+	}
+	
+	public static String removeBackSlashFromPath(String path) {
+		if(path.substring(path.length()-1, path.length()).equals("\\"))
+			return path.substring(0, path.length()-1);
+		else
+			return path;
+	}
 	  
 }

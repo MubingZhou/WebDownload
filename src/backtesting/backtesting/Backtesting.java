@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -96,7 +97,8 @@ public class Backtesting {
 						ArrayList<Object> thisAllWeightings = thisAllStockData.get(2);	// Double
 						ArrayList<Object> thisAllPrices = thisAllStockData.get(3);		// Double
 						
-						// ======== sell first ===============						
+						// ======== sell first ===============
+						Map<String, Double> thisAllSellStocks_map = new HashMap<String, Double>();   // 存储需要卖出的股票的名称
 						final int size = thisAllStocks.size();
 						for(int j = 0; j < size; j++) {
 							String stock = (String) thisAllStocks.get(j);
@@ -108,23 +110,28 @@ public class Backtesting {
 								logger.trace("[Sell] stock=" + stock + " direction=" + direction + " weighting=" + weighting + " price=" + price);
 								
 								double amt = 0.0;
-								if(weighting > 0)
-									amt = weighting;
-								else if(weighting >= -100 && weighting <= 0){
-									Underlying uly = portfolio.stockHeld.get(stock);
-									if(uly != null) {  // uly == null表示当前无持仓
-										Double currentAmt = uly.amount;
-										amt = currentAmt * weighting / -100.0;
+								Underlying uly = portfolio.stockHeld.get(stock);
+								if(uly != null) {  // uly == null表示当前无持仓
+									if((weighting > 0) || (weighting >= -100 && weighting <= 0)) {
+										if(weighting > 0)
+											amt = weighting;
+										if(weighting >= -100 && weighting <= 0) {
+											Double currentAmt = uly.amount;
+											amt = currentAmt * weighting / -100.0;
+										}
 										Order order = new Order(OrderType.SELL, thisCal, stock, price, amt, orderNum++);
 										sellOrdersArr.add(order);
+										thisAllSellStocks_map.put(stock, Math.abs(amt)*price);
+									}else {
+										logger.error("[Backtesting - Sell Amt Not Correct!] stock=" + stock + " date=" + thisDateStr + " amt=" + weighting);
 									}
-								}else {
-									logger.error("[Backtesting - Sell Amt Not Correct!] stock=" + stock + " date=" + thisDateStr + " amt=" + weighting);
+									
 								}
 							}
 							
 						}  // 过完一遍sell order
 						portfolio.sellStocks(sellOrdersArr);
+						ArrayList<String> thisAllSellStocks = new ArrayList<String>(thisAllSellStocks_map.keySet());
 						
 						// ======== then buy ===============		
 						portfolio.commitDayEndValue();
@@ -139,12 +146,21 @@ public class Backtesting {
 								logger.trace("[Buy] stock=" + stock + " direction=" + direction + " weighting=" + weighting + " price=" + price);
 								
 								double amt = 0.0;
-								if(weighting > 0)
-									amt = weighting;
-								else if(weighting >= -100 && weighting <= 0){
-									amt = portfolio.marketValue * weighting / -100 / price;
+								if(weighting > 0 || (weighting >= -100 && weighting <= 0)) {
+									if(weighting > 0)
+										amt = weighting;
+									else if(weighting >= -100 && weighting <= 0){
+										amt = portfolio.marketValue * weighting / -100 / price;
+									}
 									Order order = new Order(OrderType.BUY, thisCal, stock, price, amt, orderNum++);
 									buyOrdersArr.add(order);
+									
+									//如果一只股票在当期既买又卖，则实际上相当于不操作，应该返还手续费
+									Double valueSold = thisAllSellStocks_map.get(stock);
+									if(valueSold != null) {
+										Double value = Math.min(valueSold, price * amt);
+										portfolio.addCash(value * 2 * tradingCost);
+									}
 								}else {
 									logger.error("[Backtesting - Buy Amt Not Correct!] stock=" + stock + " date=" + thisDateStr + " amt=" + weighting);
 								}

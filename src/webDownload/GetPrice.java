@@ -19,13 +19,13 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 	private static String histDownloadURL = "";
 	private static Map<String, String> histDownloadURL_map = new HashMap<String, String>();  // stock code - downloading url
 	public static String outFilePath = "Z:\\Mubing\\stock data\\stock hist data - webb";
-	public static String allStockListPath = "D:\\stock data\\all stock list.csv";
+	public static String allStockListPath = "Z:\\Mubing\\stock data\\all stock list.csv";
 	
 	public static void main(String[] args) {
 		try {
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
-			Thread.sleep(1000 * 3600 * 4);
+			//Thread.sleep(1000 * 3600 * 7);
 			
 			
 			downloadData_2()	;
@@ -183,9 +183,14 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 				//histDownloadURL_map;
 				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(mapPath);
 				String line = "";
+				int count = 0;
 				while((line = bf.readLine()) != null) {
 					String[] sArr = line.split(",");
+					
+					//if(count >= 1250)
 					histDownloadURL_map.put(sArr[0], sArr[1]);
+					
+					count++;
 				}
 				bf.close();
 			}
@@ -193,7 +198,8 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 			ArrayList<String> stocksInMap = new ArrayList(histDownloadURL_map.keySet());  //已经有url的stocks
 			
 			ArrayList<String> stockCodeList = WebDownload.getCGITopHoldingStocks(allStockListPath);
-			//stockCodeList = new ArrayList<String>( stockCodeList.subList(116, stockCodeList.size()) );
+			
+			//stockCodeList = new ArrayList<String>( stockCodeList.subList(1390, stockCodeList.size()) );
 			//List<String> stockCodeList = stockCodeList0.subList(100, stockCodeList0.size() );
 			
 			// to download all stocks

@@ -23,7 +23,7 @@ import org.jsoup.select.Elements;
 public class DataDownloader { // downloading southbound CCASS data
 	public static String WEBB_URL_SOUTHBOUND_SH = "https://webb-site.com/ccass/cholder.asp?part=1323";
 	public static String WEBB_URL_SOUTHBOUND_SZ = "https://webb-site.com/ccass/cholder.asp?part=1456";
-	public static String FILE_OUTPUT_PATH = "D:\\stock data\\HK CCASS - WEBB SITE";
+	public static String FILE_OUTPUT_PATH = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound";
 	
 	public static void dataDownloader(String startDate, String endDate, String dateFormat, boolean toDownloadSH, boolean toDownloadSZ) {
 		try{
@@ -31,6 +31,7 @@ public class DataDownloader { // downloading southbound CCASS data
 			// get tradings dates
 			String startDate_sz = "2016-12-07";
 			String startDate_sh = "2014-11-19";
+			System.out.println("FILE_OUTPUT_PATH=" + FILE_OUTPUT_PATH);
 			
 			ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate, endDate, dateFormat);
 			//ArrayList<String> dates = utils.Utils.getWorkingDaysBetweenDates(startDate_sz, "2017-08-25", "yyyy-MM-dd");
@@ -44,7 +45,7 @@ public class DataDownloader { // downloading southbound CCASS data
 				String date = dates.get(i);
 				//System.out.println("========== date = " + date + " ============");
 				
-				String outputFilePath = FILE_OUTPUT_PATH + "\\southbound" ;
+				String outputFilePath = FILE_OUTPUT_PATH  ;
 				utils.Utils.checkDir(outputFilePath);
 				
 				String webb_sh_str = WEBB_URL_SOUTHBOUND_SH + "&d=" + date;

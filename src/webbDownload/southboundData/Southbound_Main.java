@@ -3,12 +3,14 @@ package webbDownload.southboundData;
 public class Southbound_Main {
 
 	public static void main(String[] args) {
-		String shPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\sh";
-		String szPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\sz";
-		String outputPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
+		String rootPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound";
+		String shPath = rootPath + "\\sh";
+		String szPath = rootPath + "\\sz";
+		String outputPath = rootPath + "\\combined";
+		DataDownloader.FILE_OUTPUT_PATH = rootPath;
 		
-		String startDate = "2017-11-27";
-		String endDate = startDate;
+		String startDate = "2017-12-05";
+		String endDate = startDate;//"2017-12-05";
 		String dateFormat = "yyyy-MM-dd";
 		
 		DataDownloader.dataDownloader(startDate, endDate, dateFormat, true, true);

@@ -38,11 +38,11 @@ public class BacktestFrame {
 	public static double tradingCost = 0.0;
 	
 	public static String portFilePath="";    // 最终输出的root path
-	public static String allSbDataPath = "D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";  // 存储所有southbound data的文件夹
+	public static String allSbDataPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";  // 存储所有southbound data的文件夹
 	public static String allPriceDataPath = "Z:\\Mubing\\stock data\\stock hist data - webb";  //存储所有stock price的data的文件夹
 	
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar> ();  
-	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
+	public static String allTradingDatePath = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
 	
 	// ---------------- factors --------------
 	public static int rankingStrategy = 1;
@@ -79,6 +79,7 @@ public class BacktestFrame {
 	 * 2 - 如果一只股票的southbound holding连续5天减少，则提前全部卖掉，并不再补充其他股票
 	 * 3 - 如果一只股票的southbound holding连续三天减少，则提前卖掉一半，并不再补充其他股票
 	 */
+	public static boolean isToCalNotional = true;
 	
 	// ----------- 运行中需要用到的variables --------------
 	public static boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change
@@ -137,6 +138,7 @@ public class BacktestFrame {
 			*/
 			
 			PortfolioScreening.oneMonthBeforeDays = 20;
+			PortfolioScreening.isToCalNotional = isToCalNotional;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -199,9 +201,12 @@ public class BacktestFrame {
 			ArrayList<String> stocksToBuy_str = new ArrayList<String>();  //记录每个rebalancing date需要选出的股票
 			ArrayList<StockSingleDate> stocksToBuy = new ArrayList<StockSingleDate> ();  // //记录每个rebalancing date需要选出的股票
 			for(int i = rebalStartInd-dayCalStart; i <= rebalEndInd; i++) {  
+				long startTime = System.currentTimeMillis();
+				
 				daysBetweenRelancingDate++;
 				String todayDate = sdf_yyyyMMdd.format(allTradingDate.get(i).getTime());
-				logger.info("\tScreening date = " + todayDate);
+				//logger.info("\tScreening date = " + todayDate);
+				logger.info("======= Stocks Screening - " + todayDate + " ===============");
 				
 				PortfolioScreening.oneMonthBeforeDays = 1;
 				ArrayList<StockSingleDate> todaySel = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd"); //对每只股票进行赋值
@@ -330,9 +335,10 @@ public class BacktestFrame {
 					}
 
 					// *********** rebalancing date *************
-					if(todayDate.equals(rebalDateArr.get(rebalCount))) { 
+					if(todayDate.equals(rebalDateArr.get(rebalCount))) {
+						daysBetweenRelancingDate = 15; // rolling 的概念
 						logger.info("\t\tToday is a rebalancing date! daysBetweenRelancingDate=" + daysBetweenRelancingDate);
-					
+						
 						Map<String, StockSingleDate> rebalStock_map = new HashMap<String, StockSingleDate>();  // 想要在rebal那天将每只股票的rank都列出来
 						for(int j = 0; j < todaySel .size(); j++) { // 先将rebalStock的框架搭出来
 							StockSingleDate stock = todaySel.get(j);
@@ -677,6 +683,9 @@ public class BacktestFrame {
 					// *********** rebalancing date END *************
 				}   // end of "if(todayInd > 0) {"
 				
+				long endTime = System.currentTimeMillis(); 
+				logger.info("======= Stocks Screening END - " + todayDate + " time=" + (endTime - startTime)/1000.0 + "s ===============");
+				
 			} // end of the outermost for
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -959,11 +968,30 @@ public class BacktestFrame {
 				rebalArr.add("20171124");
 				*/
 				
-				rebalArr.add("20171027");
-				//rebalArr.add("20171103");
-				//rebalArr.add("20171110");
-				//rebalArr.add("20171117");
-				rebalArr.add("20171124");
+				
+				//rebalArr.add("20171027");
+				//rebalArr.add("20171101");
+				//rebalArr.add("20171129");
+				
+				ArrayList<Date> allTradingDate_date = new ArrayList<Date> ();
+				for(int i = 0; i < allTradingDate.size(); i++) {
+					Calendar cal = allTradingDate.get(i);
+					Date d = cal.getTime();
+					allTradingDate_date.add(d);
+				}
+				
+				
+				Date startDate2 = sdf_yyyyMMdd.parse("20171101");
+				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
+				int startInd2 = allTradingDate_date.indexOf(startDate2);
+				
+				Date endDate2 = sdf_yyyyMMdd.parse("20171205");
+				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
+				int endInd2 = allTradingDate_date.indexOf(endDate2);
+				
+				for(int i = startInd2; i <= endInd2; i++) {
+					rebalArr.add(sdf_yyyyMMdd.format(allTradingDate_date.get(i)));
+				}
 			}
 			
 		}catch(Exception e) {

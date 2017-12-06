@@ -1,17 +1,44 @@
 package ashare.bbg_data;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
 
 public class DataConversion {
+	private static Logger logger = Logger.getLogger(DataConversion.class);
 	
 	public static void main(String[] args) {
+		// --------------------- stock price conversion -------------------
 		//convertToSingleFile_fundamentalDdata("","");
-		convertToSingleFile_priceData("Z:\\Mubing\\stock data\\A share data\\historical data\\201710\\201710.csv",
-				"Z:\\Mubing\\stock data\\A share data\\historical data\\201710\\");
+		String hkStockDataInputPath = "Z:\\Mubing\\stock data\\all stock list - bbg.csv";
+		String aShareDataInputPath = "Z:\\Mubing\\stock data\\";
+		
+		String hkStockDataOutputPath = "Z:\\Mubing\\stock data\\stock hist data - bbg\\";
+		String aShareDataOutputPath = "Z:\\Mubing\\stock data\\A share data\\historical data\\20171203 all\\";
+		
+		int market = 2;
+		/*
+		 * market:
+		 * 1 - A share
+		 * 2 - HK market
+		 */
+		
+		//convertToSingleFile_priceData(hkStockDataInputPath,hkStockDataOutputPath, market);
+		
+		
+		// -------------------- south bound conversion ---------------
+		String sbInputPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
+		String sbOutputPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\by stock";
+		convertSouthboundByStock(sbInputPath, sbOutputPath);
 	}
 	
 	/**
@@ -19,7 +46,13 @@ public class DataConversion {
 	 * @param inputFileName
 	 * @param outputRootPath
 	 */
-	public static void convertToSingleFile_priceData(String inputFileName, String outputRootPath) {
+	public static void convertToSingleFile_priceData(String inputFileName, String outputRootPath, int market) {
+		/*
+		 * market:
+		 * 1 - A share
+		 * 2 - HK market
+		 */
+		
 		int count = 1;  
 		if(!outputRootPath.substring(outputRootPath.length() - 1, outputRootPath.length()).equals("\\"))
 			outputRootPath = outputRootPath + "\\";
@@ -37,7 +70,10 @@ public class DataConversion {
 			String line = "";
 			 
 			int fixLine = 9;
+			if(market == 2)
+				fixLine = 10;
 			/*
+			 * 如果是A股数据：
 			 * 数据格式如下，一共9行（包括最后一行的空格）
 			 * 	300706 CH Equity							
 				Date	25/9/2017	26/9/2017	27/9/2017	28/9/2017	29/9/2017	9/10/2017	10/10/2017
@@ -48,6 +84,16 @@ public class DataConversion {
 				PX_VOLUME	#N/A N/A	5700	2000	2000	4500	5200	6600
 				EQY_SH_OUT	17170.411	17170.411	17170.411	17170.411	17170.411
 
+				如果是港股数据：
+				一共10行，700 HK Equity							
+				Date	25/9/2017	26/9/2017	27/9/2017	28/9/2017	29/9/2017	9/10/2017	10/10/2017
+				PX_OPEN	#N/A N/A	11.96	15.8	17.38	19.12	21.03	23.13
+				PX_HIGH	#N/A N/A	14.36	15.8	17.38	19.12	21.03	23.13
+				PX_LOW	#N/A N/A	11.96	15.8	17.38	19.12	21.03	23.13
+				PX_LAST	9.97	14.36	15.8	17.38	19.12	21.03	23.13
+				PX_VOLUME	#N/A N/A	5700	2000	2000	4500	5200	6600
+				EQY_SH_OUT	17170.411	17170.411	17170.411	17170.411	17170.411
+				Free Float Pct 40	40	40	
 							
 			 */
 			
@@ -59,6 +105,7 @@ public class DataConversion {
 			ArrayList<String> closeArr = new ArrayList<String> ();
 			ArrayList<String> volArr =  new ArrayList<String> ();
 			ArrayList<String> shArr =  new ArrayList<String> ();  // share outstanding
+			ArrayList<String> freeFlowPctArr =  new ArrayList<String> ();   // free float pct
 			
 			SimpleDateFormat sdf0 = new SimpleDateFormat ("dd/MM/yyyy");
 			SimpleDateFormat sdf1 = new SimpleDateFormat ("yyyyMMdd");
@@ -71,7 +118,14 @@ public class DataConversion {
 				case 1:
 					// initializing
 					String stock = lineArr.get(0);
-					stock = tdxStockName(stock);
+					if(market == 1) {
+						stock = tdxStockName(stock);
+					}
+					if(market == 2) {
+						stock = bbgStockNameInAB(stock, market);
+					}
+					logger.info("stock=" + stock);
+					
 					fw = new FileWriter(outputRootPath + stock + ".csv");
 					
 					dateArr = new ArrayList<String> ();
@@ -105,6 +159,11 @@ public class DataConversion {
 				case 8:
 					shArr =  new ArrayList<String> (lineArr.subList(1, lineArr.size()));
 					break;
+				case 9:
+					if(market == 2) {
+						freeFlowPctArr = new ArrayList<String> (lineArr.subList(1, lineArr.size()));
+					}
+					break;
 				case 0:
 					// write
 					for(int i = 0; i < openArr.size(); i++) {
@@ -116,24 +175,34 @@ public class DataConversion {
 						String vol = volArr.get(i);
 						String share = shArr.get(i);
 						
-						
+						//deal with volume
 						if(vol.equals("#N/A N/A")) {
-							continue;
+							vol = "0";
 						}
 						
-						Double shareDouble = 0.0;
-						try {
-							shareDouble = Double.parseDouble(share) * 1000000;
-						}catch(Exception e) {
-							for(int j = i; j < openArr.size(); j++) {
-								try {
-									shareDouble = Double.parseDouble(shArr.get(j)) * 1000000;
-									break;
-								}catch(Exception ee) {
-									
+						// deal with prices
+						if(utils.Utils.isDouble(close)) {
+							if(!utils.Utils.isDouble(open) || !utils.Utils.isDouble(high) || !utils.Utils.isDouble(low)) {
+								if(utils.Utils.isDouble(vol) && Double.parseDouble(vol)==0.0) {
+									open=high=low=close;
+								}else {
+									continue;
 								}
 							}
+						}else
+							continue;
+						
+						// deal with shares
+						Double shareDouble = 0.0;
+						for(int j = i; j >= 0; j--) {   //如果这个数据有问题，则向前找上一个数据代替
+							try {
+								shareDouble = Double.parseDouble(shArr.get(j)) * 1000000;
+								break;
+							}catch(Exception ee) {
+								
+							}
 						}
+						
 						
 						String date1 = date;
 						try {
@@ -148,8 +217,24 @@ public class DataConversion {
 								+ low + ","
 								+ close + ","
 								+ vol + ","
-								+ shareDouble + 
-								"\n");
+								+ shareDouble);
+						
+						// HK market
+						if(market == 2) {
+							Double freeFloatPctDouble = 100.0;
+							for(int j = i; j >= 0; j--) {   //如果这个数据有问题，则向前找上一个数据代替
+								try {
+									freeFloatPctDouble = Double.parseDouble(freeFlowPctArr.get(j)) ;
+									break;
+								}catch(Exception ee) {
+									
+								}
+							}
+							fw.write("," + String.valueOf(freeFloatPctDouble / 100 * shareDouble));
+						}
+						
+						
+						fw.write("\n");
 					}
 					fw.close();
 					break;
@@ -200,7 +285,12 @@ public class DataConversion {
 		}
 	}
 	
-	public static void convertToSingleFile_fundamentalDdata(String inputFileName, String outputRootPath) {
+	public static void convertToSingleFile_fundamentalDdata(String inputFileName, String outputRootPath, int market) {
+		/*
+		 * market:
+		 * 1 - A share
+		 * 2 - HK market
+		 */
 		int count = 1;  
 		
 		try {
@@ -244,7 +334,7 @@ public class DataConversion {
 				switch(innerLine) {
 				case 1:
 					// initializing
-					stock = bbgStockNameInAB(stock);
+					stock = bbgStockNameInAB(stock, market);
 					fw = new FileWriter(outputRootPath + stock + ".csv");
 					
 					dateArr = new ArrayList<String> ();
@@ -327,6 +417,79 @@ public class DataConversion {
 	}
 	
 	/**
+	 * 目前的southbound数据是以日期为一个文件存储，这个函数转换成
+	 * @param inputFilePath
+	 * @param outputRootPath
+	 */
+	public static void convertSouthboundByStock(String inputFilePath, String outputRootPath) {
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd"); //文件名都是这个格式的日期
+			
+			ArrayList<Date> fileDateList = new ArrayList<Date>(); 
+			File[] fileList = new File(inputFilePath).listFiles();
+			for(File f : fileList) {
+				String fileName = f.getName();
+				Date d = new Date();
+				String fileNameDate = fileName.substring(0, fileName.length() - 4);
+				try {
+					d = sdf.parse(fileNameDate);
+				}catch(Exception e) {
+					d = null;
+				}
+				if(d != null) {
+					fileDateList.add(d);
+				}
+			}
+			Collections.sort(fileDateList);  //从旧到新排序
+			
+			Map<String, FileWriter> fwMap = new HashMap<String, FileWriter>();
+			int dateC = 0;
+			for(Date d : fileDateList) {
+				String todayDateStr = sdf.format(d);
+				logger.info("file:" + todayDateStr + ".csv");
+				
+				String filePathName = utils.Utils.addBackSlashToPath(inputFilePath) + todayDateStr + ".csv";
+				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePathName);
+				String line = "";
+				int lineC = 0;
+				while((line = bf.readLine()) != null) {
+					if(lineC == 0) {
+						lineC ++;
+						continue;
+					}
+					
+					String[] arr = line.split(",");
+					String stock = arr[0];
+					String holdingStr = arr[2];
+					
+					FileWriter fw = fwMap.get(stock);
+					if(fw == null)
+						fw = new FileWriter(utils.Utils.addBackSlashToPath(outputRootPath) + bbgStockNameInAB(stock, 2) + "_southbound" + ".csv");
+					fw.write(todayDateStr + "," + holdingStr + "\n");
+					
+					if(Math.floorMod(dateC, 100) == 0)
+						fw.flush();
+					
+					fwMap.put(stock, fw);
+					
+				}
+				
+				dateC ++;
+			}
+			
+			
+			// close all file writers
+			for(FileWriter fw : fwMap.values()) {
+				fw.close();
+			}
+			
+			
+		}catch(Exception e) {
+			
+		}
+	}
+	
+	/**
 	 * stock 是bbg形式的，比如002001 CH Equity，转换成tdx_002001.SZ
 	 * @param stock
 	 * @return
@@ -347,14 +510,30 @@ public class DataConversion {
 	
 	/**
 	 * stock 是bbg形式的，比如002001 CH Equity，转换成bbg_002001_CH
+	 * 700 HK Equity -> bbg_700_HK
 	 * @param stock
 	 * @return
 	 */
-	public static String bbgStockNameInAB(String stock) {
-		String fullName = stock.substring(0,6);
+	public static String bbgStockNameInAB(String stock, int market) {
+		/*
+		 * market
+		 * 1 - A share
+		 * 2 - HK market
+		 */
+		if(market == 1) {
+			String fullName = stock.substring(0,6);
+			
+			fullName = "tdx_" + fullName + "_CH";
+			
+			return fullName;
+		}
 		
-		fullName = "tdx_" + fullName + "_CH";
+		if(market == 2) {
+			String[] arr  =stock.split(" ");
+			return "bbg_" + arr[0] + "_HK";
+		}
 		
-		return fullName;
+		return null;
+		
 	}
 }

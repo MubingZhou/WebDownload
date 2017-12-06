@@ -6,7 +6,8 @@ Regular:
 					A share northbound (update northbound holdings)
 	
 	
-	(After market work) booking
+	(After market work) booking, download price data (set a clock)
+	
 	(Weekly, every Friday) download SB data, outstadning data, SFC short interest data, download price data, run db southbound strategy
 	Monitoring A share limit up（get strategy candidates, update trading records)
 Project - DB MMA Strategy
