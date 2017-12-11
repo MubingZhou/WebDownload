@@ -43,6 +43,7 @@ public class BacktestFrame {
 	
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar> ();  
 	public static String allTradingDatePath = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
+	public static boolean isNormalSorting = true; //normal sorting - rank with higher rank in the front
 	
 	// ---------------- factors --------------
 	public static int rankingStrategy = 1;
@@ -470,6 +471,9 @@ public class BacktestFrame {
 							}
 							Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
 						}
+						if(!isNormalSorting)
+							Collections.sort(todaySel2, StockSingleDate.getComparator(1));  // 降序排列
+						
 						
 						// 还要进行filter
 						int lookbackDays1 = daysBetweenRelancingDate;
@@ -981,11 +985,11 @@ public class BacktestFrame {
 				}
 				
 				
-				Date startDate2 = sdf_yyyyMMdd.parse("20171101");
+				Date startDate2 = sdf_yyyyMMdd.parse("20171115");
 				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
 				int startInd2 = allTradingDate_date.indexOf(startDate2);
 				
-				Date endDate2 = sdf_yyyyMMdd.parse("20171205");
+				Date endDate2 = sdf_yyyyMMdd.parse("20171208");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				

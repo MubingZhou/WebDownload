@@ -1,6 +1,7 @@
 package math;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.apache.log4j.Logger;
 
@@ -112,6 +113,23 @@ public class MyMath {
 		vol = std * Math.sqrt(252);
 		return vol;
 		
+	}
+	
+	public static double median(ArrayList<Double> arr) {
+		double med = 0.0;
+		
+		Collections.sort(arr);
+		
+		int size = arr.size()-1;
+		
+		if(Math.floorMod(size, 2) == 0) {   // even number
+			med = arr.get(size / 2);
+		}else {
+			med = (arr.get((size+1)  / 2) + arr.get((size+1) / 2 - 1)) / 2;
+		}
+		
+		
+		return med;
 	}
 
 }

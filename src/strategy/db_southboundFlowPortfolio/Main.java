@@ -107,8 +107,8 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String startDateStr = "20171101";  // 20160729
-				String endDateStr = "20171205";		// "20171109"
+				String startDateStr = "20171115";  // 20160729
+				String endDateStr = "20171208";		// "20171109"
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.0012;
@@ -125,7 +125,7 @@ public class Main {
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " rolling 15days - 12bps - 20171205";
+						+ sdf2.format(new Date()) + " stock picks 25";
 				File f = new File(portFilePath);
 				f.mkdir();
 				
@@ -198,7 +198,7 @@ public class Main {
 					BacktestFrame.isToCalNotional = false;
 				
 				//-----------------------------------------
-				int[] topNStocksArr = {15};
+				int[] topNStocksArr = {25};
 				int[] weightingStrategyArr = {1,2};
 				int[] earlyUnwindStrategyArr = {1,2};
 				double[] avgDailyValueThreshHold_USDArr = {
@@ -208,7 +208,7 @@ public class Main {
 				int[] rebalancingStrategyArr = {1,2,3,4};
 				
 				int size1 = topNStocksArr.length;
-				size1 = 1;
+				//size1 = 1;
 				
 				int size2 = weightingStrategyArr.length;
 				//size2 = earlyUnwindStrategyArr.length;

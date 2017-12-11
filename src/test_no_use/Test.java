@@ -48,8 +48,10 @@ import cgi.ib.avat.AvatRecordSingleStock;
 import cgi.ib.avat.AvatUtils;
 import cgi.ib.avat.HoldingRecord;
 import cgi.ib.avat.MyIOrderHandler;
+import math.MyMath;
 import strategy.db_southboundFlowPortfolio.PortfolioScreening;
 import utils.PlayWAV;
+import utils.Utils;
 
 @SuppressWarnings("unused")
 public class Test {
@@ -62,8 +64,8 @@ public class Test {
 		// TODO Auto-generated method stub
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
 		try {			
-			String s = "A:\\test";
-			System.out.println(utils.Utils.removeBackSlashFromPath(s));
+			String s = "http://www.sse.com.cn/market/dealingdata/overview/margin/a/rzrqjygk20171114.xls";
+			Utils.downLoadFromUrl(s , "test.csv","D:\\");
 			
 		}catch(Exception e) {
 			e.printStackTrace();

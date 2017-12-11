@@ -55,6 +55,8 @@ public class PortfolioScreening {
 	
 	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
 	public static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
+	
+	public static boolean isNormalSorting = true; //normal sorting - rank with higher rank in the front
 
 	/**
 	 * 在某一天进行portfolio screening. 先不选出合适的股票，只是把每只股票的相关数据以及ranking全部 计算出来，然后排序
@@ -456,7 +458,10 @@ public class PortfolioScreening {
 				}
 			}
 			
-			Collections.sort(stockList, StockSingleDate.getComparator(-1)); 			
+			if(isNormalSorting)
+				Collections.sort(stockList, StockSingleDate.getComparator(-1));  // rank with higher score are in the front
+			else
+				Collections.sort(stockList, StockSingleDate.getComparator(1));  // rank with lower score are in the front
 				
 		}catch(Exception e) {
 			e.printStackTrace();
