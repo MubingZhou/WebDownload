@@ -9,7 +9,7 @@ public class Southbound_Main {
 		String outputPath = rootPath + "\\combined";
 		DataDownloader.FILE_OUTPUT_PATH = rootPath;
 		
-		String startDate = "2017-12-08";
+		String startDate = "2017-12-13";
 		String endDate = startDate;//"2017-12-05";
 		String dateFormat = "yyyy-MM-dd";
 		

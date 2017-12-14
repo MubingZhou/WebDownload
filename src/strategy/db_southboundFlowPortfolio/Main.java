@@ -89,6 +89,8 @@ public class Main {
 				 * 7. 是short HSI还是HSCEI，还是只从HSI或者HSCEI的成分股中选择
 				 * 8. rebalancing的frequency，1周、2周、1个月rebalance一次？
 				 * 9. 是否使用inflow的金额，而不是inflow占freefloat的百分比做ranking
+				 * 10. 1 month or 3 month adv
+				 * 11. rolling
 				 * 
 				 * Notes:
 				 * 关于factor 1，目前有四种ranking：
@@ -107,8 +109,8 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String startDateStr = "20171115";  // 20160729
-				String endDateStr = "20171208";		// "20171109"
+				String startDateStr = "20160801";  // 20160729
+				String endDateStr = "20171213";		// "20171109"
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.0012;
@@ -125,7 +127,7 @@ public class Main {
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " stock picks 25";
+						+ sdf2.format(new Date()) + " stock picks rolling - original";
 				File f = new File(portFilePath);
 				f.mkdir();
 				
@@ -208,7 +210,7 @@ public class Main {
 				int[] rebalancingStrategyArr = {1,2,3,4};
 				
 				int size1 = topNStocksArr.length;
-				//size1 = 1;
+				size1 = 1;
 				
 				int size2 = weightingStrategyArr.length;
 				//size2 = earlyUnwindStrategyArr.length;
@@ -869,8 +871,9 @@ public class Main {
 				startCal.setTime(sdf_yyyyMMdd.parse("20150101"));
 				Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingDate);
 				
+				int daysShift = 20;
 				int start_ind = allTradingDate.indexOf(startCal2);
-				Calendar dataStartCal = allTradingDate.get(start_ind - 20);
+				Calendar dataStartCal = allTradingDate.get(start_ind - daysShift);
 				startCal = (Calendar) startCal2.clone();
 				
 				// create these filewriters
@@ -926,7 +929,7 @@ public class Main {
 					}
 					
 					// 从后面往前开始读取
-					for(int j = data.size() - 1 - 60; j >= 0; j--) {
+					for(int j = data.size() - 1 - daysShift; j >= 0; j--) {
 						ArrayList<String> dataArr = data.get(j);
 						
 						String thisDate = dataArr.get(0);
@@ -935,7 +938,7 @@ public class Main {
 						Double accVol = 0.0;
 						Double accTur = 0.0;
 						int numTrdDate = 0;
-						for(int k = 0; k < 60; k++) {
+						for(int k = 0; k < daysShift; k++) {
 							ArrayList<String> pastDataArr = data.get(j + k);
 							Double thisVol = Double.parseDouble(pastDataArr.get(8));
 							Double thisTur = Double.parseDouble(pastDataArr.get(9));
@@ -1033,8 +1036,8 @@ public class Main {
 			if(mode == 5) {
 				//目前有点小问题
 				logger.info("============== notional chg ===============");
-				String startDateStr = "20171110";
-				String endDateStr = "20171129";
+				String startDateStr = "20150101";
+				String endDateStr = "20171213";
 				String filePath = MAIN_ROOT_PATH + "\\southbound notional chg\\";
 				ArrayList<String> allStockList = new ArrayList<String>();
 				BufferedReader bf_0 = utils.Utils.readFile_returnBufferedReader(ALL_STOCK_LIST_PATH);
