@@ -40,6 +40,7 @@ public class BacktestFrame {
 	public static String portFilePath="";    // 最终输出的root path
 	public static String allSbDataPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";  // 存储所有southbound data的文件夹
 	public static String allPriceDataPath = "Z:\\Mubing\\stock data\\stock hist data - webb";  //存储所有stock price的data的文件夹
+	public static String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\";
 	
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar> ();  
 	public static String allTradingDatePath = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
@@ -712,6 +713,7 @@ public class BacktestFrame {
 			//bt.startDate = "20160630";
 			bt.startDate = rebalDateArr.get(0);
 			bt.endDate = rebalDateArr.get(rebalDateArr.size() - 1);
+			bt.endDate = "20171213";
 			bt.tradingCost = tradingCost;
 			
 			ArrayList<ArrayList<ArrayList<Object>>> allRebalData = (ArrayList<ArrayList<ArrayList<Object>>>) data.get(1);
@@ -985,17 +987,24 @@ public class BacktestFrame {
 				}
 				
 				
-				Date startDate2 = sdf_yyyyMMdd.parse("20171126");
+				Date startDate2 = sdf_yyyyMMdd.parse("20171125");
 				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
 				int startInd2 = allTradingDate_date.indexOf(startDate2);
 				
-				Date endDate2 = sdf_yyyyMMdd.parse("20171213");
+				Date endDate2 = sdf_yyyyMMdd.parse("20171214");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				
 				for(int i = startInd2; i <= endInd2; i++) {
 					rebalArr.add(sdf_yyyyMMdd.format(allTradingDate_date.get(i)));
 				}
+			}
+			if(rebalancingStrategy == 101) {
+				rebalArr.add("20170731");
+				rebalArr.add("20170831");
+				rebalArr.add("20170929");
+				rebalArr.add("20171030");
+				rebalArr.add("20171130");
 			}
 			
 		}catch(Exception e) {

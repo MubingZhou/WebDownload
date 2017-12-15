@@ -50,7 +50,7 @@ public class PortfolioScreening {
 	public static Map<Date, Map<String, Double>> notionalChgData = new HashMap<Date, Map<String, Double>>();	// 每一天，所有港股通股票相对于前一天的flow的notional chg（
 											// CCASS是T+2的，举个例子，比如某只股票15号得到的CCASS holding是1000股，14号的CCASS holding是900股，则从数据上看是增加了100股
 											// 但其实15号得到的数据是13号的实际holding，14号是12号的实际holding，所以计算notional的时候，应该用 （15号的数据 - 14号的数据）*13号的股价
-	public static String notionalChgDataRootPath = "D:\\stock data\\southbound flow strategy - db\\southbound notional chg\\";
+	public static String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\southbound notional chg\\";
 	public static String avgVolMainPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\stock avg trd vol - 1M\\";
 	
 	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";

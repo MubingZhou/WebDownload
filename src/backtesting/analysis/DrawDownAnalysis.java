@@ -315,6 +315,62 @@ public class DrawDownAnalysis {
 	}
 
 	/**
+	 * Return the rolling Max DD. For example, if we input a series of market value like this
+	 * 100
+	 * 100.5
+	 * 100.6
+	 * 101
+	 * ...
+	 * and the rolling days is 10, then it will return two columns
+	 * The first column: rolling max DD with absolute value (the first 10 data are blank)
+	 * null
+	 * null
+	 * ...
+	 * null
+	 * 1
+	 * 0.5
+	 * 0.3
+	 * The 2nd column: rolling max DD with percentage (the first 10 data are blank)
+	 * null
+	 * null
+	 * ...
+	 * null
+	 * 0.01
+	 * 0.02
+	 * 0.03
+	 * @param portfolioValue
+	 * @param rollingDays
+	 * @return
+	 */
+	public static ArrayList<ArrayList<Double>> maxDrawdown_Rolling(ArrayList<Double> portfolioValue, int rollingDays){
+		if(rollingDays >= portfolioValue.size()) {
+			logger.error("portfolioValue too short!");
+			return null;
+		}
+		ArrayList<ArrayList<Double>> toReturn = new ArrayList<ArrayList<Double>>();
+		ArrayList<Double> rollingV = new ArrayList<Double>();  // rolling maxDD - value
+		ArrayList<Double> rollingP = new ArrayList<Double>();  // rolling maxDD - percentage
+		
+		for(int i = 0; i < rollingDays; i++) {
+			rollingV.add(null);
+			rollingP.add(null);
+		}
+		
+		for(int i = rollingDays; i <= portfolioValue.size(); i++) {
+			ArrayList<Double> p = new ArrayList<Double>(portfolioValue.subList(i - rollingDays, i));
+			ArrayList<Double> maxDD = maxDrawdown(p);
+			Double maxDD_value = Math.abs(maxDD.get(0));
+			Double maxDD_startValue = p.get(maxDD.get(1).intValue());
+			Double maxDD_pct = maxDD_value / maxDD_startValue;
+			
+			rollingV.add(maxDD_value);
+			rollingP.add(maxDD_pct);
+		}
+		
+		
+		return toReturn;
+	}
+	/**
 	 * get the Sharpe Ratio. rf  - risk free rate
 	 * @param dailyPortfolioValue
 	 * @param rf

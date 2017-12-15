@@ -46,12 +46,15 @@ public class Main {
 			String ALL_STOCK_LIST_PATH = "Z:\\Mubing\\stock data\\all stock list.csv";
 			String STOCK_PRICE_PATH = "Z:\\Mubing\\stock data\\stock hist data - webb";
 			String SOUTHBOUND_DATA_PATH = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
+			String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\";
 			if(false) {
 				MAIN_ROOT_PATH = "T:\\Mubing\\stock data\\southbound flow strategy - db";
 				ALL_STOCK_LIST_PATH = "T:\\Mubing\\stock data\\all stock list.csv";
 				STOCK_PRICE_PATH = "T:\\Mubing\\stock data\\stock hist data - webb";
 				SOUTHBOUND_DATA_PATH = "T:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
+				notionalChgDataRootPath = "T:\\Mubing\\stock data\\southbound flow strategy - db\\";
 			}
+			
 			
 			
 			int mode = 1;
@@ -109,8 +112,8 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String startDateStr = "20160801";  // 20160729
-				String endDateStr = "20171213";		// "20171109"
+				String startDateStr = "20171125";  // 20160729
+				String endDateStr = "20171215";		// "20171109"
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.0012;
@@ -124,16 +127,17 @@ public class Main {
 				BacktestFrame.allPriceDataPath = STOCK_PRICE_PATH;
 				BacktestFrame.allTradingDatePath = allTradingDatePath;
 				PortfolioScreening.avgVolMainPath = MAIN_ROOT_PATH + "\\stock avg trd vol - 1M\\";
+				BacktestFrame.notionalChgDataRootPath = notionalChgDataRootPath;
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " stock picks rolling - original";
+						+ sdf2.format(new Date()) + " rolling stock picks 20171215";
 				File f = new File(portFilePath);
 				f.mkdir();
 				
 				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
 				int topNStocks = 15;   // 每次选多少只股票进行买入卖出
-				double minInflowPct = 0.0;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
+				double minInflowPct = 0.7;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
 				// 现在rebalancing时使用的数据是固定15天的   daysBetweenRelancingDate
 				int rankingStrategy = 1;
@@ -166,7 +170,7 @@ public class Main {
 				 * 3 - bi-weekly
 				 * 4 - weekly
 				 * 5 - every 40 trading days
-				 * 100 - self defined
+				 * 100+ - self defined
 				 */
 				
 				int earlyUnwindStrategy  = 1;
@@ -210,7 +214,7 @@ public class Main {
 				int[] rebalancingStrategyArr = {1,2,3,4};
 				
 				int size1 = topNStocksArr.length;
-				size1 = 1;
+				//size1 = 1;
 				
 				int size2 = weightingStrategyArr.length;
 				//size2 = earlyUnwindStrategyArr.length;
