@@ -1,6 +1,7 @@
 package backtesting.analysis;
 
 import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -35,18 +36,38 @@ public class Main {
 			aa.add(100.0);
 			
 			//DrawDownAnalysis.maxDrawdown(aa);
+			ArrayList<Double> port = new ArrayList<Double>	();
 			
-			String filePath = "D:\\stock data\\southbound flow strategy - db\\20170925 075008 - filter\\test.csv";
+			String filePath = "Z:\\A share strategy\\T-2 backtest\\~~~EQUITY.csv";
 			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);
-			String[] strArr = bf.readLine().split(",");
-			ArrayList<Double> d = new ArrayList<Double>	();
-			for(int i = 0; i < strArr.length; i++) {
-				d.add(Double.parseDouble(strArr[i]));
+			String line = "";
+			while((line = bf.readLine()) != null) {
+				String[] lineArr = line.split(",");
+				port.add(Double.parseDouble(lineArr[1]));
 			}
 			
-			//logger.info("Sharpe = " + DrawDownAnalysis.sharpeRatio(d, 0.0));
-			logger.info("cov = " + MyMath.cov(d, d));
-			logger.info("var = " + MyMath.var(d));
+			
+			ArrayList<ArrayList<Double>> maxDD_rolling5 = DrawDownAnalysis.maxDrawdown_Rolling(port, 5);
+			ArrayList<ArrayList<Double>> maxDD_rolling10 = DrawDownAnalysis.maxDrawdown_Rolling(port, 10);
+			ArrayList<ArrayList<Double>> maxDD_rolling20 = DrawDownAnalysis.maxDrawdown_Rolling(port, 20);
+			
+			FileWriter fw = new FileWriter("Z:\\A share strategy\\T-2 backtest\\rollingMaxDD.csv");
+			fw.write("5 day abs val,5 day pct,10 day abs val,10 day pct,20 day abs val,20 day pct\n");
+			ArrayList<Double> absVal5 = maxDD_rolling5.get(0);
+			ArrayList<Double> pct5 = maxDD_rolling5.get(1);
+			ArrayList<Double> absVal10 = maxDD_rolling10.get(0);
+			ArrayList<Double> pct10 = maxDD_rolling10.get(1);
+			ArrayList<Double> absVal20 = maxDD_rolling20.get(0);
+			ArrayList<Double> pct20 = maxDD_rolling20.get(1);
+			for(int i = 0; i < port.size(); i++) {
+				fw.write(absVal5.get(i) + ",");
+				fw.write(pct5.get(i) + ",");
+				fw.write(absVal10.get(i) + ",");
+				fw.write(pct10.get(i) + ",");
+				fw.write(absVal20.get(i) + ",");
+				fw.write(pct20.get(i) + "\n");
+			}
+			fw.close();
 			
 		}catch(Exception e) {
 			e.printStackTrace();

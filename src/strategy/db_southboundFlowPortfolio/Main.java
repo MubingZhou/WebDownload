@@ -57,7 +57,7 @@ public class Main {
 			
 			
 			
-			int mode = 1;
+			int mode = 5;
 			/*
 			 * 0 - downloading data
 			 * 1 - full backtesting
@@ -131,13 +131,23 @@ public class Main {
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " rolling stock picks 20171215";
+						+ sdf2.format(new Date()) + " rolling stock picks 20171218";
+				/*
+				 * Rolling configurations:
+				 * rankingStrategy = 1;
+				 * stockUniverse = 1;
+				 * rebalancingStrategy: self defined daily
+				 * daysBetweenRelancingDate = 15
+				 * topNStocks = 25;
+				 * minInflowPct = 0.0;
+				 */
+				
 				File f = new File(portFilePath);
 				f.mkdir();
 				
 				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
 				int topNStocks = 15;   // 每次选多少只股票进行买入卖出
-				double minInflowPct = 0.7;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
+				double minInflowPct = 0.0;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
 				// 现在rebalancing时使用的数据是固定15天的   daysBetweenRelancingDate
 				int rankingStrategy = 1;

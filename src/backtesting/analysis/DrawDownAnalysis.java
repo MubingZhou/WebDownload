@@ -308,7 +308,7 @@ public class DrawDownAnalysis {
 	/**
 	 * to calculate the max DD given a series of portfolio value.
 	 * @param ArrayList<Double> portfolioValue
-	 * @return returns ArrayList<Double>. 0th value: max DD value (Double); 1st value: max DD period starts (Integer); 2nd value: max DD period ends (Integer);
+	 * @return returns ArrayList<Double>. 0th value: max DD pct (Double); 1st value: max DD period starts (Integer); 2nd value: max DD period ends (Integer); 3rd value: max DD start value; 4th value: max DD ends value
 	 */
 	public static ArrayList<Double> maxDrawdown(ArrayList<Double> portfolioValue){
 		return maxDrawdown(portfolioValue, "[Calculate Max DD]");
@@ -351,22 +351,23 @@ public class DrawDownAnalysis {
 		ArrayList<Double> rollingV = new ArrayList<Double>();  // rolling maxDD - value
 		ArrayList<Double> rollingP = new ArrayList<Double>();  // rolling maxDD - percentage
 		
-		for(int i = 0; i < rollingDays; i++) {
+		for(int i = 0; i < rollingDays-1; i++) {
 			rollingV.add(null);
 			rollingP.add(null);
 		}
 		
-		for(int i = rollingDays; i <= portfolioValue.size(); i++) {
-			ArrayList<Double> p = new ArrayList<Double>(portfolioValue.subList(i - rollingDays, i));
+		for(int i = rollingDays-1; i <= portfolioValue.size(); i++) {
+			ArrayList<Double> p = new ArrayList<Double>(portfolioValue.subList(i + 1 - rollingDays, i));
 			ArrayList<Double> maxDD = maxDrawdown(p);
-			Double maxDD_value = Math.abs(maxDD.get(0));
-			Double maxDD_startValue = p.get(maxDD.get(1).intValue());
-			Double maxDD_pct = maxDD_value / maxDD_startValue;
+			Double maxDD_value = Math.abs(maxDD.get(3) - maxDD.get(4));
+			Double maxDD_pct = Math.abs(maxDD.get(0));
 			
 			rollingV.add(maxDD_value);
 			rollingP.add(maxDD_pct);
 		}
 		
+		toReturn.add(rollingV);
+		toReturn.add(rollingP);
 		
 		return toReturn;
 	}

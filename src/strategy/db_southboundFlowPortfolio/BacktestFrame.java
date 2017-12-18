@@ -991,7 +991,7 @@ public class BacktestFrame {
 				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
 				int startInd2 = allTradingDate_date.indexOf(startDate2);
 				
-				Date endDate2 = sdf_yyyyMMdd.parse("20171214");
+				Date endDate2 = sdf_yyyyMMdd.parse("20171215");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				
