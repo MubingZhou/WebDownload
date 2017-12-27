@@ -56,8 +56,7 @@ public class Main {
 			}
 			
 			
-			
-			int mode = 5;
+			int mode = 1;
 			/*
 			 * 0 - downloading data
 			 * 1 - full backtesting
@@ -98,7 +97,7 @@ public class Main {
 				 * Notes:
 				 * 关于factor 1，目前有四种ranking：
 				 * 		1) 计算两次调仓日期之间的southbound flow的change，然后除以freefloat，按这个排序  	(rank1)
-				 * 		2) 计算两次调仓日期之间的southbound flow的change，然后除以3 month ADV，按这个排序	(rank2)
+				 * 		2) 计算两次调仓日期之间的southbound flow的change，然后除以1 month ADV，按这个排序	(rank2)
 				 * 		3) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的freefloat，排序，再将所有天的排序取均值		(rank3)
 				 * 		4) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的3 month ADV，排序，再将所有天的排序取均值	(rank4)
 				 * 		5) 计算两次调仓日期之间的southbound flow的notional change，即有多少资金买入了		(rank5)
@@ -113,7 +112,7 @@ public class Main {
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
 				String startDateStr = "20171125";  // 20160729
-				String endDateStr = "20171215";		// "20171109"
+				String endDateStr = "20171221";		// "20171109"
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.0012;
@@ -131,7 +130,7 @@ public class Main {
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " rolling stock picks 20171218";
+						+ sdf2.format(new Date()) + " backtest 15vs20";  //rolling stock picks 20171219
 				/*
 				 * Rolling configurations:
 				 * rankingStrategy = 1;
@@ -146,7 +145,7 @@ public class Main {
 				f.mkdir();
 				
 				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
-				int topNStocks = 15;   // 每次选多少只股票进行买入卖出
+				int topNStocks = 20;   // 每次选多少只股票进行买入卖出
 				double minInflowPct = 0.0;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
 				// 现在rebalancing时使用的数据是固定15天的   daysBetweenRelancingDate
@@ -214,7 +213,7 @@ public class Main {
 					BacktestFrame.isToCalNotional = false;
 				
 				//-----------------------------------------
-				int[] topNStocksArr = {25};
+				int[] topNStocksArr = {15,20};
 				int[] weightingStrategyArr = {1,2};
 				int[] earlyUnwindStrategyArr = {1,2};
 				double[] avgDailyValueThreshHold_USDArr = {

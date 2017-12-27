@@ -390,7 +390,19 @@ public class Utils {
 		 * @throws Exception
 		 */
 		public static void storeHTML(InputStream inputStream, String outputPath) throws Exception{
-			InputStreamReader inputStreamReader = new InputStreamReader(inputStream, "utf-8");
+			storeHTML(inputStream, outputPath,"utf-8");
+		}
+		
+		/**
+		 * format - utf-8/gbk/....
+		 * @param inputStream
+		 * @param outputPath
+		 * @param format
+		 * @throws Exception
+		 */
+		public static void storeHTML(InputStream inputStream, String outputPath, String format) throws Exception{
+			InputStreamReader inputStreamReader = new InputStreamReader(inputStream, format);
+			//System.out.println("inputStreamReader type=" + inputStreamReader.getEncoding());
 			//System.out.println("here15847");
 			
 			BufferedReader bufReader = new BufferedReader(inputStreamReader);
@@ -400,7 +412,10 @@ public class Utils {
 			StringBuilder contentBuf = new StringBuilder();
 			int counter = 0;
 			while ((line = bufReader.readLine()) != null) {
+				//line = new String(line.getBytes("GB2312"), "UTF-8");
+				//System.out.println(line);
 				contentBuf.append(line);
+				//fw.write(line);
 				//fw.write(line);
 				//System.out.println(line);
 				if(counter % 10 == 0){
@@ -408,6 +423,7 @@ public class Utils {
 				}
 				counter++;
 			}
+			bufReader.close();
 			fw.write(contentBuf.toString());
 			fw.close();
 		}

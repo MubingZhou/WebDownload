@@ -193,7 +193,7 @@ public class BacktestFrame {
 			ArrayList<ArrayList<StockSingleDate>> allPortfolioScreeningData = new ArrayList<ArrayList<StockSingleDate>>(); 
 			
 			// -------------- now start... -------------------
-			FileWriter fw_dailyCCASSChg ; // 仅仅是为了初始化
+			//FileWriter fw_dailyCCASSChg ; // 仅仅是为了初始化
 			Map<String, Map<Date, Double>> dailyCCASSChg_map = new HashMap<String, Map<Date, Double>>();
 			Set<Date> dailyCCASSChg_allDates = new  HashSet<>();;
 			
@@ -644,7 +644,7 @@ public class BacktestFrame {
 						if(isOutputDailyCCASSChg) {
 							SimpleDateFormat sdf111 = new SimpleDateFormat ("dd/MM/yyyy"); 
 							//dailyCCASSChg_map;
-							fw_dailyCCASSChg = new FileWriter(portFilePath + "\\daily southbound chg (over free float) " + todayDate + ".csv");
+							//fw_dailyCCASSChg = new FileWriter(portFilePath + "\\daily southbound chg (over free float) " + todayDate + ".csv");
 							Set<String> allStocks = dailyCCASSChg_map.keySet();
 							
 							// 先对date list 进行排序
@@ -652,9 +652,9 @@ public class BacktestFrame {
 							allDateArr.addAll(dailyCCASSChg_allDates);
 							Collections.sort(allDateArr);
 							for(int j = 0; j < allDateArr.size(); j++) {
-								fw_dailyCCASSChg.write("," + sdf111.format(allDateArr.get(j)));
+								//fw_dailyCCASSChg.write("," + sdf111.format(allDateArr.get(j)));
 							}
-							fw_dailyCCASSChg.write("\n");
+							//fw_dailyCCASSChg.write("\n");
 							
 							// 读取每只股票数据
 							for(String stock : allStocks) {
@@ -671,13 +671,14 @@ public class BacktestFrame {
 								}
 								
 								for(int k = 0; k < thisStockToWrite.size(); k++) {
-									if(k > 0)
-										fw_dailyCCASSChg.write(",");
-									fw_dailyCCASSChg.write(thisStockToWrite.get(k));
+									if(k > 0) {
+										//fw_dailyCCASSChg.write(",");
+									}
+									//fw_dailyCCASSChg.write(thisStockToWrite.get(k));
 								}
-								fw_dailyCCASSChg.write("\n");
+								//fw_dailyCCASSChg.write("\n");
 							}
-							fw_dailyCCASSChg.close();
+							//fw_dailyCCASSChg.close();
 							dailyCCASSChg_allDates = new HashSet<Date>();
 							dailyCCASSChg_map = new HashMap<String, Map<Date, Double>>();
 						}
@@ -713,7 +714,7 @@ public class BacktestFrame {
 			//bt.startDate = "20160630";
 			bt.startDate = rebalDateArr.get(0);
 			bt.endDate = rebalDateArr.get(rebalDateArr.size() - 1);
-			bt.endDate = "20171213";
+			//bt.endDate = "20171213";
 			bt.tradingCost = tradingCost;
 			
 			ArrayList<ArrayList<ArrayList<Object>>> allRebalData = (ArrayList<ArrayList<ArrayList<Object>>>) data.get(1);
@@ -987,11 +988,11 @@ public class BacktestFrame {
 				}
 				
 				
-				Date startDate2 = sdf_yyyyMMdd.parse("20171125");
+				Date startDate2 = sdf_yyyyMMdd.parse("20160101");
 				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
 				int startInd2 = allTradingDate_date.indexOf(startDate2);
 				
-				Date endDate2 = sdf_yyyyMMdd.parse("20171215");
+				Date endDate2 = sdf_yyyyMMdd.parse("20171222");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				

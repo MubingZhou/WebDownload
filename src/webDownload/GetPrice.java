@@ -25,7 +25,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 		try {
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
-			Thread.sleep(1000 * 3600 * 8);
+			Thread.sleep(1000 * 3600 * 7);
 			
 			
 			downloadData_2()	;
@@ -198,8 +198,10 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 			ArrayList<String> stocksInMap = new ArrayList(histDownloadURL_map.keySet());  //已经有url的stocks
 			
 			ArrayList<String> stockCodeList = WebDownload.getCGITopHoldingStocks(allStockListPath);
+			stockCodeList.clear();
+			stockCodeList.addAll(stocksInMap);
 			
-			//stockCodeList = new ArrayList<String>( stockCodeList.subList(1390, stockCodeList.size()) );
+			//stockCodeList = new ArrayList<String>( stockCodeList.subList(1637, stockCodeList.size()) );
 			//List<String> stockCodeList = stockCodeList0.subList(100, stockCodeList0.size() );
 			
 			// to download all stocks

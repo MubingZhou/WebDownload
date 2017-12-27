@@ -24,8 +24,8 @@ public class GetSouthboundChg {
 	public static void main(String[] args) {
 		try {
 			String stockListPath = "D:\\stocklist.csv";
-			String startDateStr = "20171101";
-			String endDateStr = "20171214";
+			String startDateStr = "20160101";
+			String endDateStr = "20171215";
 			String dateFormat = "yyyyMMdd";
 			String outputFileName = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\results\\notionalChg.csv";
 			
