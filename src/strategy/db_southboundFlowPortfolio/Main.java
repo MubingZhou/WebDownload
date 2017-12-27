@@ -189,7 +189,7 @@ public class Main {
 				 * 3 - 如果一只股票的southbound holding连续三天减少，则提前卖掉一半，并不再补充其他股票
 				 */
 				
-				boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change  (should always be true)
+				boolean isOutputDailyCCASSChg = false; // 是否输出每日southbound的CCASS的change  (必须设置为true，不然会影响earlyUnwindStrategy)
 				
 				// ----------- performance profile pre-settings -----------
 				ArrayList<String> performanceItems = new ArrayList<String>();

@@ -86,6 +86,7 @@ public class BacktestFrame {
 	// ----------- 运行中需要用到的variables --------------
 	public static boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change
 														// 必须设置为true，不然会影响earlyUnwindStrategy
+	
 	public static ArrayList<String> rebalDateArr = new ArrayList<String>();
 	/*public static int rebalStartInd =-1;
 	public static int rebalEndInd =-1;
