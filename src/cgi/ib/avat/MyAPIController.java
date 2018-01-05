@@ -404,6 +404,7 @@ public class MyAPIController extends ApiController{
 		
 		handler.isActive = 1;
 		handler.reqId = reqId;
+		logger.info("     stock=" + contract.symbol() + " id=" + reqId);
     }
     
 

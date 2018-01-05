@@ -1,6 +1,7 @@
 package webbDownload.southboundData;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -17,20 +18,28 @@ import org.apache.log4j.Logger;
 public class GetSouthboundChg {
 	public static Logger logger = Logger.getLogger(GetSouthboundChg.class);
 	public static String ALL_TRADING_DATE_PATH = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
+	public static String ALL_TRADING_DATE_PATH_ASHARE = "Z:\\Mubing\\stock data\\A share data\\all trading date a share.csv";
 	public static String SOUTHBOUND_DATA_PATH = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined\\";
+	public static String NORTHBOUND_DATA_PATH = "Z:\\Mubing\\stock data\\A share data\\northbound holding\\combined\\";
 	public static String STOCK_DATA_ROOT_PATH = "Z:\\Mubing\\stock data\\stock hist data - webb\\";
 	public static String SOUTHBOUND_DATA_DATEFORMAT = "yyyy-MM-dd";
+	public static String NORTHBOUND_DATA_DATEFORMAT = "yyyy-MM-dd";
 	
 	public static void main(String[] args) {
 		try {
 			String stockListPath = "D:\\stocklist.csv";
-			String startDateStr = "20160101";
-			String endDateStr = "20171215";
+			String startDateStr = "20171201";
+			String endDateStr = "20180104";
 			String dateFormat = "yyyyMMdd";
-			String outputFileName = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\results\\notionalChg.csv";
+			String outputFileName = "D:\\notionalChg.csv";
+				// "Z:\\Mubing\\stock data\\southbound flow strategy - db\\results\\notionalChg.csv"
 			
-			//getSouthboundHolding(stockListPath, startDateStr, endDateStr, dateFormat,true, outputFileName);
-			getSouthboundNotionalChg(stockListPath, startDateStr, endDateStr, dateFormat,true, outputFileName);
+			ALL_TRADING_DATE_PATH = ALL_TRADING_DATE_PATH_ASHARE;
+			SOUTHBOUND_DATA_PATH = NORTHBOUND_DATA_PATH;
+			SOUTHBOUND_DATA_DATEFORMAT = NORTHBOUND_DATA_DATEFORMAT;
+			
+			getSouthboundHolding(stockListPath, startDateStr, endDateStr, dateFormat,true, outputFileName);
+			//getSouthboundNotionalChg(stockListPath, startDateStr, endDateStr, dateFormat,true, outputFileName);
 			
 		}catch(Exception e)	{
 			e.printStackTrace();
@@ -72,9 +81,16 @@ public class GetSouthboundChg {
 			
 			
 			SimpleDateFormat sdf = new SimpleDateFormat(SOUTHBOUND_DATA_DATEFORMAT); 
+			ArrayList<Date> dataDate = new ArrayList<Date>();  // 真正有data的date
 			for(int i = startDateInd; i <= endDateInd; i++) {
 				Date date = allTradingDate.get(i);
 				String fileName = SOUTHBOUND_DATA_PATH + sdf.format(date) + ".csv";
+				
+				File file = new File(fileName);
+				if(!file.exists()) {
+					continue;
+				}
+				dataDate.add(date);
 				
 				BufferedReader bf2 = utils.Utils.readFile_returnBufferedReader(fileName);
 				line = "";
@@ -86,7 +102,12 @@ public class GetSouthboundChg {
 					}
 					String[]  lineArr =line.split(",");
 					String code = lineArr[0];
-					String holdingStr = lineArr[2];
+					if(code.equals("071696")) {
+						logger.info("071696  date=" + sdf.format(date));
+						Thread.sleep(100000000);
+					}
+					//String holdingStr = lineArr[2];
+					String holdingStr = lineArr[3];
 					Double holding = Double.parseDouble(holdingStr);
 					
 					LinkedHashMap<Date, Double> thisStockData = sbDataMap.get(code);
@@ -101,14 +122,15 @@ public class GetSouthboundChg {
 			// output sbDataMap
 			if(isOutput) {
 				FileWriter fw = new FileWriter(outputFileName);
-				for(int i = startDateInd; i <= endDateInd; i++) {
-					Date date = allTradingDate.get(i);
+				for(int i = 0; i < dataDate.size(); i++) {
+					Date date = dataDate.get(i);
 					fw.write("," + sdf.format(date));
 				}
 				fw.write("\n");
 				for(int i = 0; i< stockList.size(); i++) {
 					String code = stockList.get(i);
-					fw.write(code);
+					fw.write(code); 
+					logger.info("output stock=" + code);
 					
 					LinkedHashMap<Date, Double> thisStockData = sbDataMap.get(code);
 					Set<Date> allDates = thisStockData.keySet();

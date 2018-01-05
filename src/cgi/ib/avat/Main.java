@@ -39,7 +39,7 @@ public class Main {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171102";
+			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171228";
 			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("Z:\\Mubing\\stock data\\all trading date - hk.csv");
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
@@ -49,11 +49,13 @@ public class Main {
 			AvatUtils.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
+			boolean readyToExit = false;
 			// ------------ MODE -----------
 			int mode = 1;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
+			 * 		每次update股票list的时候，需要update之前的历史1min数据，然后需要update每日的auction和prevclose的股票list，还需要update那个industry的table（注意如果有一些N/A的数据，需要替换掉）
 			 * 
 			 * 100 or larger - testing
 			 */
@@ -106,6 +108,7 @@ public class Main {
 			//ArrayList<String> industryList = new ArrayList<String>();
 			
 			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "stocklist.csv");
+			//BufferedReader bf = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "additional-stocklist.csv");
 			stockList.addAll(Arrays.asList(bf.readLine().split(",")));
 			for(int i = 0; i < stockList.size(); i ++) {
 				String symbol = stockList.get(i);
@@ -124,9 +127,28 @@ public class Main {
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
-				AvatUtils.downloadHistorical1MinData(myController, conArr, "20171222", "yyyyMMdd");
+				ArrayList<String> dateArr = new ArrayList<String>();
+				dateArr.add("20171213");
+				dateArr.add("20171212");
+				dateArr.add("20171211");
+				dateArr.add("20171208");
+				dateArr.add("20171207");
+				dateArr.add("20171206");
+				dateArr.add("20171205");
+				dateArr.add("20171204");
+				dateArr.add("20171201");
+				dateArr.add("20171130");
+				dateArr.add("20171129");
+				dateArr.add("20171128");
+				dateArr.add("20171127");
+				for(int i = 1000; i < dateArr.size(); i ++) {
+					String dateStr  = dateArr.get(i);
+					AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr, "yyyyMMdd");
+				}
+				readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, "20180104", "yyyyMMdd");
+				myController.disconnect();
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
-				logger.trace("prepare ends...");
+				logger.info("dowloading ends...");
 				return;
 			}
 			
@@ -243,44 +265,17 @@ public class Main {
 				
 			}
 			if(mode == 102) {
-				//String path  = "Z:\\AVAT\\orders\\20171017\\holdingRecords.javaObj";
-				String path  = "D:\\test.javaObj";
-				
-				Map<String, Map<Integer, HoldingRecord>> holdingRecords = new HashMap<String, Map<Integer, HoldingRecord>>();
-				//holdingRecords = (Map<String, Map<Integer, HoldingRecord>> ) utils.Utils.readObject(path)  ;
-				System.out.println(holdingRecords.get("493"));
-				System.out.println(holdingRecords.get("701"));
-				
-				Thread.sleep(1000 * 1000);
-				
 				Contract con = new Contract();
-				con.symbol("700");
+				con.symbol("75");
 				con.exchange("SEHK");
 				con.secType("STK");
 				con.currency("HKD");
 				
-				Order order = new Order();
-				order.action(Action.BUY);
-				order.totalQuantity(100.0);;
-				order.orderType(OrderType.LMT);
-				order.lmtPrice(350.0);
-				
-				MyIOrderHandler myOrderH1 = new MyIOrderHandler (con, order); 
-				myOrderH1.isTransmit = true;
-				myController.placeOrModifyOrder(con, order, myOrderH1);
-				
-				while(myOrderH1.getOrderId() == -1) {Thread.sleep(5);}
-				
-				HoldingRecord hld1 = new HoldingRecord(myOrderH1, new Date().getTime());
-				
-				Map<Integer, HoldingRecord> thisHoldingMap = new HashMap();
-				
-				thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
-				holdingRecords.put("700", thisHoldingMap);
-				holdingRecords.put("701", thisHoldingMap);
-				
-				//utils.Utils.saveObject(holdingRecords, path);
 				System.out.println("DONE");
+				
+				MyIHistoricalDataHandler myHist = new MyIHistoricalDataHandler("75", "D:\\no use\\");
+				myController.reqHistoricalData(con, "2017-12-27 16:00:00", 1, DurationUnit.DAY, BarSize._1_day, WhatToShow.ADJUSTED_LAST, true, false, myHist);
+				
 			}
 			if(mode == 103) {
 				System.out.println("");
@@ -372,15 +367,18 @@ public class Main {
 			System.out.println("here11234");
 			// pause and disconnect
 			try {   
-				Thread.sleep(1000 * 10000000);
+				while(!readyToExit) {
+					Thread.sleep(1000 * 5);
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			
 			
 			// ======== close =========
-			/*
+			
 			myController.disconnect();
+			/*
 			if(myClient.isConnected()){
 				System.out.println("Is connected!");
 			}
@@ -388,6 +386,7 @@ public class Main {
 				System.out.println("Not connected!");
 			}
 			*/
+			
 			System.out.println("========================== END ==========================");
 			
 		}catch(Exception e) {

@@ -43,7 +43,7 @@ public class BacktestFrame {
 	public static String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\";
 	
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar> ();  
-	public static String allTradingDatePath = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
+	public static String allTradingDatePath = utils.PathConifiguration.ALL_TRADING_DATE_PATH;
 	public static boolean isNormalSorting = true; //normal sorting - rank with higher rank in the front
 	
 	// ---------------- factors --------------
@@ -82,6 +82,11 @@ public class BacktestFrame {
 	 * 3 - 如果一只股票的southbound holding连续三天减少，则提前卖掉一半，并不再补充其他股票
 	 */
 	public static boolean isToCalNotional = true;
+	
+	public static int topNStocks_mode = 1;    	// 1 - 正常
+												// 2 - buffer模式，即需要买入股票的排名进入“入选股票线”才买入，但是已经买入的股票只有跌出“剔除股票线”才卖出。在这种情况下，每只股票的持仓相当于1/topNStocks_bufferZone_out的比例，即有可能不是满仓
+	public static int topNStocks_bufferZone_in = 15;   // 入选股票线
+	public static int topNStocks_bufferZone_out = 20;  // 剔除股票线
 	
 	// ----------- 运行中需要用到的variables --------------
 	public static boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change
@@ -175,6 +180,7 @@ public class BacktestFrame {
 		ArrayList<ArrayList<ArrayList<Object>>> data = new ArrayList<ArrayList<ArrayList<Object>>> ();   //用来存储每次rebal选出来的股票
 		ArrayList<Date> rebalDates =  new ArrayList<Date> ();   //所有可能的rebalDates，不只是rebalDateArr，有可能有提前退出的股票
 		ArrayList<Object> toReturn = new ArrayList<Object>(); 
+		FileWriter fw_stock_ranking;
 		
 		try {
 			Calendar rebalStart = Calendar.getInstance();
@@ -192,6 +198,7 @@ public class BacktestFrame {
 			
 			int rebalCount = 0;
 			ArrayList<ArrayList<StockSingleDate>> allPortfolioScreeningData = new ArrayList<ArrayList<StockSingleDate>>(); 
+			int max_allPS_Data = 30; // max size for allPortfolioScreeningData
 			
 			// -------------- now start... -------------------
 			//FileWriter fw_dailyCCASSChg ; // 仅仅是为了初始化
@@ -214,6 +221,9 @@ public class BacktestFrame {
 				PortfolioScreening.oneMonthBeforeDays = 1;
 				ArrayList<StockSingleDate> todaySel = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd"); //对每只股票进行赋值
 				logger.debug("\t\ttodaySel .size() = " + todaySel .size());
+				if(allPortfolioScreeningData.size() >= max_allPS_Data) {   // to keep allPortfolioScreeningData not so short
+					allPortfolioScreeningData.remove(0);
+				}
 				allPortfolioScreeningData.add(todaySel );
 				
 				int todayInd = allPortfolioScreeningData.size() - 1;
@@ -339,7 +349,8 @@ public class BacktestFrame {
 
 					// *********** rebalancing date *************
 					if(todayDate.equals(rebalDateArr.get(rebalCount))) {
-						daysBetweenRelancingDate = 15; // rolling 的概念
+						daysBetweenRelancingDate = 15; // rolling 的概念(if don't want rolling, just comment this line),
+														// daysBetweenRelancingDate应该小于max_allPS_Data
 						logger.info("\t\tToday is a rebalancing date! daysBetweenRelancingDate=" + daysBetweenRelancingDate);
 						
 						Map<String, StockSingleDate> rebalStock_map = new HashMap<String, StockSingleDate>();  // 想要在rebal那天将每只股票的rank都列出来
@@ -351,7 +362,7 @@ public class BacktestFrame {
 							rebalStock_map.put(stock.stockCode, stock);
 						}
 						
-						for(int j = 0; j < daysBetweenRelancingDate; j++) { // 寻找最近20天的数据
+						for(int j = 0; j < daysBetweenRelancingDate; j++) { // 寻找最近20天的数据，计算这段时间内的平均ranking
 							ArrayList<StockSingleDate> rebal_thisDateSel = allPortfolioScreeningData.get(allPortfolioScreeningData.size() - 1 - j) ;
 							//String rebal_thisDate = sdf_yyMMdd.format(allTradingDate.get(i-j).getTime());
 							for(int k = 0; k < rebal_thisDateSel.size(); k++) {
@@ -360,7 +371,7 @@ public class BacktestFrame {
 								if(findStock != null) { // 只考虑能找到的情况
 									findStock.dummy3 = findStock.dummy3 + thisStock.dummy1; // dummy1是每只股票在当天的按照southbound的变化除以freefloat的排名，dummy3来存储20天内这个排名的总值  
 									findStock.dummy4 = findStock.dummy4 + thisStock.dummy2; // dummy2是每只股票在当天的按照southbound的变化除以3M ADV的排名，dummy4来存储20天内这个排名的总值  
-									findStock.dummy5 = findStock.dummy5 + 1;  // dummy4 来存储有多少天是有效的
+									findStock.dummy5 = findStock.dummy5 + 1;  // dummy5来存储有多少天是有效的
 									
 									
 									
@@ -483,7 +494,7 @@ public class BacktestFrame {
 						
 						int lookbackDays2 = 5;
 						int minDays2 = (int) Math.floor((double) lookbackDays2 * minInflowPct);
-						for(int j = 0; j < lookbackDays1; j++) { // 回看过去20天
+						for(int j = 0; j < Math.max(lookbackDays1, lookbackDays2); j++) { // 回看过去20天
 							ArrayList<StockSingleDate> thisDateSel = allPortfolioScreeningData.get(todayInd - j);
 							
 							Map<String, StockSingleDate> thisDateSel_map = new HashMap()	;
@@ -524,7 +535,16 @@ public class BacktestFrame {
 							}
 						}
 						
-						stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
+						if(topNStocks_mode == 1) {
+							stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
+						}
+						//ArrayList<StockSingleDate> pickedStocks_topNStocks_mode2 = new ArrayList<StockSingleDate> (); 
+						if(topNStocks_mode == 2) {  // buffer mode
+							int temp = PortfolioScreening.topNStocks;
+							PortfolioScreening.topNStocks = topNStocks_bufferZone_out;
+							stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
+							PortfolioScreening.topNStocks = temp;
+						}
 					
 						// stocks to sell
 						ArrayList<String> stocksToSell_str = new ArrayList<String>(stocksToBuy_str); //此时的stocksToBuy_str还存储着上次rebalance要买的股票，这恰好是本次要卖的股票
@@ -547,13 +567,20 @@ public class BacktestFrame {
 						}
 						
 						// stocks to buy，此时stocksToBuy已经update了，但是stocksToBuy_str还没update。。。
+						ArrayList<String> lastHoldStocks_str = new ArrayList<String>(stocksToBuy_str);  //上一期hold的股票
 						stocksToBuy_str = new ArrayList<String>();  //每个rebalancing date需要选出的股票
 						ArrayList<Integer> direction_buy = new ArrayList<Integer>();
 						ArrayList<Double> weighting_buy = new ArrayList<Double>();
 						ArrayList<Double> price_buy = new ArrayList<Double>();
-						final int size2 = stocksToBuy.size();
-						for(int j = 0; j < size2; j++) {
+						int size2 = stocksToBuy.size();
+						for(int j = 0; j < size2; j++) {   //size2其实就是topNStocks_bufferZone_out
 							String thisStockToBuy = stocksToBuy.get(j).stockCode;
+							if(topNStocks_mode == 2 && j >= topNStocks_bufferZone_in) {  
+								if(lastHoldStocks_str.indexOf(thisStockToBuy)  == -1) {
+									continue;   //如果这只股票跌出了topNStocks_bufferZone_in的范围，就不买入
+								}
+							}
+							
 							stocksToBuy_str.add(thisStockToBuy);
 							direction_buy.add(1);
 							Double thisWeighting = 0.0;
@@ -616,9 +643,9 @@ public class BacktestFrame {
 						rebalDates.add(sdf_yyyyMMdd.parse(todayDate));
 						
 						//----------------- 记录每次调仓时所有股票的排名 --------------
-						FileWriter fw = new FileWriter(portFilePath + "\\stock ranking " + todayDate + ".csv");
-						fw.write("stock,"
-								+ "3M ADV (USD mm),SB/FF,rank1,SB/3M ADV,rank2,"
+						fw_stock_ranking = new FileWriter(portFilePath + "\\stock ranking " + todayDate + ".csv");
+						fw_stock_ranking.write("stock,"
+								+ "1M ADV (USD mm),SB/FF,rank1,SB/3M ADV,rank2,"
 								+ "rank3(avg daily SB/FF ranking),rank4(avg daily SB/3M ADV ranking),"
 								+ "cum notional chg (HKD mm),rank5,"
 								+ "Total Ranking,"
@@ -631,7 +658,7 @@ public class BacktestFrame {
 							Double monthlySBChg_FF = thisStock_20.SB_over_os_shares;
 							Double monthlySBChg_vol = thisStock_20.SB_over_vol;
 							
-							fw.write(thisStock.stockCode + "," + _3MADV + "," 
+							fw_stock_ranking.write(thisStock.stockCode + "," + _3MADV + "," 
 									+ monthlySBChg_FF + "," + thisStock.rank1 + ","
 									+ monthlySBChg_vol + "," + thisStock.rank2 + ","
 									+ thisStock.rank3 + "," + thisStock.rank4 + ","
@@ -639,7 +666,7 @@ public class BacktestFrame {
 									+ thisStock.rank7 + ","
 									+ thisStock.filter2 + "," + thisStock.filter3 + "," + thisStock.filter4 + "\n");
 						}
-						fw.close();
+						fw_stock_ranking.close();
 						
 						// ========== 写入每日的southbound change ==========
 						if(isOutputDailyCCASSChg) {
@@ -780,7 +807,14 @@ public class BacktestFrame {
 				fw_stockPicks1.write(rebalDatesStr.get(i));
 			}
 			fw_stockPicks1.write("\n");
-			for(int i = 0; i < PortfolioScreening.topNStocks; i++) { //第几只股票
+			int size_stocks = -100;
+			if(topNStocks_mode == 1) {
+				size_stocks = PortfolioScreening.topNStocks;
+			}
+			if(topNStocks_mode == 2) {
+				size_stocks = topNStocks_bufferZone_out;
+			}
+			for(int i = 0; i < size_stocks; i++) { //第几只股票
 				for(int j = 0; j < rebalDatesStr.size(); j++) {
 					if(j > 0)
 						fw_stockPicks1.write(",");
@@ -989,11 +1023,11 @@ public class BacktestFrame {
 				}
 				
 				
-				Date startDate2 = sdf_yyyyMMdd.parse("20160101");
+				Date startDate2 = sdf_yyyyMMdd.parse("20171201");
 				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
 				int startInd2 = allTradingDate_date.indexOf(startDate2);
 				
-				Date endDate2 = sdf_yyyyMMdd.parse("20171222");
+				Date endDate2 = sdf_yyyyMMdd.parse("20180104");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				

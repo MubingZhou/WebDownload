@@ -93,7 +93,10 @@ public class AvatUtils {
 			String line = "";
 			while((line = bf_avat_p.readLine()) != null) {
 				String[] lineArr =line.split(",");
-				avatPrevClose.put(lineArr[0], Double.parseDouble(lineArr[1]));
+				Double pC = 0.01;
+				if(utils.Utils.isDouble(lineArr[1]))
+					pC = Double.parseDouble(lineArr[1]);
+				avatPrevClose.put(lineArr[0], pC);
 			}
 			bf_avat_p.close();
 		
@@ -582,7 +585,7 @@ public class AvatUtils {
 			int numOfTradingDays = 20;
 			avatHistPath = AVAT_ROOT_PATH + "avat para\\" + todayDate + "\\" ;  // 存放avat历史数据的文件夹
 			
-			// 先判断哪些已经download了
+			// 先判断哪些已经完成了
 			ArrayList<String> alreadyExists = new ArrayList<String> (); 
 			File fileList = new File(avatHistPath);
 			if(!fileList.exists())
@@ -647,31 +650,56 @@ public class AvatUtils {
 					
 					String _1minBarPath = _1minBarRootPath + thisTrdDateStr + "\\" + stock + ".csv";
 					
-					BufferedReader bf_ha = utils.Utils.readFile_returnBufferedReader(_1minBarPath);
+					boolean isFileExist = true;
+					File file = new File(_1minBarPath);
+					if(!file.exists()) {
+						isFileExist = false;
+					}
+					
+					BufferedReader bf_ha = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "\\test-not_delete_it.csv");  //为了处理历史数据不存在的情况，这个文件里面可以什么也没有
+					if(isFileExist) {
+						bf_ha.close();
+						bf_ha = utils.Utils.readFile_returnBufferedReader(_1minBarPath);
+					}
+					
 					String line = "";
 					int timePathInd = 0;
 					Double todayAvat = thisStockAuctionData.get(sdf2.parse(thisTrdDateStr));
 					int temp_count = 0;
-					while((line = bf_ha.readLine()) != null) {
+					boolean isReadEnd = false;
+					line = bf_ha.readLine();
+					if(line == null) {
+						isReadEnd = true;
+						isFileExist = false;  // 这种情况是文件存在，但是里面没有内容，当做不存在
+					}
+					while((isFileExist && !isReadEnd)||
+							(!isFileExist)) {
 						temp_count++;
 						//logger.info("             [prepare avat] line=" + temp_count + " content=" + line);
 						if(timePathInd == timePath.size())  // 不需要15：59之后的数据
 							break;
 
-						String[] lineArr = line.split(",");
-						
-						Double thisTimeVol = Double.parseDouble(lineArr[5]);
-						if(thisTimeVol == null)
-							thisTimeVol = 0.0;
-						//todayAvat += vol;
-						
-						SimpleDateFormat sdf_temp2 =  new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss"); 
-						Date readTime0 = sdf_temp2.parse(lineArr[0]);
-						String readTime1Str = sdf3.format(readTime0); // change to hh:MM:ss
-						Date readTime1 = sdf3.parse(readTime1Str);
-						
+						Date readTime1 = new Date();
+						Double thisTimeVol = null;
+						if(isFileExist) {
+							String[] lineArr = line.split(",");
+							
+							thisTimeVol = Double.parseDouble(lineArr[5]);
+							if(thisTimeVol == null)
+								thisTimeVol = 0.0;
+							//todayAvat += vol;
+							
+							SimpleDateFormat sdf_temp2 =  new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss"); 
+							Date readTime0 = sdf_temp2.parse(lineArr[0]);
+							String readTime1Str = sdf3.format(readTime0); // change to hh:MM:ss
+							readTime1 = sdf3.parse(readTime1Str);
+						}
 						String timePath1Str = sdf3.format(timePath.get(timePathInd)); // change to hh:MM:ss
 						Date timePath1 = sdf3.parse(timePath1Str);
+						if(!isFileExist) {
+							readTime1 = (Date) timePath1.clone();
+							thisTimeVol = 0.0;
+						}
 						
 						while(!timePath1.after(readTime1)){ // timePath1要去追 readTime1
 							if(timePath1.equals(readTime1))
@@ -716,6 +744,8 @@ public class AvatUtils {
 						
 						} // timePath1要去追 readTime1
 						
+						line = bf_ha.readLine();
+						if(line == null) isReadEnd = true;
 					} // end of while
 					bf_ha.close();
 					
@@ -760,27 +790,76 @@ public class AvatUtils {
 			boolean rthOnly = true;
 			int counter  = 1;
 			int counter2 = 0;
+			int available_i = 0;
+			
+			int inQueueStockNum = 0;   //排队下载的股票数
+			ArrayList<Integer> inQueueStockNum_i = new ArrayList<Integer>();
 			for(int i = 0; i < conArr.size(); i++) {
-				logger.debug("[historical bar] i=" + i + " Downloading " + conArr.get(i).symbol());
+				String stockCode = conArr.get(i).symbol();
+				String fileName = outputRootPath + stockCode + ".csv";
+				File f = new File(fileName);
+				if(f.exists()) {
+					//logger.debug("    [historical bar] i=" + i + " stock=" + stockCode + " Already existed!" );
+					continue;
+				}else
+					logger.debug("[historical bar] i=" + i + " Downloading " + conArr.get(i).symbol());
 				
-				MyIHistoricalDataHandler myHist = new MyIHistoricalDataHandler(conArr.get(i).symbol(), outputRootPath);
+				MyIHistoricalDataHandler myHist = new MyIHistoricalDataHandler(stockCode, outputRootPath);
 				histHandlerArr.add(myHist);
 				myController.reqHistoricalData(conArr.get(i), endDateTime, duration, durationUnit, barSize, whatToShow, rthOnly, false, myHist);
+				inQueueStockNum ++;
+				inQueueStockNum_i.add(available_i);
 				
+				if(inQueueStockNum == numOfRead || i == conArr.size() - 1) {
+					logger.info("========== waiting this part to be finished... ==============");
+					int cum = 0;
+					int cumFailedNum = 0;
+					while(cum < inQueueStockNum) {
+						cum = 0;
+						for(int j = 0; j < inQueueStockNum; j++) {
+							MyIHistoricalDataHandler thisHist = histHandlerArr.get(inQueueStockNum_i.get(j));
+							int isEnd = thisHist.isEnd;
+							cum += isEnd;
+						}
+						Thread.sleep(1000 * 2);
+						logger.debug("Ping Pong! cum=" + cum);
+						cumFailedNum ++;
+						if(cumFailedNum == 20) {  //把没有end的全部取消掉
+							for(int j = 0; j < inQueueStockNum; j++) {
+								MyIHistoricalDataHandler thisHist = histHandlerArr.get(inQueueStockNum_i.get(j));
+								int isEnd = thisHist.isEnd;
+								int isActive = thisHist.isActive;
+								if(isEnd != 1 ) {
+									myController.cancelHistoricalData(thisHist); logger.info("   -->cancel stock=" + thisHist.stockCode + " j=" + j);
+									thisHist.isActive = 0;
+									histHandlerArr.set(j, thisHist);
+								}
+							}
+							break;
+						}
+							
+					}
+					
+					inQueueStockNum =  0;
+					inQueueStockNum_i.clear();
+					logger.info("========== finished... ==============");
+				}
+				/*
 				// 每次只读取numOfRead的整数倍只股票的信息
 				int cum = 0;
-				if(i == (numOfRead * counter - 1)) {  // i 是numOfRead的整数倍
+				if(available_i == (numOfRead * counter - 1)) {  // i 是numOfRead的整数倍
 					int startInd = numOfRead * (counter - 1);
 					
 					while(cum != numOfRead) { 
 						cum = 0;
-						for(int j = startInd; j <= i; j++) {
+						for(int j = startInd; j <= available_i; j++) {
 							MyIHistoricalDataHandler thisHist = histHandlerArr.get(j);
 							int isEnd = thisHist.isEnd;
 							int isActive = thisHist.isActive;
 							if(isEnd == 1 && isActive == 1) {
-								//myController.cancelHistoricalData(thisHist);
-								//thisHist.isActive = 0;
+								myController.cancelHistoricalData(thisHist); logger.info("   -->stock=" + thisHist.stockCode + " i=" + j);
+								thisHist.isActive = 0;
+								histHandlerArr.set(j, thisHist);
 							}
 							cum += isEnd;
 						}
@@ -798,6 +877,8 @@ public class AvatUtils {
 					logger.debug("i = " + i + " Download END!");
 					counter ++;
 				}
+				*/
+				available_i ++;
 				
 			}
 		}catch(Exception e) {

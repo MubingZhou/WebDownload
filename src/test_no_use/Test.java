@@ -1,57 +1,16 @@
 package test_no_use;
 
-import java.applet.Applet;
-import java.applet.AudioClip;
-import java.awt.Toolkit;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.math.BigDecimal;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.DecimalFormat;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.DataLine;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 
 import org.apache.log4j.Logger;
-
-import com.ib.client.Contract;
-import com.ib.client.Order;
-
-import org.apache.log4j.LogManager;
-
-import backtesting.backtesting.OrderType;
-import backtesting.portfolio.Portfolio;
-import cgi.ib.avat.AvatRecordSingleStock;
-import cgi.ib.avat.AvatUtils;
-import cgi.ib.avat.HoldingRecord;
-import cgi.ib.avat.MyIOrderHandler;
-import math.MyMath;
-import strategy.db_southboundFlowPortfolio.PortfolioScreening;
-import utils.PlayWAV;
-import utils.Utils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 @SuppressWarnings("unused")
 public class Test {
@@ -60,12 +19,55 @@ public class Test {
 	 static Logger logger = Logger.getLogger(Test.class.getName());
 	 static int i = 0;
 			
+	 public static StringBuilder params = new StringBuilder();
+	 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
 		try {			
-			String s = "http://www.sse.com.cn/market/dealingdata/overview/margin/a/rzrqjygk20171114.xls";
-			Utils.downLoadFromUrl(s , "test.csv","D:\\");
+
+			String url = "http://www.cninfo.com.cn/cninfo-new/index";
+			URL realUrl = new URL(url);
+            
+            //System.out.println("params = \n" + params);
+        	
+        	HttpURLConnection conn = (HttpURLConnection) realUrl.openConnection();
+            // set properties
+            conn.setRequestProperty("accept", "*/*");
+            conn.setRequestProperty("connection", "Keep-Alive");
+            conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            conn.setRequestMethod("POST");
+            conn.setReadTimeout(30 * 1000); // set timeout
+            
+            Document doc = Jsoup.connect(url).get();	
+            //setParams("__VIEWSTATE", doc.select("input#__VIEWSTATE").first().val());
+            //setParams("__VIEWSTATEGENERATOR", doc.select("input#__VIEWSTATEGENERATOR").first().val());
+            //setParams("__EVENTVALIDATION", doc.select("input#__EVENTVALIDATION").first().val());
+            
+			setParams("index_hq_input_obj", "600519");
+            setParams("hq_start_select_obj", "2017");
+            setParams("hq_end_select_obj", "2018");
+            //setParams("btnSearch.y", "15");
+            //setParams("btnSearch.x", "15");
+          
+            
+            conn.setRequestProperty( "Content-Length", Integer.toString( params.toString().getBytes("utf-8").length ));
+            conn.setRequestProperty("Cookie", getCookie("http://www.cninfo.com.cn/cninfo-new/index"));
+            
+            // for POST
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            
+            // sent parameters
+            DataOutputStream dataOutputStream = new DataOutputStream( conn.getOutputStream()); 
+            dataOutputStream.write(params.toString().getBytes("utf-8"));
+            dataOutputStream.flush();
+            
+            //write out the response
+            webDownLoadHKEX.Utils.writeFile(conn.getInputStream(), "D:\\test.html");
+            
+            conn.disconnect();
+            
 			
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -76,6 +78,23 @@ public class Test {
 	
 	private static void test1(int i, int[] arr) {
 		arr[0] += i;
+	}
+
+	private static void setParams(String name, String value) throws Exception{
+		if(params.length() != 0) { // not first value
+			params.append('&');
+		}
+		
+		params.append(URLEncoder.encode(name, "UTF-8"));
+		params.append('=');
+		params.append(URLEncoder.encode(value, "UTF-8"));
+	}
+	private static String getCookie(String url) throws IOException {
+		URL website = new URL(url);
+		URLConnection connection = website.openConnection();
+		
+		String cookie = connection.	getHeaderField("Set-Cookie");
+        return cookie;
 	}
 }
 

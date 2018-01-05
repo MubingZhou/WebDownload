@@ -18,7 +18,7 @@ public class MyIHistoricalDataHandler implements IHistoricalDataHandler{
 	public Contract contract;
 	public FileWriter fileWriter;
 	public int isEnd = 0;
-	public int isActive = 0;  // 如果在收到所有历史数据后，没有取消request的话，这个isActive仍然是1，
+	public int isActive = 1;  // 如果在收到所有历史数据后，没有取消request的话，这个isActive仍然是1，
 	
 	public int reqId = -1;
 	
@@ -38,7 +38,8 @@ public class MyIHistoricalDataHandler implements IHistoricalDataHandler{
 			if(!f.exists())
 				f.mkdirs();
 			
-			fileWriter = new FileWriter(downloadRooPath + stockCode + ".csv", false); // not append
+			String fileName = downloadRooPath + stockCode + ".csv";
+			fileWriter = new FileWriter(fileName, false); // not append
 			
 			//AVAT_ROOT_PATH = downloadRooPath;
 		} catch (IOException e) {
@@ -65,6 +66,7 @@ public class MyIHistoricalDataHandler implements IHistoricalDataHandler{
 	public void historicalDataEnd() {
 		logger.trace("stock code = " + stockCode + " historical bar END!");
 		isEnd = 1;
+		isActive = 0;
 		try {
 			fileWriter.close();
 		} catch (IOException e) {

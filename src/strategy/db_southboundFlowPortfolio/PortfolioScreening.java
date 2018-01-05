@@ -53,7 +53,7 @@ public class PortfolioScreening {
 	public static String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\southbound notional chg\\";
 	public static String avgVolMainPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\stock avg trd vol - 1M\\";
 	
-	public static String allTradingDatePath = "D:\\stock data\\all trading date - hk.csv";
+	public static String allTradingDatePath = utils.PathConifiguration.ALL_TRADING_DATE_PATH;
 	public static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
 	
 	public static boolean isNormalSorting = true; //normal sorting - rank with higher rank in the front

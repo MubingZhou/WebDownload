@@ -4,7 +4,11 @@ Regular:
 					A share limit up strategy (update data, sell orders)
 					DB MMA strategy (update southbound holdings)
 					A share northbound (update northbound holdings)
-	
+					Browse CSRC news regarding new IPO approvals   
+						http://www.csrc.gov.cn/pub/zjhpublic/
+							最主要是工作会议公告日
+						http://data.eastmoney.com/xg/gh/
+					AVAT
 	
 	(After market work) booking, download price data (set a clock)
 	

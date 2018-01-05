@@ -93,13 +93,14 @@ public class Main {
 				 * 9. 是否使用inflow的金额，而不是inflow占freefloat的百分比做ranking
 				 * 10. 1 month or 3 month adv
 				 * 11. rolling
+				 * 12. For single stock, SB change compare to past changes.
 				 * 
 				 * Notes:
 				 * 关于factor 1，目前有四种ranking：
 				 * 		1) 计算两次调仓日期之间的southbound flow的change，然后除以freefloat，按这个排序  	(rank1)
 				 * 		2) 计算两次调仓日期之间的southbound flow的change，然后除以1 month ADV，按这个排序	(rank2)
 				 * 		3) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的freefloat，排序，再将所有天的排序取均值		(rank3)
-				 * 		4) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的3 month ADV，排序，再将所有天的排序取均值	(rank4)
+				 * 		4) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的1 month ADV，排序，再将所有天的排序取均值	(rank4)
 				 * 		5) 计算两次调仓日期之间的southbound flow的notional change，即有多少资金买入了		(rank5)
 				 * 然后有5种ranking strategy：
 				 * 		1) 最终的ranking是 (rank1 + rank2 + rank3 + rank4) / 4
@@ -111,8 +112,8 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String startDateStr = "20171125";  // 20160729
-				String endDateStr = "20171221";		// "20171109"
+				String startDateStr = "20171201";  // 20160729
+				String endDateStr = "20180102";		// "20171109"
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.0012;
@@ -130,7 +131,7 @@ public class Main {
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " backtest 15vs20";  //rolling stock picks 20171219
+						+ sdf2.format(new Date()) + " rolling stock picks 20180103 index";  //rolling stock picks 20171219   buffer - 15-20
 				/*
 				 * Rolling configurations:
 				 * rankingStrategy = 1;
@@ -146,6 +147,15 @@ public class Main {
 				
 				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
 				int topNStocks = 20;   // 每次选多少只股票进行买入卖出
+				int topNStocksMode = 1;
+				/*
+				 * 1 - 正常
+				 * 2 - buffer模式，即需要买入股票的排名进入“入选股票线”才买入，但是已经买入的股票只有跌出“剔除股票线”才卖出。在这种情况下，每只股票的持仓相当于1/topNStocks_bufferZone_out的比例，即有可能不是满仓
+				 * 		这种模式下需要对BacktestFrame.topNStocks_bufferZone_in和BacktestFrame.topNStocks_bufferZone_out进行赋值，后者要大于前者
+				 */
+				int topNStocks_bufferZone_in =  15;
+				int topNStocks_bufferZone_out = 20;
+				
 				double minInflowPct = 0.0;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
 				// 现在rebalancing时使用的数据是固定15天的   daysBetweenRelancingDate
@@ -153,12 +163,12 @@ public class Main {
 				/*
 				 * 1 - (rank1 + rank2 + rank3 + rank4) / 4
 				 * 2 - 
-				 * 3 - 
-				 * 4 - 
+				 * 3 - (rank1 + rank4) / 2
+				 * 4 - (rank2 + rank3) / 2
 				 * 5 - rank5
 				 */
 				
-				int stockUniverse = 1;
+				int stockUniverse = 4;
 				/*
 				 * 1 - south bound 
 				 * 2 - HSI
@@ -191,6 +201,7 @@ public class Main {
 				
 				boolean isOutputDailyCCASSChg = false; // 是否输出每日southbound的CCASS的change  (必须设置为true，不然会影响earlyUnwindStrategy)
 				
+				
 				// ----------- performance profile pre-settings -----------
 				ArrayList<String> performanceItems = new ArrayList<String>();
 				performanceItems.add("Start Market Value");
@@ -213,7 +224,7 @@ public class Main {
 					BacktestFrame.isToCalNotional = false;
 				
 				//-----------------------------------------
-				int[] topNStocksArr = {15,20};
+				int[] topNStocksArr = {35};
 				int[] weightingStrategyArr = {1,2};
 				int[] earlyUnwindStrategyArr = {1,2};
 				double[] avgDailyValueThreshHold_USDArr = {
@@ -240,7 +251,7 @@ public class Main {
 						//rebalancingStrategy = rebalancingStrategyArr[j];
 						
 						// -------------- file sub name ----------
-						String fileSubName = "rebal - ";
+						String fileSubName = "";
 						switch(rebalancingStrategy) {
 						case 1:
 							fileSubName += "montly begin";
@@ -258,7 +269,7 @@ public class Main {
 							fileSubName += "40 trd days";
 							break;
 						default:
-							fileSubName += "self defined rebal";
+							fileSubName += "self defined";
 							break;
 						}
 						
@@ -266,7 +277,7 @@ public class Main {
 						
 						switch(stockUniverse) {
 						case 1:
-							fileSubName += "southbound";
+							fileSubName += "sb";
 							break;
 						case 2:
 							fileSubName += "HSI";   // excluding LINK REIT (823 HK Equity)
@@ -278,7 +289,14 @@ public class Main {
 							fileSubName += "HSI HSCEI";  // excluding LINK REIT (823 HK Equity)
 							break;
 						}
-						String title = topNStocks + "stocks - " + fileSubName;  // 每个case的文件夹名称
+						String title = "";  // 每个case的文件夹名称
+						if(topNStocksMode == 1) {
+							title += topNStocks + "stocks - ";
+						}
+						if(topNStocksMode == 2) {
+							title += "bufferMode2_" + topNStocks_bufferZone_in + "-" + topNStocks_bufferZone_out + " - ";
+						}
+						title +=  fileSubName;
 						allPerformanceDataTitle.add(title);
 						
 						// ------------------- main settings -------------
@@ -292,6 +310,9 @@ public class Main {
 						BacktestFrame.rebalancingStrategy = rebalancingStrategy;
 						BacktestFrame.isOutputDailyCCASSChg = isOutputDailyCCASSChg;  
 						BacktestFrame.earlyUnwindStrategy = earlyUnwindStrategy;
+						BacktestFrame.topNStocks_mode = topNStocksMode; 
+						BacktestFrame.topNStocks_bufferZone_in = topNStocks_bufferZone_in;
+						BacktestFrame.topNStocks_bufferZone_out = topNStocks_bufferZone_out;
 						
 						BacktestFrame.startDateStr = startDateStr;
 						BacktestFrame.endDateStr = endDateStr;
@@ -881,7 +902,7 @@ public class Main {
 				logger.info("============== calculating stock volume and save ===============");
 				Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
 				Calendar startCal = Calendar.getInstance();
-				startCal.setTime(sdf_yyyyMMdd.parse("20150101"));
+				startCal.setTime(sdf_yyyyMMdd.parse("20171201"));
 				Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingDate);
 				
 				int daysShift = 20;
@@ -898,7 +919,7 @@ public class Main {
 						String path = MAIN_ROOT_PATH + "\\stock avg trd vol - 1M\\";
 						//path = "D:\\stock data\\southbound flow strategy - db\\stock avg trd vol\\";
 						FileWriter fw = new FileWriter(path + thisCal_str + ".csv");
-						fw.write("stock,3M avg vol(shares),3M avg turnover(value)\n");
+						fw.write("stock,1M avg vol(shares),1M avg turnover(value)\n");
 						
 						fwMap.put(thisCal_str, fw);
 					}
@@ -936,10 +957,12 @@ public class Main {
 						thisCal.setTime(sdf_yyyy_MM_dd.parse(lineDataArr .get(0)));
 						
 						// 只提取dataStartCal往后日期的数据
-						if(!thisCal.before(dataStartCal)) {
-							data.add(lineDataArr);
+						if(thisCal.before(dataStartCal)) {
+							break;
 						}
+						data.add(lineDataArr);
 					}
+					bf.close();
 					
 					// 从后面往前开始读取
 					for(int j = data.size() - 1 - daysShift; j >= 0; j--) {

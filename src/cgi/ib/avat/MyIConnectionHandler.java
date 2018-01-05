@@ -38,6 +38,9 @@ public class MyIConnectionHandler implements IConnectionHandler{
 		// TODO Auto-generated method stub
 		if(id != -1)
 			logger.info("[MyIConnectionHandler - message] id=" + id + " errorCode=" + errorCode + " errorMsg=" + errorMsg);
+		if(errorCode == 162) { // historical data downloader error: such stock may be suspended trading that date
+			
+		}
 	}
 
 	@Override

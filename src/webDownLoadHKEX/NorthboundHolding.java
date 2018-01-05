@@ -34,9 +34,9 @@ public class NorthboundHolding {
 	private static Logger logger = Logger.getLogger(NorthboundHolding.class);
 	
 	public static void main(String[] args) {
-		String dateStr = "20171222";
-		downloader(dateStr,dateStr,"yyyyMMdd");
-		combiner(dateStr,dateStr,"yyyyMMdd");
+		String dateStr = "20170317";
+		downloader(dateStr,"20180104","yyyyMMdd");
+		combiner(dateStr,"20180104","yyyyMMdd");
 	}
 	
 	public static void downloader(Date startDate, Date endDate, boolean isSH, boolean isSZ) {
@@ -248,6 +248,9 @@ public class NorthboundHolding {
 						}
 						if(code.substring(0, 2).equals("72")) {
 							code = "002" + code.substring(2);
+						}
+						if(code.substring(0, 2).equals("71")) {
+							code = "001" + code.substring(2);
 						}
 						if(code.substring(0, 2).equals("77")) {
 							code = "300" + code.substring(2);

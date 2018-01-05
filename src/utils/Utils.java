@@ -799,7 +799,7 @@ public class Utils {
 		}
 		
 		public static ArrayList<Calendar> getAllTradingDate(){
-			return getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			return getAllTradingDate(utils.PathConifiguration.ALL_TRADING_DATE_PATH);
 		}
 		
 		/**
