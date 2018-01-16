@@ -39,7 +39,7 @@ public class Main {
 			SimpleDateFormat sdf_yyyy_MM_dd = new SimpleDateFormat("yyyy-MM-dd");
 			//ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 			String allTradingDatePath = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("Z:\\Mubing\\stock data\\all trading date - hk.csv");
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate(allTradingDatePath);
 			//ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("T:\\Mubing\\stock data\\all trading date - hk.csv");
 			//String MAIN_ROOT_PATH = "D:\\stock data\\southbound flow strategy - db";
 			String MAIN_ROOT_PATH = "Z:\\Mubing\\stock data\\southbound flow strategy - db";
@@ -47,6 +47,7 @@ public class Main {
 			String STOCK_PRICE_PATH = "Z:\\Mubing\\stock data\\stock hist data - webb";
 			String SOUTHBOUND_DATA_PATH = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 			String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\";
+			String percentileDataRootPath = MAIN_ROOT_PATH + "\\southbound chg percentile - by stock\\";  //outputPath_byStock
 			if(false) {
 				MAIN_ROOT_PATH = "T:\\Mubing\\stock data\\southbound flow strategy - db";
 				ALL_STOCK_LIST_PATH = "T:\\Mubing\\stock data\\all stock list.csv";
@@ -64,7 +65,8 @@ public class Main {
 			 * 3 - reshape & calculate avg volume & turnover
 			 * 4 - reshape stock outstanding shares info - undone
 			 * 5 - 计算每只股票在每一天相对于前一天的notional chg
-			 * 先download数据（包括outstanding shares的数据和southbound的数据），再run mode 3，再run mode 5，然后再run mode 1
+			 * 6 - 计算每只股票每天的southbound flow相对于历史的southbound flow的percentile
+			 * 先download数据（包括outstanding shares的数据和southbound的数据），再run mode 3，再run mode 5（计算notional，可以不run）再run mode 6（计算historical percentile，也可以不run），然后再run mode 1
 			 */
 			
 			if(mode == 0) {
@@ -102,18 +104,22 @@ public class Main {
 				 * 		3) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的freefloat，排序，再将所有天的排序取均值		(rank3)
 				 * 		4) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的1 month ADV，排序，再将所有天的排序取均值	(rank4)
 				 * 		5) 计算两次调仓日期之间的southbound flow的notional change，即有多少资金买入了		(rank5)
+				 * 		6) 计算两次调仓日期之间的southbound flow占过去250天的flow的percentile，算法为(current flow - min flow) / (max flow - min flow)，然后rank6 = 430 * percentile  （假设有430只股票）  (rank6)  效果好像不是很好
+				 * 		7) 对于所有股票而言，利用rank1计算其每日的ranking，然后计算过去一段时间某只股票ranking的升幅，升幅越大的排名越靠前（比如对过去5天的所有index member计算其ranking的升幅，买入升幅靠前的5名） （rank7）
+				 *    
 				 * 然后有5种ranking strategy：
 				 * 		1) 最终的ranking是 (rank1 + rank2 + rank3 + rank4) / 4
 				 * 		2) 最终的ranking是：先按照rank1 + rank2进行ranking，得到rank5，再按照rank3 + rank4进行ranking，得到rank6，最后按照rank5 + rank6进行ranking
 				 * 		3) 最终的ranking是 (rank1 + rank4) / 2
 				 * 		4) 最终的ranking是 (rank2 + rank3) / 2
 				 * 		5) 最终的ranking是 rank5
+				 * 		6) 最终的ranking是 rank6
 				 */
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String startDateStr = "20171201";  // 20160729
-				String endDateStr = "20180102";		// "20171109"
+				String startDateStr = "20170101";  // 20160729
+				String endDateStr = "20180112";		// "20171109"
 				Double initialFunding = 1000000.0;
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.0012;
@@ -128,10 +134,11 @@ public class Main {
 				BacktestFrame.allTradingDatePath = allTradingDatePath;
 				PortfolioScreening.avgVolMainPath = MAIN_ROOT_PATH + "\\stock avg trd vol - 1M\\";
 				BacktestFrame.notionalChgDataRootPath = notionalChgDataRootPath;
+				BacktestFrame.percentileDataRootPath = percentileDataRootPath;
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " rolling stock picks 20180103 index";  //rolling stock picks 20171219   buffer - 15-20
+						+ sdf2.format(new Date()) + " rolling 20171219";  //rolling stock picks 20171219   buffer - 15-20   index 5days FULLLIST
 				/*
 				 * Rolling configurations:
 				 * rankingStrategy = 1;
@@ -166,9 +173,16 @@ public class Main {
 				 * 3 - (rank1 + rank4) / 2
 				 * 4 - (rank2 + rank3) / 2
 				 * 5 - rank5
+				 * 6 - rank6 (	mode 0: use historical percentile
+				 * 				mode 1: use past 250D percentile
+				 * 				mode 2: use past 60D percentile
+				 * 			)
+				 * 7 - rank7
 				 */
+				int rank6Mode = 2;
 				
-				int stockUniverse = 4;
+				
+				int stockUniverse = 1;
 				/*
 				 * 1 - south bound 
 				 * 2 - HSI
@@ -302,6 +316,7 @@ public class Main {
 						// ------------------- main settings -------------
 						BacktestFrame.portFilePath = portFilePath + "\\" + title;
 						BacktestFrame.rankingStrategy = rankingStrategy;
+						BacktestFrame.rank6Mode = rank6Mode;
 						BacktestFrame.avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USD; 
 						BacktestFrame.topNStocks = topNStocks;
 						BacktestFrame. minInflowPct =  minInflowPct;
@@ -1257,6 +1272,177 @@ public class Main {
 					fwMap.get(stock).close();
 				}
 			}  // end of mode 5
+			
+			
+			if(mode == 6) {
+				String outputPath_byStock = percentileDataRootPath;
+				String outputPath_byDate = MAIN_ROOT_PATH + "\\southbound chg percentile - by date\\";
+				
+				// first to use the PortfolioScreening's function to get southbound holding data for the past
+				PortfolioScreening.getAllSbData(SOUTHBOUND_DATA_PATH);
+				final int lookBackPeriod1 = 250;  // LBP1
+				final int lookBackPeriod2 = 60;		// // LBP2
+				
+				// by stock
+				for(String stock : PortfolioScreening.sbDataMap.keySet()) {
+					logger.info("stock = " + stock);
+					Map<Date,ArrayList<Double>> singleStock_DataMap = PortfolioScreening.sbDataMap.get(stock);
+					ArrayList<Date> singleStock_AllDate = new ArrayList<Date>(singleStock_DataMap.keySet());
+					if(singleStock_AllDate == null || singleStock_AllDate.size() <= 1 ) {
+						continue;
+					}
+					Collections.sort(singleStock_AllDate);   // 从小到大排序
+					ArrayList<Double> singleStock_HistPercentile = new ArrayList<Double>(); 
+					ArrayList<Double> singleStock_LBP1Percentile = new ArrayList<Double>(); 
+					ArrayList<Double> singleStock_LBP2Percentile = new ArrayList<Double>(); 
+					
+					String writePath = utils.Utils.addBackSlashToPath(outputPath_byStock) + stock + ".csv";
+					FileWriter fw = new FileWriter(writePath);
+					fw.write("Date,Percentile all hist,Percentile 250D,Percenetile 60D,today Chg,hist high,high low," + lookBackPeriod1 + "D high,"+ lookBackPeriod1 + "D low," + lookBackPeriod2 +"D high," + lookBackPeriod2 + "D low\n");
+					
+					final int dateSize = singleStock_AllDate.size();
+					ArrayList<Double> hist_Chg = new ArrayList<Double>(); //存储过去的chg 
+					ArrayList<Double> LBP1_Chg = new ArrayList<Double>(); //存储过去250天的chg 
+					ArrayList<Double> LBP2_Chg = new ArrayList<Double>(); //存储过去60天的chg 
+					
+					ArrayList<Double> hist_high = new ArrayList<Double>(); //存储过去的high
+					ArrayList<Double> hist_low = new ArrayList<Double>(); //存储过去的low
+					ArrayList<Double> LBP1_high = new ArrayList<Double>(); //存储过去250天的high 
+					ArrayList<Double> LBP1_low = new ArrayList<Double>(); //存储过去250天的low
+					ArrayList<Double> LBP2_high = new ArrayList<Double>(); //存储过去60天的high 
+					ArrayList<Double> LBP2_low = new ArrayList<Double>(); //存储过去60天的low
+					
+					Double histHigh = 0.0;
+					Double histLow = 0.0;
+					Double histHighLBP1 = 0.0;
+					Double histLowLBP1 = 0.0;
+					Double histHighLBP2 = 0.0;
+					Double histLowLBP2 = 0.0;
+					Double lastHolding = 0.0;
+					Double tempChg0 = 0.0;  //存储第一个chg值
+					Double tempChg1 = 0.0;
+					for(int i = 0; i < dateSize; i++) {
+						Date date = singleStock_AllDate.get(i);
+						ArrayList<Double> data = singleStock_DataMap.get(date);
+						Double holding = data.get(0);   // shares
+						
+						Double holdingChg = holding - lastHolding;
+						hist_Chg.add(holdingChg);
+						
+						if(i == 0) {
+							tempChg0 = holdingChg;
+							singleStock_HistPercentile.add(-1.0);
+							singleStock_LBP1Percentile.add(-1.0);
+							singleStock_LBP2Percentile.add(-1.0);
+							hist_high.add(-1.0);
+							hist_low.add(-1.0);
+							LBP1_high.add(-1.0);
+							LBP1_low.add(-1.0);
+							LBP2_high.add(-1.0);
+							LBP2_low.add(-1.0);
+						}
+						
+						if(i == 1) {
+							tempChg1 = holdingChg;
+							histHigh = Math.max(tempChg0, tempChg1);
+							histLow = Math.min(tempChg0, tempChg1);
+							singleStock_HistPercentile.add(-1.0);
+							singleStock_LBP1Percentile.add(-1.0);
+							singleStock_LBP2Percentile.add(-1.0);
+							hist_high.add(-1.0);
+							hist_low.add(-1.0);
+							LBP1_high.add(-1.0);
+							LBP1_low.add(-1.0);
+							LBP2_high.add(-1.0);
+							LBP2_low.add(-1.0);
+						}
+						if(i >= 2) {
+							// hist
+							Double percentile_hist = (holdingChg - histLow) / (histHigh - histLow);
+							singleStock_HistPercentile.add(percentile_hist);
+							if(holdingChg > histHigh)
+								histHigh = holdingChg;
+							if(holdingChg < histLow)
+								histLow = holdingChg;
+							hist_high.add(histHigh);
+							hist_low.add(histLow);
+							
+							
+							// 250D..
+							Double percentile_LBP1 = 0.0;
+							if(LBP1_Chg.size() == lookBackPeriod1) {
+								histHighLBP1 = MyMath.max(LBP1_Chg);   //这里算出来的high和low还是没有包括今天的数据
+								histLowLBP1 = MyMath.min(LBP1_Chg);
+								
+								percentile_LBP1 = (holdingChg - histLowLBP1) / (histHighLBP1 - histLowLBP1);
+								singleStock_LBP1Percentile.add(percentile_LBP1);
+								
+								// updating...
+								LBP1_Chg.remove(0);
+								LBP1_Chg.add(holdingChg);
+								LBP1_high.add(MyMath.max(LBP1_Chg));
+								LBP1_low.add(MyMath.min(LBP1_Chg));
+								
+								
+							}else {
+								LBP1_Chg.add(holdingChg);
+								singleStock_LBP1Percentile.add(-1.0);
+								LBP1_high.add(-1.0);
+								LBP1_low.add(-1.0);
+							}
+							
+							// 60D....
+							Double percentile_LBP2 = 0.0;
+							if(LBP2_Chg.size() == lookBackPeriod2) {
+								histHighLBP2 = MyMath.max(LBP2_Chg);
+								histLowLBP2 = MyMath.min(LBP2_Chg);
+								
+								percentile_LBP2 = (holdingChg - histLowLBP2) / (histHighLBP2 - histLowLBP2);
+								singleStock_LBP2Percentile.add(percentile_LBP2);
+								
+								// updating...
+								LBP2_Chg.remove(0);
+								LBP2_Chg.add(holdingChg);
+								LBP2_high.add(MyMath.max(LBP2_Chg));
+								LBP2_low.add(MyMath.min(LBP2_Chg));
+								
+							}else {
+								LBP2_Chg.add(holdingChg);
+								singleStock_LBP2Percentile.add(-1.0);
+								LBP2_high.add(-1.0);
+								LBP2_low.add(-1.0);
+							}
+							
+							
+							
+							
+							
+						} // end of if(i >= 2)
+						
+						lastHolding = holding;
+						
+					}  // end of for(int i = 0; i < dateSize; i++) {
+					
+					// write files 从最近的往前开始写
+					for(int i = dateSize-1; i >= 0; i--) {
+						Date date = singleStock_AllDate.get(i);
+						fw.write(sdf_yyyy_MM_dd.format(date) 
+								+ "," + singleStock_HistPercentile.get(i) 
+								+ "," + singleStock_LBP1Percentile.get(i) 
+								+ "," + singleStock_LBP2Percentile.get(i) 
+								+ "," +  hist_Chg.get(i) 
+								+ "," +  hist_high.get(i) 
+								+ "," +  hist_low.get(i) 
+								+ "," +  LBP1_high.get(i) 
+								+ "," +  LBP1_low.get(i) 
+								+ "," +  LBP2_high.get(i) 
+								+ "," +  LBP2_low.get(i) 
+								+ "\n");
+					}
+					fw.close();
+					
+				}
+			}  // end of mode 6
 			
 			
 		} catch (Exception e) {

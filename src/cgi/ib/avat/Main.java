@@ -145,7 +145,7 @@ public class Main {
 					String dateStr  = dateArr.get(i);
 					AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr, "yyyyMMdd");
 				}
-				readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, "20180104", "yyyyMMdd");
+				readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, "20180115", "yyyyMMdd");
 				myController.disconnect();
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.info("dowloading ends...");

@@ -26,17 +26,21 @@ public class GetSouthboundChg {
 	public static String NORTHBOUND_DATA_DATEFORMAT = "yyyy-MM-dd";
 	
 	public static void main(String[] args) {
+		// NORTHBOUND MODE NOW
 		try {
+			//String stockListPath = "D:\\stocklist_ashare.csv";
 			String stockListPath = "D:\\stocklist.csv";
 			String startDateStr = "20171201";
-			String endDateStr = "20180104";
+			String endDateStr = "20180115";
 			String dateFormat = "yyyyMMdd";
 			String outputFileName = "D:\\notionalChg.csv";
 				// "Z:\\Mubing\\stock data\\southbound flow strategy - db\\results\\notionalChg.csv"
 			
-			ALL_TRADING_DATE_PATH = ALL_TRADING_DATE_PATH_ASHARE;
-			SOUTHBOUND_DATA_PATH = NORTHBOUND_DATA_PATH;
-			SOUTHBOUND_DATA_DATEFORMAT = NORTHBOUND_DATA_DATEFORMAT;
+			if(false) {
+				ALL_TRADING_DATE_PATH = ALL_TRADING_DATE_PATH_ASHARE;
+				SOUTHBOUND_DATA_PATH = NORTHBOUND_DATA_PATH;
+				SOUTHBOUND_DATA_DATEFORMAT = NORTHBOUND_DATA_DATEFORMAT;
+			}
 			
 			getSouthboundHolding(stockListPath, startDateStr, endDateStr, dateFormat,true, outputFileName);
 			//getSouthboundNotionalChg(stockListPath, startDateStr, endDateStr, dateFormat,true, outputFileName);
@@ -102,12 +106,9 @@ public class GetSouthboundChg {
 					}
 					String[]  lineArr =line.split(",");
 					String code = lineArr[0];
-					if(code.equals("071696")) {
-						logger.info("071696  date=" + sdf.format(date));
-						Thread.sleep(100000000);
-					}
-					//String holdingStr = lineArr[2];
-					String holdingStr = lineArr[3];
+			
+					String holdingStr = lineArr[2];   // hk - sb holding
+					//String holdingStr = lineArr[3];		// a share - nb holdindg
 					Double holding = Double.parseDouble(holdingStr);
 					
 					LinkedHashMap<Date, Double> thisStockData = sbDataMap.get(code);
@@ -129,10 +130,16 @@ public class GetSouthboundChg {
 				fw.write("\n");
 				for(int i = 0; i< stockList.size(); i++) {
 					String code = stockList.get(i);
-					fw.write(code); 
 					logger.info("output stock=" + code);
 					
 					LinkedHashMap<Date, Double> thisStockData = sbDataMap.get(code);
+					
+					if(thisStockData == null || thisStockData.size() == 0) {
+						logger.info("    No info.");
+						continue;
+					}
+					
+					fw.write(code); 
 					Set<Date> allDates = thisStockData.keySet();
 					for(Date d : allDates) {
 						fw.write("," + thisStockData.get(d));

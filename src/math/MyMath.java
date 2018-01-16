@@ -132,4 +132,24 @@ public class MyMath {
 		return med;
 	}
 
+	public static double max(ArrayList<Double> arr) {
+		double m = arr.get(0);
+		
+		for(int i = 1; i < arr.size(); i++) {
+			m = arr.get(i) > m? arr.get(i):m;
+		}
+		
+		return m;
+	}
+	
+	public static double min(ArrayList<Double> arr) {
+		double m = arr.get(0);
+		
+		for(int i = 1; i < arr.size(); i++) {
+			m = arr.get(i) < m? arr.get(i):m;
+		}
+		
+		return m;
+	}
+	
 }

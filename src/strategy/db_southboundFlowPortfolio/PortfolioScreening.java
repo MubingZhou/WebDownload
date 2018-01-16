@@ -43,6 +43,7 @@ public class PortfolioScreening {
 	public static Map<String, String> ffPctMap = new HashMap();
 	public static Map<String, Map<Date,ArrayList<Double>>> sbDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {holding shares, holding value}
 	public static Map<String, Map<Date,ArrayList<Double>>> osDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {outstanding shares, outstanding value}
+	public static Map<String, Map<Date,ArrayList<Double>>> SbChgPercentileDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {percentile wrt all hist data, percentile wrt to 250-day data, percentile wrt to 60-day data}
 	public static Map<String, ArrayList<Object>> osDataMap2 = new HashMap<String, ArrayList<Object>>();  // String - stock, ArrayList<Object> - 三个元素，一个是ArrayList<Date>，一个是ArrayList<Double>，一个是ArrayList<Double>，第一个是股本有变化的日期，第二个是当日的股本，第三个当日的市值
 	public static String outstandingFilePath = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
 	//public static Map<String, Map<Date,ArrayList<Double>>> priceDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {unadjusted price, adjusted price}
@@ -53,7 +54,7 @@ public class PortfolioScreening {
 	public static String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\southbound notional chg\\";
 	public static String avgVolMainPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\stock avg trd vol - 1M\\";
 	
-	public static String allTradingDatePath = utils.PathConifiguration.ALL_TRADING_DATE_PATH;
+	public static String allTradingDatePath = utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK;
 	public static ArrayList<Date> allTradingDate = new ArrayList<Date>(); 
 	
 	public static boolean isNormalSorting = true; //normal sorting - rank with higher rank in the front
@@ -145,7 +146,7 @@ public class PortfolioScreening {
 				stockListStrArr= utils.Utils.getHSCEI_HSIStocks(date, dateFormat, true, false);
 			if(stockUniverse == 4) {
 				stockListStrArr= utils.Utils.getHSCEI_HSIStocks(date, dateFormat, true, true);
-				stockListStrArr.remove("823");
+				//stockListStrArr.remove("823");
 			}
 			for(String blStock : blackList) {
 				stockListStrArr.remove(blStock);
@@ -187,6 +188,24 @@ public class PortfolioScreening {
 					stock.SB_1MBefore_holdingValue = 0.0;
 				}
 				
+				// ============= get percentile information =======
+				Map<Date,ArrayList<Double>> sbPercentileDataMap_oneStock = SbChgPercentileDataMap.get(stockCode);
+				ArrayList<Double> today_SBPercentileData = new ArrayList<Double> ();
+				if(sbPercentileDataMap_oneStock != null) {
+					today_SBPercentileData = sbPercentileDataMap_oneStock.get(todayDate);
+				}
+				if(today_SBPercentileData != null && today_SBPercentileData.size() > 0) {
+					stock.SB_chg_hist_percentile = today_SBPercentileData.get(0);
+					stock.SB_chg_250D_percentile = today_SBPercentileData.get(1);
+					stock.SB_chg_60D_percentile = today_SBPercentileData.get(2);
+				}else {
+					logger.debug("[today SB Percentile data not exists] code=" + stockCode +  " " + date);
+					stock.SB_chg_hist_percentile = -1.0;
+					stock.SB_chg_250D_percentile = -1.0;
+					stock.SB_chg_60D_percentile = -1.0;
+				}
+				
+				
 				stock.SB_1M_trailingFlow = stock.SB_today_holding - stock.SB_1MBefore_holding;
 				//System.out.println(new SimpleDateFormat("yyyyMMdd").format(oneMonthBefore.getTime()) + " Southbound trailing = " + stock.SB_1M_trailingFlow);
 				
@@ -198,6 +217,7 @@ public class PortfolioScreening {
 					stock.Turnover_3M_avg = avgTur_map.get(stockCode);
 				//System.out.println("avg vol = " + stock.Vol_1M_avg);
 				//Thread.sleep(1000 * 10000000);
+				
 				
 				// ========== get outstanding shares / value ==========
 				/*
@@ -452,9 +472,7 @@ public class PortfolioScreening {
 					StockSingleDate stock2 = stockList.get(i);
 					stock2.dummy2 = (double) i;
 					stock2.sorting_indicator = stock2.dummy1 + stock2.dummy2;
-					
-					//stock.sorting_indicator = (stock.SB_today_holding - stock.SB_1MBefore_holding) / stock.osShares_today;
-					//stock.sorting_indicator = stock.SB_over_os_shares;
+					//stock2.sorting_indicator = stock2.SB_chg_250D_percentile;
 				}
 			}
 			
@@ -669,6 +687,75 @@ public class PortfolioScreening {
             } // end of file for
            
             logger.info("Get All Sb Data - Done!");
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void getSbChgPercentileData(String rootPath) {
+		// e.g rootPath -  Z:\Mubing\stock data\southbound flow strategy - db\southbound chg percentile - by stock
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+			
+			File rootFile = new File(rootPath);
+			File[] files = rootFile.listFiles();
+			
+			String line = "";
+			for(File f : files) {
+				String fileName = f.getName();
+				String stockCode = fileName.substring(0, fileName.length()-4);
+				
+				if(!utils.Utils.isDouble(stockCode))
+					continue;
+				
+				Map<Date,ArrayList<Double>> singleStockMap = SbChgPercentileDataMap.get(stockCode);
+				if(singleStockMap == null) {
+					singleStockMap = new HashMap<Date,ArrayList<Double>>();
+				}
+				
+				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(utils.Utils.addBackSlashToPath(rootPath) + fileName);
+				line = "";
+				int c = 0;
+				while((line = bf.readLine()) != null) {
+					if(c == 0) {
+						c++;
+						continue;
+					}
+					
+					String[] lineArr = line.split(",");
+					String dateS = lineArr[0];
+					Date date = sdf.parse(dateS);
+					
+					String pctHistS = lineArr[1];
+					Double pctHist = -1.0;
+					if(utils.Utils.isDouble(pctHistS)) {
+						pctHist = Double.parseDouble(pctHistS);
+					}
+					
+					String pctHist250DS = lineArr[2];
+					Double pctHist250D = -1.0;
+					if(utils.Utils.isDouble(pctHist250DS)) {
+						pctHist250D = Double.parseDouble(pctHist250DS);
+					}
+					
+					String pctHist60DS = lineArr[3];
+					Double pctHist60D = -1.0;
+					if(utils.Utils.isDouble(pctHist60DS)) {
+						pctHist60D = Double.parseDouble(pctHist60DS);
+					}
+					
+					ArrayList<Double> data = new ArrayList<Double>();
+					data.add(pctHist);
+					data.add(pctHist250D);
+					data.add(pctHist60D);
+					
+					singleStockMap.put(date, data);
+				}
+				SbChgPercentileDataMap.put(stockCode, singleStockMap);
+				
+			}
+			
+			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -1099,5 +1186,6 @@ public class PortfolioScreening {
 		}
 		
 	}
-	
+
+
 }

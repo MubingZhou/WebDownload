@@ -24,8 +24,8 @@ import org.jsoup.select.Elements;
 
 public class DataDownloader { // downloading southbound CCASS data
 	public static String WEBB_URL_OUTSTANDING = "https://webb-site.com/dbpub/outstanding.asp?sc=";
-	public static String FILE_OUTPUT_PATH = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
-	public static String ALL_STOCK_LIST_PATH = "D:\\stock data\\all stock list.csv";
+	public static String FILE_OUTPUT_PATH = utils.PathConifiguration.HK_STOCK_OUTSTANDING_DATA;
+	public static String ALL_STOCK_LIST_PATH = utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\outstanding stock list.csv";
 	private static boolean isTrustedAllCertificates = false;
 	
 	/**
@@ -98,7 +98,8 @@ public class DataDownloader { // downloading southbound CCASS data
 			
 			// write
 			utils.Utils.checkDir(FILE_OUTPUT_PATH);
-			FileWriter fw = new FileWriter(FILE_OUTPUT_PATH + stockCode + ".csv");
+			FILE_OUTPUT_PATH = utils.Utils.addBackSlashToPath(FILE_OUTPUT_PATH);
+			FileWriter fw = new FileWriter( FILE_OUTPUT_PATH + stockCode + ".csv");
 			
 			String urlStr = WEBB_URL_OUTSTANDING + stockCode;
 			URL url = new URL(urlStr);

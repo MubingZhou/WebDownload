@@ -25,6 +25,10 @@ import javax.xml.bind.annotation.XmlType;
    "SB_1MBefore_holding",
    "SB_1MBefore_holdingValue",   
    
+   "SB_chg_hist_percentile",
+   "SB_chg_250D_percentile",
+   "SB_chg_60D_percentile",
+   
    "Vol_1M_avg",   
    "Vol_3M_avg",
    "SB_over_vol",
@@ -60,6 +64,22 @@ import javax.xml.bind.annotation.XmlType;
    "dummy4",
    "dummy5",
    "dummy6",
+   "dummy7",
+   "dummy8",
+   "dummy9",
+   "dummy10",
+   "dummy11",
+   "dummy12",
+   "dummy13",
+   "dummy14",
+   "dummy15",
+   "dummy100",
+   "dummy101",
+   "dummy102",
+   "dummyRank6",
+   "dummyRank6Total",
+   "dummyRank6EffectiveNum",
+   "dummyRank7RankDiff",
    
    "filter1",
    "filter2",
@@ -73,6 +93,18 @@ import javax.xml.bind.annotation.XmlType;
    "rank5",
    "rank6",
    "rank7",
+   "rank8",
+   "rank9",
+   "rank10",
+   "rank11",
+   "rank12",
+   "rank13",
+   "rank14",
+   "rank15",
+   "rank100",
+   "rank101",
+   "rank102",
+   "rankFinal",
 })  
 public class StockSingleDate {
 	public Calendar cal = Calendar.getInstance();
@@ -84,6 +116,10 @@ public class StockSingleDate {
 	public Double SB_1MBefore_holdingValue = 0.0;
 	public Double SB_notional_chg = 0.0;   // notional change wrt yesterday
 	public Double SB_cum_notional_chg = 0.0;   // 一段时间内的cumulative notional chg，至于是多少时间，由用户自己判断
+	
+	public Double SB_chg_hist_percentile = -1.0; // Southbound的holding change相对于historical的percentile
+	public Double SB_chg_250D_percentile = -1.0; // Southbound的holding change相对于250 D的percentile
+	public Double SB_chg_60D_percentile = -1.0; // Southbound的holding change相对于60 D的percentile
 	
 	public Double Vol_1M_avg = 0.0;
 	public Double Vol_3M_avg = 0.0;
@@ -118,6 +154,22 @@ public class StockSingleDate {
 	public Double dummy4 = 0.0;
 	public Double dummy5 = 0.0;
 	public Double dummy6 = 0.0;
+	public Double dummy7 = 0.0;
+	public Double dummy8 = 0.0;
+	public Double dummy9 = 0.0;
+	public Double dummy10 = 0.0;
+	public Double dummy11 = 0.0;
+	public Double dummy12 = 0.0;
+	public Double dummy13 = 0.0;
+	public Double dummy14 = 0.0;
+	public Double dummy15 = 0.0;
+	public Double dummy101 = 0.0;
+	public Double dummy102 = 0.0;
+	public Double dummy103 = 0.0;
+	public Double dummyRank6 = 0.0;
+	public Double dummyRank6Total = 0.0;
+	public Double dummyRank6EffectiveNum = 0.0;
+	public Double dummyRank7RankDiff = 0.0;
 	
 	public Double filter1 = 1.0;
 	public Double filter2 = 1.0;
@@ -140,6 +192,18 @@ public class StockSingleDate {
 	public Double rank5 = 0.0;
 	public Double rank6 = 0.0;
 	public Double rank7 = 0.0;
+	public Double rank8 = 0.0;
+	public Double rank9 = 0.0;
+	public Double rank10 = 0.0;
+	public Double rank11 = 0.0;
+	public Double rank12 = 0.0;
+	public Double rank13 = 0.0;
+	public Double rank14 = 0.0;
+	public Double rank15 = 0.0;
+	public Double rank100 = 0.0;
+	public Double rank101 = 0.0;
+	public Double rank102 = 0.0;
+	public Double rankFinal = 0.0;
 	
 	public StockSingleDate(String stockCode, String date, String dateFormat) {
 		this.stockCode = stockCode;
@@ -163,7 +227,7 @@ public class StockSingleDate {
 	
 	// sort ascendingly
 	public static java.util.Comparator<StockSingleDate> getComparator(int dir) {
-		// dir = 1 - sort ascendingly
+		// dir = 1 - sort ascendingly  即从小到大
 		// dir = -1 - sort descendingly
 		return new  java.util.Comparator<StockSingleDate>() {
 			public int compare(StockSingleDate arg0, StockSingleDate arg1) {

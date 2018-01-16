@@ -11,9 +11,10 @@ public class Main {
 			//System.out.println(DataGetter.getStockDataField("1", DataGetter.OutstandingDataField.PRICE, "19920801", "yyyyMMdd"));
 			
 			ArrayList<String> arr = new ArrayList<String>();
-			arr.add("8328");
+			arr.add("1997");
 			
-			DataDownloader.dataDownloader();
+			//DataDownloader.dataDownloader();
+			DataDownloader.dataDownloader(arr);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

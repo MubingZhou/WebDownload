@@ -799,7 +799,7 @@ public class Utils {
 		}
 		
 		public static ArrayList<Calendar> getAllTradingDate(){
-			return getAllTradingDate(utils.PathConifiguration.ALL_TRADING_DATE_PATH);
+			return getAllTradingDate(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
 		}
 		
 		/**
