@@ -522,7 +522,7 @@ public class PortfolioScreening {
 				String stockCode = s.stockCode;
 				
 				// ========= test if suspended && volume is OK ==========
-				if(s.filter1 > 0 && s.filter2 > 0 && s.filter3 > 0 && s.filter4 > 0) {
+				if(s.filter1 > 0 && s.filter2 > 0 && s.filter3 > 0 && s.filter4 > 0 && s.filterRankingStrategy6_1 > 0) {
 					if(!s.suspended && s.Turnover_3M_avg > (avgDailyValueThreshHold_USD * 7.8)) {
 						//stockListStr.add(s.stockCode);
 						stockPickedList.add(s);
@@ -643,17 +643,45 @@ public class PortfolioScreening {
 	 * @param rootPath
 	 */
 	public static void getAllSbData(String rootPath) {
+		getAllSbData(rootPath, "19000101","30000101", "yyyyMMdd");
+	}
+	
+	/**
+	 * 只获得某个时间段内的
+	 * @param rootPath
+	 * @param startDate
+	 * @param endDate
+	 * @param dateFormat
+	 */
+	public static void getAllSbData(String rootPath, String startDateStr, String endDateStr, String dateFormat) {
+		try {
+			SimpleDateFormat sdf_readDate = new SimpleDateFormat (dateFormat);
+			Date startDate = sdf_readDate.parse(startDateStr);
+			Date endDate = sdf_readDate.parse(endDateStr);
+			
+			getAllSbData(rootPath, startDate, endDate);
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void getAllSbData(String rootPath, Date startDate, Date endDate) {
 		try {
 			//Map<String, Map<Date,Double>> sbDataMap = new HashMap<String, Map<Date,Double>>();
 			//rootPath  ="D:\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 			
 			SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+			
+			
             File allFile = new File(rootPath);
             for(File f : allFile.listFiles()) {
             	String fileName = f.getName();  // "2017-07-21.csv"
             	String filePath = rootPath + "\\" + fileName	;
             	String dateStr = fileName.substring(0, fileName.length() - 4); // "2017-07-21"   
             	Date date = sdf.parse(dateStr);
+            	if(date.before(startDate) || date.after(endDate))
+            		continue;
+            	
             	logger.trace("get all SB data - " + dateStr);
             	
             	BufferedReader bf = utils.Utils.readFile_returnBufferedReader(filePath);

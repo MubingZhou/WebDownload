@@ -25,7 +25,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 		try {
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
-			Thread.sleep(1000 * 3600 * 5);
+			Thread.sleep(1000 * 3600 * 2);
 			
 			
 			downloadData_2()	;
@@ -178,6 +178,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 		try {
 			// get the map
 			String mapPath = outFilePath + "\\stock hist data - map.csv";
+			//String mapPath = "Z:\\Mubing\\stock data\\all sb stocks - webb map.csv";
 			File mapFile = new File(mapPath);
 			if(mapFile.exists()) {
 				//histDownloadURL_map;
@@ -201,7 +202,7 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 			stockCodeList.clear();
 			stockCodeList.addAll(stocksInMap);
 			
-			//stockCodeList = new ArrayList<String>( stockCodeList.subList(1637, stockCodeList.size()) );
+			//stockCodeList = new ArrayList<String>( stockCodeList.subList(940, stockCodeList.size()) );
 			//List<String> stockCodeList = stockCodeList0.subList(100, stockCodeList0.size() );
 			
 			// to download all stocks
@@ -212,6 +213,17 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 				for(int i = 0; i < stockCodeList.size(); i++ ) {
 					String stockCode = stockCodeList.get(i);
 					System.out.println("=========== i = " + i + "/" + stockCodeList.size() + " " + stockCode + " ================");
+					
+					//------------ temp code --------------
+					if(false) {
+						File f = new File("Z:\\Mubing\\stock data\\stock hist data - webb\\" + stockCode + ".csv");
+						if(f.exists()) {
+							System.out.println("   Already existed");
+							continue;   //已经存在的不用下载
+						}
+					}
+					
+					// ------------ temp code end ----------------
 					
 					boolean isOK = true;
 					// 如果已经存在于list中

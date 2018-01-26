@@ -352,7 +352,10 @@ public class AvatUtils {
 						stock = lineArr[i];
 					}
 					if(count > 0 && i > 0) {
-						Double thisData = Double.parseDouble(lineArr[i]);
+						Double thisData = 0.0;
+						if(utils.Utils.isDouble(lineArr[i])) {
+							thisData = Double.parseDouble(lineArr[i]);
+						}
 						thisLineData.put(auctionDateArr.get(i-1), thisData);
 					}
 				}

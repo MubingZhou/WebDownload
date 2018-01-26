@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +36,7 @@ public class BacktestFrame {
 	public static Date endDate ;
 	public static String endDateStr ="";
 	public static Double initialFunding = 1000000.0;
+	public static Double eachStockValue = 1000000.0;    // 每只股票买多少钱，只适用于每只股票按照固定金额买的情况
 	public static double tradingCost = 0.0;
 	
 	public static String portFilePath="";    // 最终输出的root path
@@ -42,13 +44,14 @@ public class BacktestFrame {
 	public static String allPriceDataPath = "Z:\\Mubing\\stock data\\stock hist data - webb";  //存储所有stock price的data的文件夹
 	public static String notionalChgDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\";
 	public static String percentileDataRootPath = "Z:\\Mubing\\stock data\\southbound flow strategy - db\\southbound chg percentile - by stock\\";
+	public static String executionOutputFilePath = "";
 	
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar> ();  
 	public static String allTradingDatePath = utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK;
 	public static boolean isNormalSorting = true; //normal sorting - rank with higher rank in the front
 	
 	// ---------------- factors --------------
-	public static int rankingStrategy = 1;
+	public static double rankingStrategy = 1;
 	public static double avgDailyValueThreshHold_USD = 7000000.0;
 	public static int topNStocks = 20;
 	public static double minInflowPct = 0.7;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
@@ -89,6 +92,9 @@ public class BacktestFrame {
 	public static int topNStocks_bufferZone_in = 15;   // 入选股票线
 	public static int topNStocks_bufferZone_out = 20;  // 剔除股票线
 	
+	public static double rankingStrategy6_1_threshold = 1.0;   // 当inflow的percentile超过历史数据的某个threshold之后，才买入
+	public static int rankingStrategy6_1_holdDay = 10;
+	
 	// ----------- 运行中需要用到的variables --------------
 	public static boolean isOutputDailyCCASSChg = true; // 是否输出每日southbound的CCASS的change
 														// 必须设置为true，不然会影响earlyUnwindStrategy
@@ -100,6 +106,32 @@ public class BacktestFrame {
 	public static ArrayList<ArrayList<StockSingleDate>> allPortfolioScreeningData = new ArrayList<ArrayList<StockSingleDate>> (); // 存储每次运行portfolio screening选出的股票
 	public static ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>> ();   // 存储每个rebalancing date选出的股票
 	*/
+	
+	/*
+	 * this variable stores External signals for selling
+	 * Date - date, 
+	 * String - stock code, 
+	 * ArrayList<Double> - {Type: 1.0 - cash, 2.0 - quantity
+	 * 						Value: 	
+	 * 									type 1.0: sell certain amt of cash value stocks (e.g. if stock price = 10, Value = 5000, then we will sell 500 shares, subject to further checks)
+	 * 									type 2.0: buy certain amt of shares (e.g. Value = 10000, will sell 10000 shares)
+	 * 								
+	 * 						}
+	 */
+	public static Map<Date, Map<String, ArrayList<Double>>> externalSignals_sell = new HashMap<Date, Map<String, ArrayList<Double>>>();
+	/*
+	 * this variable stores External signals for buying
+	 * Date - date, 
+	 * String - stock code, 
+	 * ArrayList<Double> - {Type: 1.0 - cash, 2.0 - quantity
+	 * 						Value: 	
+	 * 									type 1.0: buy certain amt of cash value stocks (e.g. if stock price = 10, Value = 5000, then we will buy 500 shares)
+	 * 									type 2.0: buy certain amt of shares (e.g. Value = 10000, will buy 10000 shares)
+	 * 								
+	 * 						}
+	 */
+	public static Map<Date, Map<String, ArrayList<Double>>> externalSignals_buy = new HashMap<Date, Map<String, ArrayList<Double>>>();
+	public static LinkedHashMap<Date, ArrayList<String>> stockPicks = new LinkedHashMap<Date, ArrayList<String>>();  // 记录每个rebal date的stock picks
 	
 	public static void init() {
 		try {
@@ -136,8 +168,10 @@ public class BacktestFrame {
 			PortfolioScreening.outputPath = portFilePath;
 			if(PortfolioScreening.allTradingDate == null || PortfolioScreening.allTradingDate.size() == 0)
 				PortfolioScreening.getAllTradingDate();
-			if(PortfolioScreening.sbDataMap == null || PortfolioScreening.sbDataMap.size() == 0)
+			if(PortfolioScreening.sbDataMap == null || PortfolioScreening.sbDataMap.size() == 0) {
+				
 				PortfolioScreening.getAllSbData(allSbDataPath);
+			}
 			if(PortfolioScreening.SbChgPercentileDataMap == null || PortfolioScreening.SbChgPercentileDataMap.size() == 0)
 				PortfolioScreening.getSbChgPercentileData(percentileDataRootPath);
 			
@@ -151,6 +185,8 @@ public class BacktestFrame {
 			
 			PortfolioScreening.oneMonthBeforeDays = 20;
 			PortfolioScreening.isToCalNotional = isToCalNotional;
+			
+			executionOutputFilePath = utils.Utils.addBackSlashToPath(portFilePath) + "executedOrders.csv";
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -213,29 +249,35 @@ public class BacktestFrame {
 			int dayCalStart = 20;
 			int daysBetweenRelancingDate = 0;
 			PortfolioScreening.getAllOsData(PortfolioScreening.outstandingFilePath, allTradingDate.get(rebalStartInd-dayCalStart).getTime());
-			ArrayList<String> stocksToBuy_str = new ArrayList<String>();  //记录每个rebalancing date需要选出的股票
-			ArrayList<StockSingleDate> stocksToBuy = new ArrayList<StockSingleDate> ();  // //记录每个rebalancing date需要选出的股票
+			ArrayList<StockSingleDate> stocksSelected = new ArrayList<StockSingleDate> ();  // //记录每个rebalancing date需要选出的股票
+			
+			//ArrayList<String> stocksToBuy_str = new ArrayList<String>();  //记录每个rebalancing date需要选出的股票
+			ArrayList<String> selectedLastTime = new ArrayList<String>();   // 记录上一次的选出的股票
 			for(int i = rebalStartInd-dayCalStart; i <= rebalEndInd; i++) {  
 				long startTime = System.currentTimeMillis();
 				
 				daysBetweenRelancingDate++;
-				String todayDate = sdf_yyyyMMdd.format(allTradingDate.get(i).getTime());
+				String todayDateStr = sdf_yyyyMMdd.format(allTradingDate.get(i).getTime());
+				Date todayDate = allTradingDate.get(i).getTime();
 				//logger.info("\tScreening date = " + todayDate);
-				logger.info("======= Stocks Screening - " + todayDate + " ===============");
+				logger.info("======= Stocks Screening - " + todayDateStr + " ===============");
 				
 				PortfolioScreening.oneMonthBeforeDays = 1;
-				ArrayList<StockSingleDate> todaySel = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd"); //对每只股票进行赋值
+				ArrayList<StockSingleDate> todaySel = PortfolioScreening.assignValue_singleDate(todayDateStr, "yyyyMMdd"); //对每只股票进行赋值
 				logger.debug("\t\ttodaySel .size() = " + todaySel .size());
+				
 				// 每天按照rank6进行排序，存储在dummyRank6
-				for(int j = 0; j < todaySel.size(); j++) {
-					StockSingleDate s = todaySel.get(j);
-					if(rank6Mode == 0)
-						s.dummyRank6 = todaySel .size() * s.SB_chg_hist_percentile;
-					if(rank6Mode == 1)
-						s.dummyRank6 = todaySel .size() * s.SB_chg_250D_percentile;
-					if(rank6Mode == 2)
-						s.dummyRank6 = todaySel .size() * s.SB_chg_60D_percentile;
-					todaySel.set(j, s);
+				if(rankingStrategy >= 6 && rankingStrategy < 7) {
+					for(int j = 0; j < todaySel.size(); j++) {
+						StockSingleDate s = todaySel.get(j);
+						if(rank6Mode == 0)
+							s.dummyRank6 = todaySel .size() * s.SB_chg_hist_percentile;
+						if(rank6Mode == 1)
+							s.dummyRank6 = todaySel .size() * s.SB_chg_250D_percentile;
+						if(rank6Mode == 2)
+							s.dummyRank6 = todaySel .size() * s.SB_chg_60D_percentile;
+						todaySel.set(j, s);
+					}
 				}
 				
 				
@@ -314,7 +356,7 @@ public class BacktestFrame {
 						ArrayList<Object> weighting_sell = new ArrayList<Object>();
 						ArrayList<Object> price_sell = new ArrayList<Object>();
 						
-						final int stocksToBuySize = stocksToBuy_str.size();
+						final int stocksToBuySize = selectedLastTime.size();
 						Date DayT = allTradingDate.get(i).getTime();  // day T
 						Date DayT_1 = allTradingDate.get(i-1).getTime();  // day T-1
 						Date DayT_2 = allTradingDate.get(i-2).getTime();  // day T-2
@@ -322,7 +364,7 @@ public class BacktestFrame {
 						Date DayT_4 = allTradingDate.get(i-4).getTime();  // day T-4
 						
 						for(int j = 0; j < stocksToBuySize; j++) {
-							String stock = stocksToBuy_str.get(j);
+							String stock = selectedLastTime.get(j);
 							Map<Date, Double> stockData = dailyCCASSChg_map.get(stock);
 							if(stockData != null) {
 								Double chgT = stockData.get(DayT);
@@ -333,7 +375,7 @@ public class BacktestFrame {
 								
 								if(chgT != null && chgT_2 != null & chgT_1 != null && chgT_3 != null && chgT_4 != null 
 										&& chgT < 0 && chgT_1 < 0 && chgT_2 < 0 && chgT_3 < 0 && chgT_4 < 0) {  // 连续多天净卖出，满足early unwind的条件
-									logger.info("stocksToBuy_str=" + stocksToBuy_str);
+									logger.info("selectedLastTime=" + selectedLastTime);
 									
 									stocksToSell_str.add(stock);
 									direction_sell.add(-1);
@@ -344,7 +386,7 @@ public class BacktestFrame {
 										weighting_sell.add(-50.0);
 									}
 									price_sell.add(
-											Double.parseDouble(stockPrice.DataGetter.getStockDataField(stock,stockPrice.DataGetter.StockDataField.adjclose, todayDate, "yyyyMMdd"))
+											Double.parseDouble(stockPrice.DataGetter.getStockDataField(stock,stockPrice.DataGetter.StockDataField.adjclose, todayDateStr, "yyyyMMdd"))
 											);
 									logger.info("Early unwind (strategy " + earlyUnwindStrategy + ")! stock=" + stock);
 								}
@@ -352,7 +394,7 @@ public class BacktestFrame {
 						}
 						
 						if(stocksToSell_str.size() > 0) {
-							logger.info("       todaydate=" + todayDate);
+							logger.info("       todaydate=" + todayDateStr);
 							ArrayList<ArrayList<Object>> thisRebalData = new ArrayList<ArrayList<Object>>(); 
 							thisRebalData.add(stocksToSell_str);
 							thisRebalData.add(direction_sell);
@@ -360,15 +402,15 @@ public class BacktestFrame {
 							thisRebalData.add(price_sell);
 							
 							data.add(thisRebalData);
-							rebalDates.add(sdf_yyyyMMdd.parse(todayDate));
+							rebalDates.add(sdf_yyyyMMdd.parse(todayDateStr));
 						}
 						
 					}
 					// ---------- 执行early Unwind Strategy结束----------
 
 					// *********** rebalancing date *************
-					if(todayDate.equals(rebalDateArr.get(rebalCount))) {
-						daysBetweenRelancingDate = 15; // rolling 的概念(if don't want rolling, just comment this line),
+					if(todayDateStr.equals(rebalDateArr.get(rebalCount))) {
+						daysBetweenRelancingDate = 5; // rolling 的概念(if don't want rolling, just comment this line),
 														// daysBetweenRelancingDate应该小于max_allPS_Data
 						logger.info("\t\tToday is a rebalancing date! daysBetweenRelancingDate=" + daysBetweenRelancingDate);
 						
@@ -409,7 +451,7 @@ public class BacktestFrame {
 									rebalStock_map.put(thisStock.stockCode, findStock);
 									
 									Date testDate = sdf_yyyyMMdd.parse("20170801");
-									if(false && findStock.stockCode.equals("700") && testDate.equals(sdf_yyyyMMdd.parseObject(todayDate))) {
+									if(false && findStock.stockCode.equals("700") && testDate.equals(sdf_yyyyMMdd.parseObject(todayDateStr))) {
 										logger.info("    date=" + sdf_yyyyMMdd.format(thisStock.cal.getTime()) + " cum notional =" + findStock.SB_cum_notional_chg);
 									}
 								}
@@ -418,7 +460,7 @@ public class BacktestFrame {
 						
 						// 上面是做daily的ranking，这里只做month end和month begin的ranking
 						PortfolioScreening.oneMonthBeforeDays = daysBetweenRelancingDate;
-						ArrayList<StockSingleDate> todaySel_20 = PortfolioScreening.assignValue_singleDate(todayDate, "yyyyMMdd");
+						ArrayList<StockSingleDate> todaySel_20 = PortfolioScreening.assignValue_singleDate(todayDateStr, "yyyyMMdd");
 						Map<String, StockSingleDate> todaySel_20_map = new HashMap<String, StockSingleDate>();
 						for(int k = 0; k < todaySel_20.size(); k++) {
 							StockSingleDate thisStock = todaySel_20.get(k);
@@ -480,7 +522,7 @@ public class BacktestFrame {
 							if(rankingStrategy == 5) {
 								thisStock.sorting_indicator = thisStock.rank5;
 							}
-							if(rankingStrategy == 6) {
+							if(rankingStrategy >= 6.0 && rankingStrategy < 7.0) {
 								thisStock.sorting_indicator = thisStock.rank6;
 							}
 							thisStock.rankFinal = thisStock.sorting_indicator;
@@ -494,30 +536,35 @@ public class BacktestFrame {
 							Map<String, Double> lastDateRank7_map = new HashMap<String, Double>();
 							for(StockSingleDate singleStock : rebal_lastDateSel) {
 								String stockCode = singleStock.stockCode;
-								Double singleStockRank7 = singleStock.rank7;
-								lastDateRank7_map.put(stockCode, singleStockRank7);
+								Double rankingStrategy1Rank = singleStock.dummyRankingStrategy1Rank;
+								lastDateRank7_map.put(stockCode, rankingStrategy1Rank);
 							}
 							
-							//计算这个
-							for(int j = 0; j < todaySel2 .size(); j++) {
+							//计算这个rebal date的rank7
+							final int  tempSize = todaySel2 .size();
+							for(int j = 0; j < tempSize; j++) {  // 此时的todaySel2是已经按照ranking strategy 1排过序的，排名越靠前说明越是ranking strategy 1 的picks
 								StockSingleDate thisStock = todaySel2.get(j);
+								thisStock.dummyRankingStrategy1Rank = (double) j;
+								
 								Double lastDateRank7 = lastDateRank7_map.get(thisStock.stockCode);
 								if(lastDateRank7 == null) {
 									thisStock.sorting_indicator = -1000.0;
 								}else {
-									thisStock.sorting_indicator = lastDateRank7 - j;
+									thisStock.sorting_indicator = lastDateRank7 - thisStock.dummyRankingStrategy1Rank;
 								}
 								thisStock.dummyRank7RankDiff = thisStock.sorting_indicator;
 								todaySel2.set(j, thisStock);
 							}
 							
-							allPortfolioScreeningData.set(allPortfolioScreeningData.size()-1, todaySel2);
+													
 							Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
 							
 							for(int j = 0; j < todaySel2 .size(); j++) {
 								StockSingleDate thisStock = todaySel2.get(j);
-								thisStock.rank7 = (double) j;
+								thisStock.rank7 = (double) j;    //这个似乎是用不到的
 							}
+							allPortfolioScreeningData.set(allPortfolioScreeningData.size()-1, todaySel2);
+							
 						}
 						
 						
@@ -580,7 +627,7 @@ public class BacktestFrame {
 						}// end of filter
 						
 						// 判断每只股票的符合条件的天数是否满足最小天数要求
-						for(int k = 0; k < todaySel2.size(); k++	) {
+						for(int k = 0; k < todaySel2.size(); k++) {
 							StockSingleDate thisStock = todaySel2.get(k);
 							
 							if(thisStock.filter2 / (lookbackDays1 * 100) >= ((double) minDays1 / lookbackDays1)
@@ -589,64 +636,183 @@ public class BacktestFrame {
 							}else {
 								thisStock.filter4 = -2.0;
 							}
+							
+							// ranking strategy 6.1 (filter out those un-qualified)
+							if(rankingStrategy == 6.1 && thisStock.rank6 < todaySel2.size() * rankingStrategy6_1_threshold)
+								thisStock.filterRankingStrategy6_1 = -1.0;
+							
 						}
 						// ---------------- filter 结束 ---------------
 						
+						
+						// ------------ 选出要买的股票 ---------------
 						if(topNStocks_mode == 1) {
-							stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
+							stocksSelected = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
 						}
 						//ArrayList<StockSingleDate> pickedStocks_topNStocks_mode2 = new ArrayList<StockSingleDate> (); 
 						if(topNStocks_mode == 2) {  // buffer mode
 							int temp = PortfolioScreening.topNStocks;
 							PortfolioScreening.topNStocks = topNStocks_bufferZone_out;
-							stocksToBuy = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
+							stocksSelected = PortfolioScreening.pickStocks_singleDate(todaySel2, false);
 							PortfolioScreening.topNStocks = temp;
 						}
 						
+						if(rankingStrategy == 6.1) {  // rankingStrategy 6.1只使用 external signal进行买卖
+							//externalSignals_buy;
+							Date sellDate = allTradingDate.get(i+rankingStrategy6_1_holdDay).getTime();
+							Map<String, ArrayList<Double>> nextDateMapSell = externalSignals_sell.get(sellDate);
+							if(nextDateMapSell == null) {
+								nextDateMapSell = new HashMap<String, ArrayList<Double>>();
+							}
+							
+							Double totalCash = initialFunding * 0.001;
+							
+							Map<String, ArrayList<Double>> todayMapBuy = externalSignals_buy.get(todayDate);
+							if(todayMapBuy == null)
+								todayMapBuy = new HashMap<String, ArrayList<Double>>();
+							
+							for(StockSingleDate stock : stocksSelected) {
+								String stockC = stock.stockCode;
+								String priceToBuy = stockPrice.DataGetter.getStockDataField(
+										stockC,
+										stockPrice.DataGetter.StockDataField.adjclose, 
+										todayDateStr, "yyyyMMdd");
+								Double amt = totalCash / Double.parseDouble(priceToBuy)	;
+								amt = 10*Math.floor(amt/10);
+								
+								ArrayList<Double> d = new ArrayList<Double>();
+								d.add(2.0);
+								d.add(amt);
+								
+								todayMapBuy.put(stockC, d);
+								nextDateMapSell.put(stockC, d);
+							}
+							//还差sell的signal
+							
+							externalSignals_buy.put(todayDate, todayMapBuy);
+							externalSignals_sell.put(sellDate, nextDateMapSell);
+						}
 					
+						// --------------- 比较本次和上次的选股，找出需要卖掉或者买入的股票 ----------
+						ArrayList<String> stockToSellThisTime = new ArrayList<String>();
+						ArrayList<String> stockToSBuyThisTime = new ArrayList<String>();
+						ArrayList<String> selectedThisTime = new ArrayList<String>();
+						ArrayList<String> selectedLastTimeCopy = new ArrayList<String>(selectedLastTime);
+						for(StockSingleDate s : stocksSelected) {
+							String sc = s.stockCode;
+							selectedThisTime.add(sc);
+							
+							if(selectedLastTime.indexOf(sc) == -1) { // 本次选出的股票不在上次的股票池中，所以要买入
+								stockToSBuyThisTime.add(sc);
+							}else {   // 如果本次选出的股票也在上次的股票池中，要保留这只股票，selectedLastTimeCopy最终剩下的股票是这次要卖的股票
+								selectedLastTimeCopy.remove(sc);
+							}
+							
+						}
+						stockToSellThisTime.addAll(selectedLastTimeCopy);
+						System.out.println("stockToSellThisTime=" + stockToSellThisTime);
+						System.out.println("stockToSBuyThisTime=" + stockToSBuyThisTime);
+						
+						// --------------- 生成买卖信号 ---------------
 						// stocks to sell
-						ArrayList<String> stocksToSell_str = new ArrayList<String>(stocksToBuy_str); //此时的stocksToBuy_str还存储着上次rebalance要买的股票，这恰好是本次要卖的股票
+						ArrayList<String> stocksToSell_str = new ArrayList<String>(stockToSellThisTime); //此时的stocksToBuy_str还存储着上次rebalance要买的股票，这恰好是本次要卖的股票
 						ArrayList<Integer> direction_sell = new ArrayList<Integer>();
 						ArrayList<Double> weighting_sell = new ArrayList<Double>();
 						ArrayList<Double> price_sell = new ArrayList<Double>();
 						final int size1 = stocksToSell_str.size();   
 						for(int j = 0; j < size1; j++) {
-							String thisStockToSell = stocksToBuy_str.get(j);
+							if(rankingStrategy == 6.1) {
+								break;   //如果是6.1，不用按照结果的排序进行rebalance，而是固定hold一段时间
+							}
+							
+							String thisStockToSell = stocksToSell_str.get(j);
 							direction_sell.add(-1);
 							weighting_sell.add(-100.0);
 							
 							String priceToSell = stockPrice.DataGetter.getStockDataField(
 									thisStockToSell,
 									stockPrice.DataGetter.StockDataField.adjclose, 
-									todayDate, "yyyyMMdd");
-							if(priceToSell == null)
+									todayDateStr, "yyyyMMdd");
+							if(priceToSell == null || priceToSell.equals("") || priceToSell.length() == 0)
 								priceToSell ="0";
 							price_sell.add(Double.parseDouble(priceToSell));
 						}
 						
-						// stocks to buy，此时stocksToBuy已经update了，但是stocksToBuy_str还没update。。。
-						ArrayList<String> lastHoldStocks_str = new ArrayList<String>(stocksToBuy_str);  //上一期hold的股票
-						stocksToBuy_str = new ArrayList<String>();  //每个rebalancing date需要选出的股票
+						// stocks to sell (external signals)
+						Map<String, ArrayList<Double>> today_externalSignalsSell = externalSignals_sell.get(todayDate);
+						ArrayList<String> stocksToSell_external_str = new ArrayList<String>();
+						ArrayList<Integer> direction_external_sell = new ArrayList<Integer>();
+						ArrayList<Double> weighting_external_sell = new ArrayList<Double>();
+						ArrayList<Double> price_external_sell = new ArrayList<Double>();
+						if(today_externalSignalsSell != null) {
+							for(String tempStock : today_externalSignalsSell.keySet()) {
+								ArrayList<Double> stock_signal =  today_externalSignalsSell.get(tempStock);
+								Double type = stock_signal.get(0);
+								Double value = stock_signal.get(1);
+								
+								String priceToSell = stockPrice.DataGetter.getStockDataField(
+										tempStock,
+										stockPrice.DataGetter.StockDataField.adjclose, 
+										todayDateStr, "yyyyMMdd");
+								Double price = 0.0;
+								if(priceToSell == null || priceToSell.equals("")) {
+									price = 1.0;
+								}else {
+									price =Double.parseDouble(priceToSell);
+								}
+								
+								
+								Double weighting  = 0.0;
+								boolean isTypeCorrect = true;
+								if(type == 1.0) { // cash
+									weighting = value / price;  // get quantity to sell
+								}else
+									if(type == 2.0) {// quantity
+										weighting = value;
+									}else
+										isTypeCorrect = false;
+									
+								if(isTypeCorrect) {
+									direction_external_sell.add(-1);
+									weighting_external_sell.add(weighting);
+									price_external_sell.add(price);
+									stocksToSell_external_str.add(tempStock);
+								}
+							}
+						}
+						logger.info("todayDate = " + todayDateStr + " stocksToSell_str=" + stocksToSell_str + " external sell=" + today_externalSignalsSell);
+						
+						// stocks to buy
+						 //ArrayList<String> lastHoldStocks_str = new ArrayList<String>(stockToSBuyThisTime);  
+						ArrayList<String> stocksToBuy_str = new ArrayList<String>(stockToSBuyThisTime);  //每个rebalancing date需要选出的股票
 						ArrayList<Integer> direction_buy = new ArrayList<Integer>();
 						ArrayList<Double> weighting_buy = new ArrayList<Double>();
 						ArrayList<Double> price_buy = new ArrayList<Double>();
-						int size2 = stocksToBuy.size();
+						int size2 = stocksToBuy_str.size();
 						for(int j = 0; j < size2; j++) {   //size2其实就是topNStocks_bufferZone_out
-							String thisStockToBuy = stocksToBuy.get(j).stockCode;
+							if(rankingStrategy == 6.1) {
+								break;   //如果是6.1，不用按照结果的排序进行rebalance，而是固定hold一段时间
+							}
+							
+							String thisStockToBuy = stockToSBuyThisTime.get(j);
 							if(topNStocks_mode == 2 && j >= topNStocks_bufferZone_in) {  
-								if(lastHoldStocks_str.indexOf(thisStockToBuy)  == -1) {
+								if(selectedLastTime.indexOf(thisStockToBuy)  == -1) {
 									continue;   //如果这只股票跌出了topNStocks_bufferZone_in的范围，就不买入
 								}
 							}
 							
-							stocksToBuy_str.add(thisStockToBuy);
 							direction_buy.add(1);
+							
+							Double priceToBuy = Double.parseDouble(stockPrice.DataGetter.getStockDataField(thisStockToBuy,stockPrice.DataGetter.StockDataField.adjclose, todayDateStr, "yyyyMMdd"));
+							
 							Double thisWeighting = 0.0;
-							if(weightingStrategy == 1) {
-								thisWeighting  = -98.0 /  size2;
-								weighting_buy.add(-98.0 /  size2);
+							if(weightingStrategy == 1) {  // 每只股票都买固定的金额
+//								thisWeighting  = -98.0 /  size2;
+//								weighting_buy.add(-98.0 /  size2);
+								thisWeighting = Math.floor(eachStockValue / priceToBuy);    // 每次买的股票股数
+								weighting_buy.add(thisWeighting);
 							}
-							if(weightingStrategy == 2) {
+							if(weightingStrategy == 2) {   // weightingStrategy 2似乎不太给力，可以先不考虑这里的code 
 								//分四组，每组加起来权重分别是40%,30%,20%,10%
 								final int g1 = (int) Math.floor(size2 * 0.25);
 								final int g2 = (int) Math.floor(size2 * 0.5);
@@ -665,27 +831,90 @@ public class BacktestFrame {
 								weighting_buy.add(thisWeighting);
 							}
 							
-							price_buy.add(Double.parseDouble(stockPrice.DataGetter.getStockDataField(thisStockToBuy,stockPrice.DataGetter.StockDataField.adjclose, todayDate, "yyyyMMdd")));
+							price_buy.add(priceToBuy);
 						}
 						
-						logger.info("todayDate = " + todayDate + " stocksToBuy_str=" + stocksToBuy_str);
+						// stocks to buy (external signals)
+						Map<String, ArrayList<Double>> today_externalSignals_buy = externalSignals_buy.get(todayDate);
+						ArrayList<String> stocksToBuy_external_str = new ArrayList<String>();
+						ArrayList<Integer> direction_external_buy = new ArrayList<Integer>();
+						ArrayList<Double> weighting_external_buy = new ArrayList<Double>();
+						ArrayList<Double> price_external_buy = new ArrayList<Double>();
+						if(today_externalSignals_buy != null) {
+							for(String tempStock : today_externalSignals_buy.keySet()) {
+								ArrayList<Double> stock_signal =  today_externalSignals_buy.get(tempStock);
+								Double type = stock_signal.get(0);
+								Double value = stock_signal.get(1);
+								
+								String priceToBuy = stockPrice.DataGetter.getStockDataField(
+										tempStock,
+										stockPrice.DataGetter.StockDataField.adjclose, 
+										todayDateStr, "yyyyMMdd");
+								Double price = Double.parseDouble(priceToBuy);
+								
+								Double weighting  = 0.0;
+								boolean isTypeCorrect = true;
+								if(type == 1.0) { // cash
+									weighting = value / price;  // get quantity to sell
+								}else
+									if(type == 2.0) {// quantity
+										weighting = value;
+									}else
+										isTypeCorrect = false;
+									
+								if(isTypeCorrect) {
+									direction_external_buy.add(1);
+									weighting_external_buy.add(weighting);
+									price_external_buy.add(price);
+									stocksToBuy_external_str.add(tempStock);
+								}
+							}
+						}
+						
+						logger.info("todayDate = " + todayDateStr + " stocksToBuy_str=" + stocksToBuy_str + " external buy=" + stocksToBuy_external_str);
 						
 						
 						//合并2个list
 						ArrayList<Object> thisRebalStocks = new ArrayList<Object> (stocksToSell_str); 
+						thisRebalStocks.addAll(stocksToSell_external_str);  // external sell
 						thisRebalStocks.addAll(stocksToBuy_str);
-						ArrayList<Object> thisRebalDirections = new ArrayList<Object> (direction_sell);
-						thisRebalDirections.addAll(direction_buy);
-						ArrayList<Object> thisRebalWeightings = new ArrayList<Object>(weighting_sell);
-						thisRebalWeightings.addAll(weighting_buy);
-						ArrayList<Object> thisRebalPrices = new ArrayList<Object>(price_sell);
-						thisRebalPrices.addAll(price_buy);
-								
-						ArrayList<ArrayList<Object>> thisRebalData = new ArrayList<ArrayList<Object>>(); 
-						thisRebalData.add(thisRebalStocks);
-						thisRebalData.add(thisRebalDirections);
-						thisRebalData.add(thisRebalWeightings);
-						thisRebalData.add(thisRebalPrices);
+						thisRebalStocks.addAll(stocksToBuy_external_str);  // external buy
+						
+						if(thisRebalStocks != null && thisRebalStocks.size() > 0) {   // 只有当今天有数据的时候才
+							ArrayList<Object> thisRebalDirections = new ArrayList<Object> (direction_sell);
+							thisRebalDirections.addAll(direction_external_sell);  // external sell
+							thisRebalDirections.addAll(direction_buy);
+							thisRebalDirections.addAll(direction_external_buy);  // external buy
+							ArrayList<Object> thisRebalWeightings = new ArrayList<Object>(weighting_sell);
+							thisRebalWeightings.addAll(weighting_external_sell); // external sell
+							thisRebalWeightings.addAll(weighting_buy);
+							thisRebalWeightings.addAll(weighting_external_buy); // external buy
+							ArrayList<Object> thisRebalPrices = new ArrayList<Object>(price_sell);
+							thisRebalPrices.addAll(price_external_sell); // external sell
+							thisRebalPrices.addAll(price_buy);
+							thisRebalPrices.addAll(price_external_buy); // external buy
+									
+							ArrayList<ArrayList<Object>> thisRebalData = new ArrayList<ArrayList<Object>>(); 
+							thisRebalData.add(thisRebalStocks);
+							thisRebalData.add(thisRebalDirections);
+							thisRebalData.add(thisRebalWeightings);
+							thisRebalData.add(thisRebalPrices);
+							
+							data.add(thisRebalData);
+							rebalDates.add(sdf_yyyyMMdd.parse(todayDateStr));
+							
+							//System.out.print("thisRebalStocks = " + thisRebalStocks.size() + " thisRebalDirections=" + thisRebalDirections.size() + " thisRebalPrices=" + thisRebalPrices.size() + " thisRebalData=" + thisRebalData.size());
+							//Thread.sleep(1000 * 1000000);
+						}
+						
+						// ----------------- 生成买卖信号结束 -----------
+						
+						// ------------ 更新并记录 -------------
+						selectedLastTime.clear();
+						selectedLastTime.addAll(selectedThisTime);
+						
+						stockPicks.put(todayDate, selectedThisTime);
+						// ------------ 更新结束 -------------
 						
 						/*
 						// debug
@@ -697,19 +926,17 @@ public class BacktestFrame {
 						logger.info("stocksTemp=" + stocksTemp);
 						*/
 						
-						data.add(thisRebalData);
-						rebalDates.add(sdf_yyyyMMdd.parse(todayDate));
-						
 						//----------------- 记录每次调仓时所有股票的排名 --------------
-						fw_stock_ranking = new FileWriter(portFilePath + "\\stock ranking " + todayDate + ".csv");
+						fw_stock_ranking = new FileWriter(portFilePath + "\\stock ranking " + todayDateStr + ".csv");
 						fw_stock_ranking.write("stock,"
 								+ "1M ADV (USD mm),SB/FF,rank1,SB/3M ADV,rank2,"
 								+ "rank3(avg daily SB/FF ranking),rank4(avg daily SB/3M ADV ranking),"
+								+ "ranking strategy 1 rank,"
 								+ "cum notional chg (HKD mm),rank5,"
 								+ "percentile,rank6,"
 								+ "rank diff,rank7,"
-								+ "Total Ranking,"
-								+ "filter2,filter3,filter4\n");
+								//+ "Total Ranking,"
+								+ "filter2,filter3,filter4,filterRankingStrategy6_1\n");
 						for(int j = 0; j < todaySel2 .size(); j++) {
 							StockSingleDate thisStock = todaySel2.get(j);
 							Double _3MADV = thisStock.Turnover_3M_avg / 7.8 / 1000000;
@@ -733,11 +960,12 @@ public class BacktestFrame {
 									+ monthlySBChg_FF + "," + thisStock.rank1 + ","
 									+ monthlySBChg_vol + "," + thisStock.rank2 + ","
 									+ thisStock.rank3 + "," + thisStock.rank4 + ","
+									+ thisStock.dummyRankingStrategy1Rank + ","
 									+ thisStock.SB_cum_notional_chg / 1000000 + "," + thisStock.rank5 + ","
 									+ percentileData + "," + thisStock.rank6 + ","
 									+ thisStock.dummyRank7RankDiff + "," + thisStock.rank7 + ","
-									+ thisStock.rankFinal + ","
-									+ thisStock.filter2 + "," + thisStock.filter3 + "," + thisStock.filter4 + "\n");
+									//+ thisStock.rankFinal + ","
+									+ thisStock.filter2 + "," + thisStock.filter3 + "," + thisStock.filter4 + "," + thisStock.filterRankingStrategy6_1 + "\n");
 						}
 						fw_stock_ranking.close();
 						
@@ -791,9 +1019,32 @@ public class BacktestFrame {
 				}   // end of "if(todayInd > 0) {"
 				
 				long endTime = System.currentTimeMillis(); 
-				logger.info("======= Stocks Screening END - " + todayDate + " time=" + (endTime - startTime)/1000.0 + "s ===============");
+				logger.info("======= Stocks Screening END - " + todayDateStr + " time=" + (endTime - startTime)/1000.0 + "s ===============");
 				
 			} // end of the outermost for
+			
+			// --------------- output stock picks -----------
+			FileWriter fw_stockPicks = new FileWriter(portFilePath + "\\stock picks.csv");
+			ArrayList<Date> allDates = new ArrayList<Date>(stockPicks.keySet());
+			int numOfStocks = stockPicks.get(allDates.get(0)).size();
+			for(int k = 0; k < numOfStocks; k++) {
+				if(k == 0) {  // 写表头
+					for(int m = 0; m < allDates.size(); m++) {
+						fw_stockPicks.write(sdf_yyyyMMdd.format(allDates.get(m)) + ",");
+					}
+					fw_stockPicks.write("\n");
+				}
+				
+				for(int l = 0; l < allDates.size(); l++) {
+					Date thisDate = allDates.get(l);
+					ArrayList<String> thisDateStock = stockPicks.get(thisDate);
+					String stock = thisDateStock.get(k);
+					
+					fw_stockPicks.write(stock + ",");
+				}
+				fw_stockPicks.write("\n");
+			}
+			fw_stockPicks.close();
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -817,6 +1068,7 @@ public class BacktestFrame {
 			bt.endDate = rebalDateArr.get(rebalDateArr.size() - 1);
 			//bt.endDate = "20171213";
 			bt.tradingCost = tradingCost;
+			bt.executionOutputFilePath = executionOutputFilePath;
 			
 			ArrayList<ArrayList<ArrayList<Object>>> allRebalData = (ArrayList<ArrayList<ArrayList<Object>>>) data.get(1);
 			ArrayList<Date> rebalDates = (ArrayList<Date>) data.get(0);
@@ -826,6 +1078,8 @@ public class BacktestFrame {
 				rebalDatesStr.add(sdf.format(rebalDates.get(i)));
 			}
 			bt.rotationalTrading(rebalDatesStr, dateFormat, allRebalData);
+			bt.portfolio.fw.close();
+			
 			
 			pf = bt.portfolio;
 			Map<Calendar, PortfolioOneDaySnapshot> histSnap = pf.histSnap;
@@ -855,7 +1109,7 @@ public class BacktestFrame {
 				fw.write(",Cash,"+ String.valueOf(cash) + "\n");
 				
 				//System.out.println("  Stock holdings:");
-				fw.write(",Stock holding\n");
+				fw.write(",Stock holding (shares)\n");
 				
 				Set<String> stockKeys = stockHeld.keySet()	;
 				for(String stock : stockKeys) {
@@ -873,7 +1127,7 @@ public class BacktestFrame {
 			
 			// ======= output stock picks =========
 			Map<String, ArrayList<String>> data_trans = new HashMap();
-			FileWriter fw_stockPicks1 = new FileWriter(portFilePath + "\\stock picks1.csv");
+			FileWriter fw_stockPicks1 = new FileWriter(portFilePath + "\\stock picks1 (buy only).csv");
 			for(int i = 0; i < rebalDatesStr.size(); i++) {
 				if(i > 0)
 					fw_stockPicks1.write(",");
@@ -1096,11 +1350,11 @@ public class BacktestFrame {
 				}
 				
 				
-				Date startDate2 = sdf_yyyyMMdd.parse("20171201");
+				Date startDate2 = sdf_yyyyMMdd.parse("20171225");
 				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
 				int startInd2 = allTradingDate_date.indexOf(startDate2);
 				
-				Date endDate2 = sdf_yyyyMMdd.parse("20180115");
+				Date endDate2 = sdf_yyyyMMdd.parse("20180125");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				

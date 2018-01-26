@@ -31,12 +31,12 @@ public class GetSouthboundChg {
 			//String stockListPath = "D:\\stocklist_ashare.csv";
 			String stockListPath = "D:\\stocklist.csv";
 			String startDateStr = "20171201";
-			String endDateStr = "20180115";
+			String endDateStr = "20180123";
 			String dateFormat = "yyyyMMdd";
 			String outputFileName = "D:\\notionalChg.csv";
 				// "Z:\\Mubing\\stock data\\southbound flow strategy - db\\results\\notionalChg.csv"
 			
-			if(false) {
+			if(false) {   // if true -> a share; if false -> hk share
 				ALL_TRADING_DATE_PATH = ALL_TRADING_DATE_PATH_ASHARE;
 				SOUTHBOUND_DATA_PATH = NORTHBOUND_DATA_PATH;
 				SOUTHBOUND_DATA_DATEFORMAT = NORTHBOUND_DATA_DATEFORMAT;

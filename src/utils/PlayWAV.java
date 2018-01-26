@@ -77,9 +77,9 @@ public class PlayWAV {
             while (clip.isRunning())
                 Thread.sleep(1);
 
-//            clip.close();
-//            ais.close();
-//            bais.close();
+            clip.close();
+            ais.close();
+            bais.close();
 			
 		}catch(Exception e) {
 			e.printStackTrace();

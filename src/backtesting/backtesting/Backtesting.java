@@ -25,10 +25,12 @@ public class Backtesting {
 	
 	public double initialFunding = 1000000.0;
 	public double tradingCost = 0.001; // in percentage
-	public ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+	public ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
 	
 	public Portfolio portfolio = new Portfolio(initialFunding);
 	// at this stage, assume using equal-value method
+	
+	public String executionOutputFilePath = "";
 	
 	/**
 	 * 这里用到的rebalStockData的数据形式如下
@@ -55,7 +57,9 @@ public class Backtesting {
 	 */
 	public void rotationalTrading(ArrayList<String> date, String dateFormat, ArrayList<ArrayList<ArrayList<Object>>> rebalStockData) {
 		System.out.println("*********** Backtesting - " + date + " ***********");
+		portfolio.executionOutputFilePath=executionOutputFilePath;
 		try {
+			portfolio.fw = new  FileWriter(executionOutputFilePath, true);
 			//FileWriter fw =  new FileWriter("D:\\stock data\\southbound flow strategy - db\\backtesting.csv");
 			
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
@@ -239,6 +243,7 @@ public class Backtesting {
 						portfolio.commitDayEndValue();
 						rotationalInd++;
 						
+						//portfolio.fw.close();
 						System.out.println("********** rebal END, date = " + sdf.format(thisCal.getTime()) + " ***********");
 					}else {
 						portfolio.commitDayEndValue();

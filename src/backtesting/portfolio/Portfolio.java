@@ -1,5 +1,6 @@
 package backtesting.portfolio;
 
+import java.io.FileWriter;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -47,6 +48,10 @@ public class Portfolio implements Serializable {
 	
 	// configuration
 	public Double tradingCost = 0.001;
+	public String executionOutputFilePath = "";
+	public FileWriter fw = null;
+	public SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+	
 	//public Double shortMarginReq = 1.0;    // let it be 1 
 	public int minNumOfDigit_forShares = 0;   //   0 - 只能持仓整数股
 	public int roundingMode_forShares = BigDecimal.ROUND_FLOOR;
@@ -145,6 +150,8 @@ public class Portfolio implements Serializable {
 	public boolean executeOrders(ArrayList<Order> orderArr) {
 		boolean isOK = true;
 		try {
+			
+			
 			for(int i = 0; i < orderArr.size(); i++) {
 				Order o = orderArr.get(i);
 				MsgType msg = executeOrder(o);
@@ -153,9 +160,12 @@ public class Portfolio implements Serializable {
 				if(!msg.equals(MsgType.Successful)) {
 					System.out.println("Errors occur! Executing stock " + stock + " invalid, type=" + o.type);
 				}else {
-					System.out.println("Sold stock " + stock + " price=" + o.price + " amt=" + o.amount);
+					System.out.println("Execute stock " + stock + " dir = " + o.type + " price=" + o.price + " amt=" + o.amount);
+					
 				}
 			}
+			
+			
 		}catch(Exception e) {
 			isOK = false;
 		}
@@ -206,19 +216,24 @@ public class Portfolio implements Serializable {
 	*/
 	public MsgType executeOrder(Order order) {
 		MsgType msg = MsgType.Successful;
+		String direction = "";
 		try {
 			switch(order.type) {
 			case BUY:
 				msg = buyStock(order);
+				direction = "BUY";
 				break;
 			case SELL:
 				msg = sellStock(order);
+				direction = "SELL";
 				break;
 			case SHORT:
 				msg = shortStock(order);
+				direction = "SHORT";
 				break;
 			case COVER:
 				msg = coverStock(order);
+				direction = "COVER";
 				break;
 			default:
 				msg = MsgType.OrderTypeIncorrect;
@@ -231,6 +246,8 @@ public class Portfolio implements Serializable {
 		
 		if(msg == MsgType.Successful) {
 			order.status = OrderStatus.FILLED;
+			
+			
 		}else {
 			order.status = OrderStatus.FAILED;
 		}
@@ -289,6 +306,8 @@ public class Portfolio implements Serializable {
 					Underlying uly = new Underlying(stockCode, amt, price);
 					stockHeld.put(stockCode, uly);
 				}
+				
+				fw.write(stockCode + "," + "BUY" + "," + sdf.format(date.getTime()) + "," + price + "," + amt + "\n");
 			}else {
 				System.out.println("[Buy stock - insufficient fund] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
 				msg = MsgType.InsufficientFund;
@@ -363,6 +382,7 @@ public class Portfolio implements Serializable {
 			
 			stockHeld.put(stockCode, uly);
 			
+			fw.write(stockCode + "," + "SELL" + "," + sdf.format(date.getTime()) + "," + price + "," + amt + "\n");
 		}catch(Exception e) {
 			e.printStackTrace();
 			msg = MsgType.Unknown;

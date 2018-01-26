@@ -105,7 +105,7 @@ public class Main {
 				 * 		4) 计算两次调仓日期之间每日的southbound flow的change，然后除以当日的1 month ADV，排序，再将所有天的排序取均值	(rank4)
 				 * 		5) 计算两次调仓日期之间的southbound flow的notional change，即有多少资金买入了		(rank5)
 				 * 		6) 计算两次调仓日期之间的southbound flow占过去250天的flow的percentile，算法为(current flow - min flow) / (max flow - min flow)，然后rank6 = 430 * percentile  （假设有430只股票）  (rank6)  效果好像不是很好
-				 * 		7) 对于所有股票而言，利用rank1计算其每日的ranking，然后计算过去一段时间某只股票ranking的升幅，升幅越大的排名越靠前（比如对过去5天的所有index member计算其ranking的升幅，买入升幅靠前的5名） （rank7）
+				 * 		7) 对于所有股票而言，利用rank1计算其每日的ranking，然后计算过去一段时间某只股票ranking的升幅，升幅越大的排名越靠前（比如对过去5天的所有index member计算其ranking的升幅，买入升幅靠前的5名） （rank7） 效果好像不是很好
 				 *    
 				 * 然后有5种ranking strategy：
 				 * 		1) 最终的ranking是 (rank1 + rank2 + rank3 + rank4) / 4
@@ -114,16 +114,19 @@ public class Main {
 				 * 		4) 最终的ranking是 (rank2 + rank3) / 2
 				 * 		5) 最终的ranking是 rank5
 				 * 		6) 最终的ranking是 rank6
+				 * 			6.1) 查看过去一段时间（比如一周）的数据，如果过去1周之内
+				 * 		7) 最终的ranking是 rank7
 				 */
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
 				String startDateStr = "20170101";  // 20160729
-				String endDateStr = "20180112";		// "20171109"
-				Double initialFunding = 1000000.0;
+				String endDateStr = "20180119";		// "20171109"
+				Double initialFunding = 100000000.0;  // 1亿  
 				BacktestFrame.initialFunding = initialFunding;
-				BacktestFrame.tradingCost = 0.0012;
+				BacktestFrame.tradingCost = 0.002;
 				ArrayList<String>  blackList = new ArrayList<String>() ;
+				BacktestFrame.eachStockValue = 800000.0;
 				blackList.add("607");
 				blackList.add("1250");
 				
@@ -138,7 +141,7 @@ public class Main {
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " rolling 20171219";  //rolling stock picks 20171219   buffer - 15-20   index 5days FULLLIST
+						+ sdf2.format(new Date()) + " rolling 20180125 index";  //rolling stock picks 20171219   buffer - 15-20   index 5days FULLLIST
 				/*
 				 * Rolling configurations:
 				 * rankingStrategy = 1;
@@ -152,8 +155,8 @@ public class Main {
 				File f = new File(portFilePath);
 				f.mkdir();
 				
-				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
-				int topNStocks = 20;   // 每次选多少只股票进行买入卖出
+				double avgDailyValueThreshHold_USD =  000000.0;  // 每天的平均成交额需要超过这个数才能入选
+				int topNStocks = 100;   // 每次选多少只股票进行买入卖出
 				int topNStocksMode = 1;
 				/*
 				 * 1 - 正常
@@ -165,8 +168,8 @@ public class Main {
 				
 				double minInflowPct = 0.0;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
-				// 现在rebalancing时使用的数据是固定15天的   daysBetweenRelancingDate
-				int rankingStrategy = 1;
+				// 现在rebalancing时使用的数据是固定5天的   daysBetweenRelancingDate
+				double rankingStrategy = 1;
 				/*
 				 * 1 - (rank1 + rank2 + rank3 + rank4) / 4
 				 * 2 - 
@@ -177,12 +180,14 @@ public class Main {
 				 * 				mode 1: use past 250D percentile
 				 * 				mode 2: use past 60D percentile
 				 * 			)
+				 *		6.1 - 只有historical的值超过一定的阈值（比如95%）的时候才买入
 				 * 7 - rank7
 				 */
 				int rank6Mode = 2;
+				double rankingStrategy6_1_threshold = 1.0;
+				int rankingStrategy6_1_holdDay = 5;
 				
-				
-				int stockUniverse = 1;
+				int stockUniverse = 4;
 				/*
 				 * 1 - south bound 
 				 * 2 - HSI
@@ -238,7 +243,7 @@ public class Main {
 					BacktestFrame.isToCalNotional = false;
 				
 				//-----------------------------------------
-				int[] topNStocksArr = {35};
+				int[] topNStocksArr = {100};
 				int[] weightingStrategyArr = {1,2};
 				int[] earlyUnwindStrategyArr = {1,2};
 				double[] avgDailyValueThreshHold_USDArr = {
@@ -247,18 +252,27 @@ public class Main {
 				int[] stockUniverseArr = {1,2,3,4};
 				int[] rebalancingStrategyArr = {1,2,3,4};
 				
+				double[] rankingStrategy6_1_threshold_Arr = {0.8,0.85,0.9,0.95,1.0};
+				int [] rankingStrategy6_1_holdDay_Arr = {3,5,10,15};
+//				double[] rankingStrategy6_1_threshold_Arr = {0.9};
+//				int [] rankingStrategy6_1_holdDay_Arr = {3};
+				
 				int size1 = topNStocksArr.length;
-				//size1 = 1;
+				size1 = rankingStrategy6_1_threshold_Arr.length;
+				size1 = topNStocksArr.length;
 				
 				int size2 = weightingStrategyArr.length;
 				//size2 = earlyUnwindStrategyArr.length;
 				//size2 = avgDailyValueThreshHold_USDArr.length;
 				//size2 = stockUniverseArr.length;
 				//size2 = rebalancingStrategyArr.length;
+				//size2 = rankingStrategy6_1_holdDay_Arr.length;
 				size2 = 1;
 				for(int i = 0; i < size1; i++) {
 					topNStocks = topNStocksArr[i];
+					rankingStrategy6_1_threshold = rankingStrategy6_1_threshold_Arr[i];
 					for(int j = 0; j < size2; j++) {
+						rankingStrategy6_1_holdDay = rankingStrategy6_1_holdDay_Arr[j];
 						//earlyUnwindStrategy = earlyUnwindStrategyArr[j];
 						//avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USDArr[j];
 						//stockUniverse = stockUniverseArr[j];
@@ -311,12 +325,15 @@ public class Main {
 							title += "bufferMode2_" + topNStocks_bufferZone_in + "-" + topNStocks_bufferZone_out + " - ";
 						}
 						title +=  fileSubName;
+						//title = " th " + rankingStrategy6_1_threshold + " hl " + rankingStrategy6_1_holdDay;
 						allPerformanceDataTitle.add(title);
 						
 						// ------------------- main settings -------------
 						BacktestFrame.portFilePath = portFilePath + "\\" + title;
 						BacktestFrame.rankingStrategy = rankingStrategy;
 						BacktestFrame.rank6Mode = rank6Mode;
+						BacktestFrame.rankingStrategy6_1_threshold = rankingStrategy6_1_threshold;
+						BacktestFrame.rankingStrategy6_1_holdDay = rankingStrategy6_1_holdDay;
 						BacktestFrame.avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USD; 
 						BacktestFrame.topNStocks = topNStocks;
 						BacktestFrame. minInflowPct =  minInflowPct;
@@ -335,6 +352,7 @@ public class Main {
 						// -------------- Main body -----------
 						BacktestFrame.init();
 						ArrayList<Object> data = BacktestFrame.getRebalancingSelection();
+						//Thread.sleep(1000  * 100000);
 						Portfolio pf = BacktestFrame.backtesting( data);
 						ArrayList<Object> marketValueData = pf.getMarketValue("20000101","20200101","yyyyMMdd");
 						ArrayList<Double> marketValue = (ArrayList<Double>) marketValueData.get(0);

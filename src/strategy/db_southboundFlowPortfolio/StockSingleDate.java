@@ -80,11 +80,13 @@ import javax.xml.bind.annotation.XmlType;
    "dummyRank6Total",
    "dummyRank6EffectiveNum",
    "dummyRank7RankDiff",
+   "dummyRankingStrategy1Rank",
    
    "filter1",
    "filter2",
    "filter3",
    "filter4",
+   "filterRankingStrategy6_1",
    
    "rank1",
    "rank2",
@@ -170,11 +172,13 @@ public class StockSingleDate {
 	public Double dummyRank6Total = 0.0;
 	public Double dummyRank6EffectiveNum = 0.0;
 	public Double dummyRank7RankDiff = 0.0;
+	public Double dummyRankingStrategy1Rank =  null;  //按照ranking strategy 1得到的最终排序，与rank1不一样
 	
 	public Double filter1 = 1.0;
 	public Double filter2 = 1.0;
 	public Double filter3 = 1.0;
 	public Double filter4 = 1.0;
+	public Double filterRankingStrategy6_1 = 1.0;
 	
 	public Double db_SB_over_ff = 0.0;
 	public Double db_SB_over_turnover = 0.0;

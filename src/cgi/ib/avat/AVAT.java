@@ -65,6 +65,8 @@ public class AVAT {
 	public static ArrayList<Calendar> allTradingDate = new ArrayList<Calendar>();
 	public static SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 	private static String errMsgHead = "[AVAT - error] ";
+	public static boolean isStartExecutionMonitor = false;
+	private static boolean isMonitoringExecutions = true;
 	
 	private static Map<Double, String> msg_eligibleStocksMap = new HashMap<Double, String>();  // 用来存储每次运行完之后符合要求的股票，用于在对话框中显示，key是avat，value是stock code
 	private static String alertToShow = "";   // 将要显示在弹出框的内容
@@ -80,7 +82,7 @@ public class AVAT {
 	private static String holdingRecordsPath = "";  // 存储 holdingRecords 的路径
 	private static String orderWriterPath ;
 	private static FileWriter orderWriter;
-	private static boolean transmitToIB = true;  // 是否transmit 到 IB server
+	private static boolean transmitToIB = false;  // 是否transmit 到 IB server (true - 是; false - 否，也就是说，不将order传给IB，只存在本地)
 	
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
@@ -155,7 +157,8 @@ public class AVAT {
 						   executionMonitor();
 					   }
 				});
-				orderMonitorThd.start();
+				if(isStartExecutionMonitor)
+					orderMonitorThd.start();
 				
 				// 初始化记录orders的filewriter
 				orderWriterPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\";
@@ -187,6 +190,13 @@ public class AVAT {
 			// before end actions
 			if(isStartOrders)
 				orderWriter.close();
+			isMonitoringExecutions = false;
+			
+			// cancel request for top market data
+			for(MyITopMktDataHandler myTop : topMktDataHandlerArr) {
+				myController.cancelTopMktData(myTop);
+				logger.info("Cancel top market data. Stock=" + myTop.stockCode);
+			}
 			
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -1000,7 +1010,7 @@ public class AVAT {
 			
 			MyITradeReportHandler myTradeReportHandler = new MyITradeReportHandler(executionsRecPath);
 			logger.info("getting into execution monitor....");
-			while(true) {
+			while(isMonitoringExecutions) {
 				// ---------- MyITradeReportHandler的一些setting -----------
 				ExecutionFilter filter = new ExecutionFilter();
 				filter.secType("STK");
@@ -1151,11 +1161,12 @@ public class AVAT {
 				// --------- update完records之后，还要根据成交的情况来放sell orders --------------
 				
 				Thread.sleep(1000 * waitingSec);  // wait for 30 sec
-			}
+			} // end of while
 			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+		logger.info("Executions Monitor shuts down...");
 	}
 	
 	/**

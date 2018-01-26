@@ -34,13 +34,26 @@ public class Main {
 	//public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
 	
+	// IB controller  
+	public static MyLogger inLogger = new MyLogger();
+	public static MyLogger outLogger = new MyLogger();
+	public static MyIConnectionHandler myConnectionHandler = new MyIConnectionHandler();
+	public static MyAPIController myController;
+	public static ApiConnection myClient; 
+	public static ArrayList<Contract> conArr = new ArrayList<Contract> ();
+	public static boolean isDownloadEnds = false;   // if downloading historical data ends
+	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		try {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
-			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date()); //todayDate="20171228";
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("Z:\\Mubing\\stock data\\all trading date - hk.csv");
+			SimpleDateFormat sdf_HHmmss = new SimpleDateFormat ("HH:mm:ss"); 
+			String dateFormat_yyyyMMdd = "yyyyMMdd";
+			SimpleDateFormat sdf_yyyyMMdd = new SimpleDateFormat (dateFormat_yyyyMMdd); 
+			
+			
+			String todayDate = sdf_yyyyMMdd.format(new Date()); //todayDate="20171228";
 			SimpleDateFormat sdf_100 = new SimpleDateFormat ("yyyyMMdd HH_mm_ss"); 
 			
 			AVAT.todayDate = todayDate;
@@ -50,8 +63,15 @@ public class Main {
 			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
 			boolean readyToExit = false;
+			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingDate("Z:\\Mubing\\stock data\\all trading date - hk.csv");
+			ArrayList<Date> allTradingDate = new ArrayList<Date> ();
+			for(Calendar cal : allTradingCal) {
+				allTradingDate .add(cal.getTime());
+			}
+			
+			
 			// ------------ MODE -----------
-			int mode = 1;
+			int mode = 123456;
 			/*
 			 * 0 - download historical data
 			 * 1 - avat: real time running
@@ -72,22 +92,14 @@ public class Main {
 			if(isTestRun == 1)
 				clientId = 53;
 			
-
-
-			//[start] 
-			MyLogger inLogger = new MyLogger();
-			MyLogger outLogger = new MyLogger();
-			
-			
-			MyIConnectionHandler myConnectionHandler = new MyIConnectionHandler();
 			//****** the main controller **********
-			MyAPIController myController = new MyAPIController(myConnectionHandler, inLogger, outLogger	);
+			myController = new MyAPIController(myConnectionHandler, inLogger, outLogger	);
 			myController.connect(host, port, clientId, null);
 			
 			// create EClient
 			//MyEReaderSignal signal = new MyEReaderSignal();
 			//ApiConnection myConnection = new ApiConnection(myController, inLogger, outLogger);
-			ApiConnection myClient = myController.client();  
+			myClient = myController.client();  
 			//myClient.eConnect(host, port, clientId, true);
 			if(myClient.isConnected()){
 				System.out.println("Is connected!");
@@ -103,7 +115,6 @@ public class Main {
 			}
 			
 			//======== constructing contracts ===========
-			ArrayList<Contract> conArr = new ArrayList<Contract> ();
 			ArrayList<String> stockList = new ArrayList<String>();
 			//ArrayList<String> industryList = new ArrayList<String>();
 			
@@ -123,7 +134,36 @@ public class Main {
 			}
 			//industryList.addAll(Arrays.asList(bf.readLine().split(",")));
 			bf.close();
-			// [end] 
+			
+			// --------------- downloading historical data --------------- 
+			Date nowDate = sdf.parse(todayDate + " " + sdf_HHmmss.format(new Date()));
+			logger.info("nowDate = " + sdf.format(nowDate));
+			if(nowDate.after(sdf.parse(todayDate + " 16:30:00")) ) {  // 16:30之后，下载当天数据
+				System.out.println("after " + todayDate + " 16:30:00");
+				isDownloadEnds = getHistorical1MinData_OneDay(todayDate, dateFormat_yyyyMMdd);
+			}else {
+				Date lastTrdDate = allTradingDate.get(allTradingDate.indexOf(sdf_yyyyMMdd.parse(todayDate)) - 1);
+				System.out.println("last trd date = " + sdf_yyyyMMdd.format(lastTrdDate));
+				isDownloadEnds = getHistorical1MinData_OneDay(sdf_yyyyMMdd.format(lastTrdDate), dateFormat_yyyyMMdd);
+			}
+			
+			while(!isDownloadEnds) {
+				Thread.sleep(1000 * 5);
+			}
+			logger.info("dowloading ends...");
+			
+			// --------------- avat--------------- 
+			AVAT.setting(myController, conArr, AVAT_ROOT_PATH);
+			logger.info("AVAT.setting ends...");
+			
+			AVAT.start();
+			// --------------- avat done --------------- 
+			logger.info("-------------------- All ends ----------------------");
+			//Thread.sleep(1000 * 500000);
+			
+			
+			
+			
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");
@@ -145,7 +185,7 @@ public class Main {
 					String dateStr  = dateArr.get(i);
 					AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr, "yyyyMMdd");
 				}
-				readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, "20180115", "yyyyMMdd");
+				readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, "20180124", "yyyyMMdd");
 				myController.disconnect();
 				//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
 				logger.info("dowloading ends...");
@@ -366,13 +406,13 @@ public class Main {
 			
 			System.out.println("here11234");
 			// pause and disconnect
-			try {   
-				while(!readyToExit) {
-					Thread.sleep(1000 * 5);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+//			try {   
+//				while(!readyToExit) {
+//					Thread.sleep(1000 * 5);
+//				}
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
 			
 			
 			// ======== close =========
@@ -398,6 +438,30 @@ public class Main {
 		
 	}
 	
-	//public String getNextTradeDate(String date, ArrayList<Calendar> allTradingDate)
+	public static boolean getHistorical1MinData_OneDay(String dateStr, String dateFormat) {
+		ArrayList<String> dateArr = new ArrayList<String>();
+		dateArr.add("20171213");
+		dateArr.add("20171212");
+		dateArr.add("20171211");
+		dateArr.add("20171208");
+		dateArr.add("20171207");
+		dateArr.add("20171206");
+		dateArr.add("20171205");
+		dateArr.add("20171204");
+		dateArr.add("20171201");
+		dateArr.add("20171130");
+		dateArr.add("20171129");
+		dateArr.add("20171128");
+		dateArr.add("20171127");
+		for(int i = 1000; i < dateArr.size(); i ++) {
+			String dateStr1  = dateArr.get(i);
+			AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr1, dateFormat);
+		}
+		
+		boolean readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr, dateFormat);
+		//myController.disconnect();
+		//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
+		return readyToExit;
+	}
 
 }
