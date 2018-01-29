@@ -40,6 +40,7 @@ public class Backtesting {
 	 * 		{direction1, direction2, ...}, // 1 - buy, -1 - sell
 	 * 		{weighting1, weighting2, ...},	 // positive #: num of shares to buy/sell; negative #: percentage to buy/sell (e.g. if buy, -10 represents buying 10% of total portfolio value; if sell, -10 represents selling 10% of total holding value, that is, if holding 10000 shares, -10 means selling 1000 shares
 	 * 		{price1, price2, ...}
+	 * 		{comment1, comment2, ...}
 	 * 	}
 	 * 	,
 	 * 	{
@@ -47,6 +48,7 @@ public class Backtesting {
 	 * 		{direction1, direction2, ...},
 	 * 		{weighting1, weighting2, ...},
 	 * 		{price1, price2, ...}
+	 * 		{comment1, comment2, ...}
 	 * 	}
 	 * 	...
 	 * }
@@ -100,6 +102,12 @@ public class Backtesting {
 						ArrayList<Object> thisAllDirections = thisAllStockData.get(1);  // Integer
 						ArrayList<Object> thisAllWeightings = thisAllStockData.get(2);	// Double
 						ArrayList<Object> thisAllPrices = thisAllStockData.get(3);		// Double
+						ArrayList<Object> thisAllComments = new ArrayList<Object>();
+						if(thisAllStockData.size() >= 5) {
+							thisAllComments = thisAllStockData.get(4);
+							logger.info("thisAllComments size=" + thisAllComments.size());
+							logger.info("thisAllPrices size=" + thisAllPrices.size());
+						}
 						
 						// ======== sell first ===============
 						Map<String, Double> thisAllSellStocks_map = new HashMap<String, Double>();   // 存储需要卖出的股票的名称
@@ -109,6 +117,9 @@ public class Backtesting {
 							Integer direction = (Integer) thisAllDirections.get(j);
 							Double weighting = (Double) thisAllWeightings.get(j);
 							Double price = (Double) thisAllPrices.get(j);
+							String comment = "";
+							if(thisAllComments != null && thisAllComments.size() > 0)
+								comment = (String) thisAllComments.get(j);
 							
 							if(direction.equals(-1)) { // sell order
 								logger.trace("[Sell] stock=" + stock + " direction=" + direction + " weighting=" + weighting + " price=" + price);
@@ -124,6 +135,7 @@ public class Backtesting {
 											amt = currentAmt * weighting / -100.0;
 										}
 										Order order = new Order(OrderType.SELL, thisCal, stock, price, amt, orderNum++);
+										order.comment = comment;
 										sellOrdersArr.add(order);
 										thisAllSellStocks_map.put(stock, Math.abs(amt)*price);
 									}else {
@@ -144,7 +156,9 @@ public class Backtesting {
 							Integer direction = (Integer) thisAllDirections.get(j);
 							Double weighting = (Double) thisAllWeightings.get(j);
 							Double price = (Double) thisAllPrices.get(j);
-							
+							String comment = "";
+							if(thisAllComments != null && thisAllComments.size()>0)
+								comment = (String) thisAllComments.get(j);
 							
 							if(direction.equals(1)) { // buy order
 								logger.trace("[Buy] stock=" + stock + " direction=" + direction + " weighting=" + weighting + " price=" + price);
@@ -157,6 +171,7 @@ public class Backtesting {
 										amt = portfolio.marketValue * weighting / -100 / price;
 									}
 									Order order = new Order(OrderType.BUY, thisCal, stock, price, amt, orderNum++);
+									order.comment = comment;
 									buyOrdersArr.add(order);
 									
 									//如果一只股票在当期既买又卖，则实际上相当于不操作，应该返还手续费

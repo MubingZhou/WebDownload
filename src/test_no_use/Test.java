@@ -30,7 +30,11 @@ public class Test {
 		// TODO Auto-generated method stub
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
 		try {			
-
+			
+			Date date = new Date();
+			date.setTime(date.getTime() - 1000 * 3600 *24);
+			System.out.println(date);
+			
 			// test date
 			ArrayList<String> stockListStrArr= utils.Utils.getHSCEI_HSIStocks("20171124", "yyyyMMdd", true, true);
 			for(String s : stockListStrArr) {

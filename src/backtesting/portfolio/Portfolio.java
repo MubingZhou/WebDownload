@@ -274,6 +274,7 @@ public class Portfolio implements Serializable {
 			order.amount = AMT.setScale(minNumOfDigit_forShares, roundingMode_forShares).doubleValue();
 			double amt = order.amount;
 			Calendar date = order.date;
+			String comment = order.comment;
 			
 			if(price <= 0) {
 				System.out.println("[Buy stock - price not positive] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
@@ -307,7 +308,7 @@ public class Portfolio implements Serializable {
 					stockHeld.put(stockCode, uly);
 				}
 				
-				fw.write(stockCode + "," + "BUY" + "," + sdf.format(date.getTime()) + "," + price + "," + amt + "\n");
+				fw.write(stockCode + "," + "BUY" + "," + sdf.format(date.getTime()) + "," + price + "," + amt + "," + comment + "\n");
 			}else {
 				System.out.println("[Buy stock - insufficient fund] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
 				msg = MsgType.InsufficientFund;
@@ -344,6 +345,7 @@ public class Portfolio implements Serializable {
 			Double price = order.price;
 			Double amt = Math.abs(order.amount);
 			Calendar date = order.date;
+			String comment = order.comment;
 			
 			if(price <= 0) {
 				System.out.println("[Sell stock - price not positive] stock=" + stockCode + " price=" + price + " amt=" + amt + " date=" + date.getTime());
@@ -382,7 +384,7 @@ public class Portfolio implements Serializable {
 			
 			stockHeld.put(stockCode, uly);
 			
-			fw.write(stockCode + "," + "SELL" + "," + sdf.format(date.getTime()) + "," + price + "," + amt + "\n");
+			fw.write(stockCode + "," + "SELL" + "," + sdf.format(date.getTime()) + "," + price + "," + amt + "," + comment + "\n");
 		}catch(Exception e) {
 			e.printStackTrace();
 			msg = MsgType.Unknown;

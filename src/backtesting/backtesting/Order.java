@@ -37,6 +37,7 @@ public class Order implements Serializable,Cloneable {
 	public Double amount;
 	public Integer orderId = -1;
 	public OrderStatus status = OrderStatus.UNSPECIFIED;
+	public String comment = "";
 	
 	public Double dummy100 = 0.0;
 	

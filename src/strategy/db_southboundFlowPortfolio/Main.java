@@ -120,13 +120,16 @@ public class Main {
 				String dateFormat = "yyyyMMdd";
 				SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd HHmmss"); 
-				String startDateStr = "20170101";  // 20160729
-				String endDateStr = "20180119";		// "20171109"
-				Double initialFunding = 100000000.0;  // 1亿  
+				String startDateStr = "20171229";  // 20160729
+				String endDateStr = "20180125";		// "20171109"
+				Double initialFunding = 12500000.0;  // 
 				BacktestFrame.initialFunding = initialFunding;
 				BacktestFrame.tradingCost = 0.002;
 				ArrayList<String>  blackList = new ArrayList<String>() ;
-				BacktestFrame.eachStockValue = 800000.0;
+				boolean isFixedAmount = true;	//每次每只股票买fixed amount
+				double eachStockValue = 800000;
+				boolean isRebalanceEachTime = false;
+				double eachStockValueRebalanceThreshold = 0.01;
 				blackList.add("607");
 				blackList.add("1250");
 				
@@ -141,7 +144,7 @@ public class Main {
 				
 				// -------------------- Configurations -----------------------
 				String portFilePath = MAIN_ROOT_PATH + "\\" 
-						+ sdf2.format(new Date()) + " rolling 20180125 index";  //rolling stock picks 20171219   buffer - 15-20   index 5days FULLLIST
+						+ sdf2.format(new Date()) + " rolling 20180126 - 5day";  //rolling stock picks 20171219   buffer - 15-20   index 5days FULLLIST
 				/*
 				 * Rolling configurations:
 				 * rankingStrategy = 1;
@@ -155,7 +158,7 @@ public class Main {
 				File f = new File(portFilePath);
 				f.mkdir();
 				
-				double avgDailyValueThreshHold_USD =  000000.0;  // 每天的平均成交额需要超过这个数才能入选
+				double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
 				int topNStocks = 100;   // 每次选多少只股票进行买入卖出
 				int topNStocksMode = 1;
 				/*
@@ -168,7 +171,7 @@ public class Main {
 				
 				double minInflowPct = 0.0;   // factor 4  在两次调仓之间，至少有这个比例的日子的flow是流入的
 				
-				// 现在rebalancing时使用的数据是固定5天的   daysBetweenRelancingDate
+				// 现在rebalancing时使用的数据是固定10天的   daysBetweenRelancingDate
 				double rankingStrategy = 1;
 				/*
 				 * 1 - (rank1 + rank2 + rank3 + rank4) / 4
@@ -187,7 +190,7 @@ public class Main {
 				double rankingStrategy6_1_threshold = 1.0;
 				int rankingStrategy6_1_holdDay = 5;
 				
-				int stockUniverse = 4;
+				int stockUniverse = 1;
 				/*
 				 * 1 - south bound 
 				 * 2 - HSI
@@ -243,7 +246,7 @@ public class Main {
 					BacktestFrame.isToCalNotional = false;
 				
 				//-----------------------------------------
-				int[] topNStocksArr = {100};
+				int[] topNStocksArr = {15};  //{5,10,15,20,25};
 				int[] weightingStrategyArr = {1,2};
 				int[] earlyUnwindStrategyArr = {1,2};
 				double[] avgDailyValueThreshHold_USDArr = {
@@ -256,6 +259,7 @@ public class Main {
 				int [] rankingStrategy6_1_holdDay_Arr = {3,5,10,15};
 //				double[] rankingStrategy6_1_threshold_Arr = {0.9};
 //				int [] rankingStrategy6_1_holdDay_Arr = {3};
+				boolean[] isRebalanceEachTimeArr = {true, false};
 				
 				int size1 = topNStocksArr.length;
 				size1 = rankingStrategy6_1_threshold_Arr.length;
@@ -267,16 +271,18 @@ public class Main {
 				//size2 = stockUniverseArr.length;
 				//size2 = rebalancingStrategyArr.length;
 				//size2 = rankingStrategy6_1_holdDay_Arr.length;
+				size2 = isRebalanceEachTimeArr.length;
 				size2 = 1;
 				for(int i = 0; i < size1; i++) {
 					topNStocks = topNStocksArr[i];
-					rankingStrategy6_1_threshold = rankingStrategy6_1_threshold_Arr[i];
+					//rankingStrategy6_1_threshold = rankingStrategy6_1_threshold_Arr[i];
 					for(int j = 0; j < size2; j++) {
-						rankingStrategy6_1_holdDay = rankingStrategy6_1_holdDay_Arr[j];
+						//rankingStrategy6_1_holdDay = rankingStrategy6_1_holdDay_Arr[j];
 						//earlyUnwindStrategy = earlyUnwindStrategyArr[j];
 						//avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USDArr[j];
 						//stockUniverse = stockUniverseArr[j];
 						//rebalancingStrategy = rebalancingStrategyArr[j];
+						//isRebalanceEachTime = isRebalanceEachTimeArr[j];
 						
 						// -------------- file sub name ----------
 						String fileSubName = "";
@@ -326,6 +332,10 @@ public class Main {
 						}
 						title +=  fileSubName;
 						//title = " th " + rankingStrategy6_1_threshold + " hl " + rankingStrategy6_1_holdDay;
+						if(isRebalanceEachTime)
+							title += " - rebal";
+						else
+							title += " - not rebal";
 						allPerformanceDataTitle.add(title);
 						
 						// ------------------- main settings -------------
@@ -336,7 +346,7 @@ public class Main {
 						BacktestFrame.rankingStrategy6_1_holdDay = rankingStrategy6_1_holdDay;
 						BacktestFrame.avgDailyValueThreshHold_USD = avgDailyValueThreshHold_USD; 
 						BacktestFrame.topNStocks = topNStocks;
-						BacktestFrame. minInflowPct =  minInflowPct;
+						BacktestFrame.minInflowPct =  minInflowPct;
 						BacktestFrame.stockUniverse = stockUniverse; 
 						BacktestFrame.weightingStrategy = weightingStrategy;
 						BacktestFrame.rebalancingStrategy = rebalancingStrategy;
@@ -345,6 +355,11 @@ public class Main {
 						BacktestFrame.topNStocks_mode = topNStocksMode; 
 						BacktestFrame.topNStocks_bufferZone_in = topNStocks_bufferZone_in;
 						BacktestFrame.topNStocks_bufferZone_out = topNStocks_bufferZone_out;
+						
+						BacktestFrame.isFixedAmount = isFixedAmount;   
+						BacktestFrame.eachStockValue = eachStockValue;
+						BacktestFrame.isRebalanceEachTime = isRebalanceEachTime;
+						BacktestFrame.eachStockValueRebalanceThreshold = eachStockValueRebalanceThreshold;
 						
 						BacktestFrame.startDateStr = startDateStr;
 						BacktestFrame.endDateStr = endDateStr;
@@ -935,7 +950,7 @@ public class Main {
 				logger.info("============== calculating stock volume and save ===============");
 				Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
 				Calendar startCal = Calendar.getInstance();
-				startCal.setTime(sdf_yyyyMMdd.parse("20171201"));
+				startCal.setTime(sdf_yyyyMMdd.parse("20171223"));
 				Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingDate);
 				
 				int daysShift = 20;
