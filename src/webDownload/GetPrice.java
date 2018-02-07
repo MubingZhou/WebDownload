@@ -19,13 +19,13 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 	private static String histDownloadURL = "";
 	private static Map<String, String> histDownloadURL_map = new HashMap<String, String>();  // stock code - downloading url
 	public static String outFilePath = "Z:\\Mubing\\stock data\\stock hist data - webb";
-	public static String allStockListPath = "Z:\\Mubing\\stock data\\all stock list.csv";
+	public static String allStockListPath = "Z:\\Mubing\\stock data\\all stock list.csv";  //"Z:\\Mubing\\stock data\\all stock list.csv"
 	
 	public static void main(String[] args) {
 		try {
 			//getHistoricalData("2098", "2098.csv", filePath);
 			
-			//Thread.sleep(1000 * 3600 * 2);
+			//Thread.sleep(1000 * 3600 * 4);
 			
 			
 			downloadData_2()	;

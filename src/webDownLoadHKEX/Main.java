@@ -21,7 +21,7 @@ public class Main {
 		System.out.println("******************** Web Download From HKEX ********************");
 		try {
 			//String[] dates = {"2017-08-04"};
-			String[] dates = {"2017-08-24","2017-08-25"};
+			String[] dates = {"2018-02-05"};
 			//String[] dates = {"2017-07-03"};
 			
 			for(int i = 0; i < dates.length; i++) {
@@ -58,7 +58,7 @@ public class Main {
 		}*/
 		
 		//ArrayList<String> stockCodeList = getCGITopHoldingStocks(Utils.OUTPUT_ROOT_PATH + "\\cgi stock list.csv");
-		ArrayList<String> stockCodeList = getCGITopHoldingStocks("D:\\stock data\\all stock list.csv");
+		ArrayList<String> stockCodeList = getCGITopHoldingStocks("Z:\\Mubing\\stock data\\temp stock list.csv");
 		
 		
 		////////////// downloading webpage and parse /////////////////
@@ -95,7 +95,7 @@ public class Main {
 				
 				long endTime_i = System.currentTimeMillis();    //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 				double runningTime = ((double) endTime_i - startTime_i) / 1000; // s
-				//System.out.println("======== running time"  + runningTime + "s ==========");    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿þý
+				//System.out.println("======== running time"  + runningTime + "s ==========");    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 				
 			} // end of "for"
 			

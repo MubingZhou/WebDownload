@@ -49,10 +49,16 @@ public class MyIOrderHandler implements IOrderHandler,Serializable {
 	public void orderStatus(OrderStatus status, double filled, double remaining, double avgFillPrice, long permId,
 			int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
 		logger.info("[MyIOrderHandler - orderStatus - " + this.contract.symbol() + "] " + status.toString());
-		if(isTransmit && (status.equals(OrderStatus.Submitted) || status.equals(OrderStatus.PreSubmitted)))
+		if(isTransmit && (status.equals(OrderStatus.Submitted) || status.equals(OrderStatus.PreSubmitted))) {
 			isSubmitted = 1;
-		if(!isTransmit && status.equals(OrderStatus.PendingSubmit))
+			//logger.info("         Confirm submitted! - isTransmit=True");
+		}
+			
+		if(!isTransmit && status.equals(OrderStatus.PendingSubmit)) {
 			isSubmitted = 1;
+			//logger.info("         Confirm submitted! - isTransmit=false");
+		}
+			
 	}
 
 	@Override

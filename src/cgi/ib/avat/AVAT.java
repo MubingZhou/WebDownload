@@ -41,6 +41,7 @@ public class AVAT {
 	public static String AVAT_ROOT_PATH = "";
 	public static String AVAT_ORDER_PATH = "";
 	public static String AVAT_REALTIME_DATA_PATH = "";
+	public static String avatRtDataRootPath = "";    // 用来存储avat realtime data的
 	public static ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
 	public static int numOfTopMktDataStock = 0;
 	public static double bilateralTrdCost = 0.003;
@@ -82,8 +83,10 @@ public class AVAT {
 	private static String holdingRecordsPath = "";  // 存储 holdingRecords 的路径
 	private static String orderWriterPath ;
 	private static FileWriter orderWriter;
-	private static boolean transmitToIB = false;  // 是否transmit 到 IB server (true - 是; false - 否，也就是说，不将order传给IB，只存在本地)
 	
+	private static boolean isPlaceOrder = true;  // 是否place order，这个和下面的区别是，place order是指是否往TWS place order，如果isPlaceOrder=true，但是transmitToIB=false，则order只会存在TWS中，不会到IB的server上
+	private static boolean transmitToIB = true;  // 是否transmit 到 IB server (true - 是; false - 否，也就是说，不将order传给IB，只存在本地)
+	private static Double fixedBuyAmount = 500000.0;
 	
 	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
@@ -99,7 +102,7 @@ public class AVAT {
 		// 创建文件…
 		String avatRecordRootPath = AVAT_ROOT_PATH + "\\avat record\\";
 		String avatParaRootPath = AVAT_ROOT_PATH + "\\avat para\\";
-		String avatRtDataRootPath = AVAT_ROOT_PATH + "\\realtime data\\";
+		avatRtDataRootPath = AVAT_ROOT_PATH + "\\realtime data\\";
 		if(isTestRun == 1) {
 			avatRtDataRootPath = AVAT_ROOT_PATH + "\\test\\realtime data\\";
 		}
@@ -197,6 +200,8 @@ public class AVAT {
 				myController.cancelTopMktData(myTop);
 				logger.info("Cancel top market data. Stock=" + myTop.stockCode);
 			}
+			avatDisplayFrame.dispose();
+			buyOrdersFrame.dispose();
 			
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -205,15 +210,15 @@ public class AVAT {
 	
 	private static void prepare() {
 		try {
-			allTradingDate = utils.Utils.getAllTradingDate(TRADING_DATE_PATH);
+			allTradingDate = utils.Utils.getAllTradingCal(TRADING_DATE_PATH);
 			
 			// ------- avat - prepare historical avat --------
 			AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
-			logger.info("prepare prev cross setional avat - done");
+			logger.info("prepare prev cross sectional avat - done");
 			
 			// ------- avat - historical avat ---------
 			avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
-			logger.info("get prev cross setional avat - done");
+			logger.info("get prev cross sectional avat - done");
 			
 				//Thread.sleep(1000 * 10000000);
 			
@@ -266,7 +271,9 @@ public class AVAT {
 	private static void requestForRtData() {
 		for(int i = 0; i < numOfTopMktDataStock; i++) {
 			Contract con = conArr.get(i);
-			MyITopMktDataHandler myTop = new MyITopMktDataHandler(con.symbol(), AVAT_ROOT_PATH, todayDate);
+			if(con == null)
+				continue;
+			MyITopMktDataHandler myTop = new MyITopMktDataHandler(con, avatRtDataRootPath, todayDate);
 			//myTop.fileWriterMainPath = AVAT_ROOT_PATH + "real time data\\";
 			topMktDataHandlerArr.add(myTop);
 			myController.reqTopMktData(con, "233,375", false, false, myTop);
@@ -290,12 +297,13 @@ public class AVAT {
 			Date now = new Date();
 			//Map<String,ArrayList<Double>> avatRatioNow = new HashMap();
 			ArrayList<AvatRecordSingleStock> avatRecord = new ArrayList<AvatRecordSingleStock>();
-			ArrayList<AvatRecordSingleStock> lastAvatRecord = new ArrayList<AvatRecordSingleStock>();
+			//ArrayList<AvatRecordSingleStock> lastAvatRecord = new ArrayList<AvatRecordSingleStock>();
 			Map<String, Integer> lastRankingData = new HashMap();
 			
 			boolean isFirst = true;
 			long scanPeriod = 1000 * 60;  //每次隔多久扫描一次
 			while(now.before(avatTimePath.get(avatTimePath.size() - 1))) {
+			//while(now.before(sdf_100.parse("20180201 14_33_30"))) {
 				// --------- 判断时间 -----------
 				logger.info("now = " + sdf.format(now));
 				if(now.before(sdf.parse(todayDate + " 09:30:00"))) {
@@ -308,7 +316,8 @@ public class AVAT {
 				//---------- 正式开始 -----------
 				logger.info("Generating avat!");
 				
-				avatRecord = new ArrayList<AvatRecordSingleStock>();
+				avatRecord.clear();
+				//avatRecord = new ArrayList<AvatRecordSingleStock>();
 				
 				ArrayList<String> eligibleStocks = new ArrayList<String>(); // 看avat是否符合要求
 				ArrayList<Double> eligibleStocksValue = new ArrayList<Double>(); 
@@ -564,7 +573,8 @@ public class AVAT {
 				isLotSizeMapToUpdate = 0;
 				
 				Thread.sleep(scanPeriod); // wait for 1 min
-				lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
+				//lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
+				
 				isFirst = false;
 				now = new Date();
 			}  // end of while
@@ -578,7 +588,7 @@ public class AVAT {
 			logger.info("---------- scanForOrders ---------");
 			
 			String errMsgHead  = "[trading strategy] ";
-			Double fixedBuyAmount = 500000.0;  // fix buying amount for each stock, HKD
+			//Double fixedBuyAmount = fixedBuyAmount;  // fix buying amount for each stock, HKD
 			Double buyPriceDiscount = 1.0;  // 为了testing，不让order被fill，可以将buyprice设小点
 			
 			// ------- 与买入有关的variables ----------
@@ -603,14 +613,15 @@ public class AVAT {
 			
 			// --------- 浏览各个AvatRecordSingleStock ----------- 
 			Set<String> thisBuyStocksSet = new HashSet<String>();
+			//logger.info("********* 1111 **********");
 			for(AvatRecordSingleStock singleRec : avatRecord) {
 				/*
 				 * ------- 先看是否有买入信号 ---------
 				 * 买入条件：
 				 * 		1. 时间是11:00之前；并且
-				 * 		(2.1 当前的avat5D ratio超过2，并且股价上涨超过1.5%；或者
-				 * 		2.2 avat20D ratio超过1，并且股价上涨超过1.5%；或者
-				 * 		2.3. 当时的volume超过了昨天全天的volume)
+				 * 		(	2.1 当前的avat5D ratio超过2，并且股价上涨超过1.5%；或者
+				 * 			2.2 avat20D ratio超过1，并且股价上涨超过1.5%；或者
+				 * 			2.3. 当时的volume超过了昨天全天的volume)
 				 * 		3. turnover 大于一个threshold 
 				 * 		4. 已经买过的股票如果三注码都加满，则不再买入；同一注码重复出现，不再重复下注
 				 * 
@@ -618,6 +629,8 @@ public class AVAT {
 				 */
 			
 				Date thisTime = new Date(singleRec.timeStamp);
+				String stockCode = singleRec.stockCode;
+				
 				if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
 					
 					boolean isBuy = false;
@@ -689,12 +702,11 @@ public class AVAT {
 						}
 					}
 					
+					//logger.info("      ********* 2222 ********** stock = " + stockCode);
 					// ----------- 处理 buy signal -------------
 					if(buyCond3 == 1 && toBuyAmt > 0) {  
-						//logger.info("[scan for orders] found stock! stock=" + );
+						//logger.info("[scan for orders] found stock! stock=" + stockCode);
 						// 新开一个线程来处理似乎不妥当，因为每个order的id必须大于之前order的id，所以如果很多线程并行的话，不能保证先提交给ib的order的id是最小的
-						
-						String stockCode = singleRec.stockCode;
 						
 						Contract con = conMap.get(stockCode);
 						Double lotSize = avatLotSize.get(stockCode);
@@ -724,58 +736,76 @@ public class AVAT {
 						order2.totalQuantity(orderQty2);
 						order2.transmit(transmitToIB);  // false - 只在api平台有这个order
 					
-
+						//logger.info("      ********* 3301 **********");
 						// --------- submit orders ---------
-						MyIOrderHandler myOrderH1 = new MyIOrderHandler (con, order1); 
-						myOrderH1.isTransmit = transmitToIB;
-						myController.placeOrModifyOrder(con, order1, myOrderH1);
-						MyIOrderHandler myOrderH2 = new MyIOrderHandler (con, order2); 
-						myOrderH2.isTransmit = transmitToIB;
-						myController.placeOrModifyOrder(con, order2, myOrderH2);
-						
-						while(myOrderH1.getOrderId() == -1) {Thread.sleep(5);}
-						while(myOrderH2.getOrderId() == -1) {Thread.sleep(5);}
-						
-						HoldingRecord hld1 = new HoldingRecord(myOrderH1, now.getTime());
-						HoldingRecord hld2 = new HoldingRecord(myOrderH2, now.getTime());
-						
-						if(thisHoldingMap == null)
-							thisHoldingMap = new HashMap<Integer, HoldingRecord>();
-						
-						String buyReason = "";
-						if(buyTracer[0] == 1) {
-							hld1.buyCond2_1 = 1;
-							hld2.buyCond2_1 = 1;
-							buyReason += "avat5D;";
+						if(isPlaceOrder) {
+							MyIOrderHandler myOrderH1 = new MyIOrderHandler (con, order1); 
+							myOrderH1.isTransmit = transmitToIB;
+							//logger.info("      ********* 3302 **********");
+							
+							myController.placeOrModifyOrder(con, order1, myOrderH1);
+							MyIOrderHandler myOrderH2 = new MyIOrderHandler (con, order2); 
+							myOrderH2.isTransmit = transmitToIB;
+							myController.placeOrModifyOrder(con, order2, myOrderH2);
+							//logger.info("      ********* 3303 **********");
+							
+							while(myOrderH1.getOrderId() == -1) {
+								Thread.sleep(5);
+								//logger.info("                 myOrderH1.getOrderId() = " + myOrderH1.getOrderId());
+							}
+							//logger.info("      ********* 3304 **********");
+							
+							while(myOrderH2.getOrderId() == -1) {Thread.sleep(5);}
+							//logger.info("      ********* 3305 **********");
+							
+							HoldingRecord hld1 = new HoldingRecord(myOrderH1, now.getTime());
+							HoldingRecord hld2 = new HoldingRecord(myOrderH2, now.getTime());
+							//logger.info("      ********* 3306 **********");
+							
+							if(thisHoldingMap == null)
+								thisHoldingMap = new HashMap<Integer, HoldingRecord>();
+							//logger.info("      ********* 3307 **********");
+							
+							String buyReason = "";
+							if(buyTracer[0] == 1) {
+								hld1.buyCond2_1 = 1;
+								hld2.buyCond2_1 = 1;
+								buyReason += "avat5D;";
+							}
+							if(buyTracer[1] == 1) {
+								hld1.buyCond2_2 = 1;
+								hld2.buyCond2_2 = 1;
+								buyReason += "avat20D;";
+							}
+							if(buyTracer[2] == 1) {
+								hld1.buyCond2_3 = 1;
+								hld2.buyCond2_3 = 1;
+								buyReason += "volume;";
+							}
+							//logger.info("      ********* 3308 **********");
+							hld1.buyReason = buyReason ;
+							hld2.buyReason = buyReason ;
+							
+							thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
+							thisHoldingMap.put(myOrderH2.getOrderId(), hld2);
+							holdingRecords.put(stockCode, thisHoldingMap);
+							
+							//logger.info("      ********* 3309 **********");
+							
+							orderWriter.write(hld1.toString() + "\n");
+							orderWriter.write(hld2.toString() + "\n");
+							orderWriter.flush();
+							
+							logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
+							//logger.info("      ********* 3310 **********");
+							
+							SimpleDateFormat sdf_temp = new SimpleDateFormat ("dd/MM/yyyy hh:mm:ss");
+							buyOrdersToShow += "time=" + sdf_temp.format(now) + " stock=" + stockCode + " buyReason=" + buyReason + "\n";
+							//logger.info("      ********* 3311 **********");
 						}
-						if(buyTracer[1] == 1) {
-							hld1.buyCond2_2 = 1;
-							hld2.buyCond2_2 = 1;
-							buyReason += "avat20D;";
-						}
-						if(buyTracer[2] == 1) {
-							hld1.buyCond2_3 = 1;
-							hld2.buyCond2_3 = 1;
-							buyReason += "volume;";
-						}
-						hld1.buyReason = buyReason ;
-						hld2.buyReason = buyReason ;
 						
-						thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
-						thisHoldingMap.put(myOrderH2.getOrderId(), hld2);
-						holdingRecords.put(stockCode, thisHoldingMap);
-						
-						
-						orderWriter.write(hld1.toString() + "\n");
-						orderWriter.write(hld2.toString() + "\n");
-						orderWriter.flush();
-						
-						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
-						
-						SimpleDateFormat sdf_temp = new SimpleDateFormat ("dd/MM/yyyy hh:mm:ss");
-						buyOrdersToShow += "time=" + sdf_temp.format(now) + " stock=" + stockCode + " buyReason=" + buyReason + "\n";
 						thisBuyStocksSet.add(stockCode);
-						
+						//logger.info("      ********* 3333 **********");
 						//buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + "222" + " buyReason=" + "123" + "\n";
 						/*
 						Thread placingOrderAlert = new Thread(new Runnable(){
@@ -798,6 +828,7 @@ public class AVAT {
 			
 			ArrayList<String> thisBuyStocks = new ArrayList<String>(thisBuyStocksSet);
 			
+			//logger.info("********* 6987 **********");
 			Thread t_save = new Thread(new Runnable(){
 				   public void run(){
 					   try {

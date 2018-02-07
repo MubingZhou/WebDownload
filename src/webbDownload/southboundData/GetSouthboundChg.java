@@ -28,15 +28,15 @@ public class GetSouthboundChg {
 	public static void main(String[] args) {
 		// NORTHBOUND MODE NOW
 		try {
-			//String stockListPath = "D:\\stocklist_ashare.csv";
-			String stockListPath = "D:\\stocklist.csv";
+			String stockListPath = "D:\\stocklist_ashare.csv";
+			//String stockListPath = "D:\\stocklist.csv";
 			String startDateStr = "20171201";
-			String endDateStr = "20180123";
+			String endDateStr = "20180205";
 			String dateFormat = "yyyyMMdd";
 			String outputFileName = "D:\\notionalChg.csv";
 				// "Z:\\Mubing\\stock data\\southbound flow strategy - db\\results\\notionalChg.csv"
 			
-			if(false) {   // if true -> a share; if false -> hk share
+			if(true) {   // if true -> a share; if false -> hk share；还要在getSouthboundHolding里面改一个地方
 				ALL_TRADING_DATE_PATH = ALL_TRADING_DATE_PATH_ASHARE;
 				SOUTHBOUND_DATA_PATH = NORTHBOUND_DATA_PATH;
 				SOUTHBOUND_DATA_DATEFORMAT = NORTHBOUND_DATA_DATEFORMAT;
@@ -68,7 +68,7 @@ public class GetSouthboundChg {
 			String line = bf.readLine();
 			ArrayList<String> stockList = new ArrayList<String>(Arrays.asList(line.split(",")));
 			
-			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingDate(ALL_TRADING_DATE_PATH);
+			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingCal(ALL_TRADING_DATE_PATH);
 			ArrayList<Date> allTradingDate = new ArrayList<Date>();
 			for(int i = 0; i < allTradingCal.size(); i++) {
 				Calendar c = allTradingCal.get(i);
@@ -107,8 +107,8 @@ public class GetSouthboundChg {
 					String[]  lineArr =line.split(",");
 					String code = lineArr[0];
 			
-					String holdingStr = lineArr[2];   // hk - sb holding
-					//String holdingStr = lineArr[3];		// a share - nb holdindg
+					//String holdingStr = lineArr[2];   // hk - sb holding
+					String holdingStr = lineArr[2];		// a share - nb holdindg; lineArr[2] - holding shares, lineArr[3] - holding pct
 					Double holding = Double.parseDouble(holdingStr);
 					
 					LinkedHashMap<Date, Double> thisStockData = sbDataMap.get(code);
@@ -165,7 +165,7 @@ public class GetSouthboundChg {
 			String line = bf.readLine();
 			ArrayList<String> stockList = new ArrayList<String>(Arrays.asList(line.split(",")));
 			
-			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingDate(ALL_TRADING_DATE_PATH);
+			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingCal(ALL_TRADING_DATE_PATH);
 			ArrayList<Date> allTradingDate = new ArrayList<Date>();
 			for(int i = 0; i < allTradingCal.size(); i++) {
 				Calendar c = allTradingCal.get(i);

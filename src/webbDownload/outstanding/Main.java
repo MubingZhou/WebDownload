@@ -13,8 +13,8 @@ public class Main {
 			ArrayList<String> arr = new ArrayList<String>();
 			arr.add("1997");
 			
-			//DataDownloader.dataDownloader();
-			DataDownloader.dataDownloader(arr);
+			DataDownloader.dataDownloader();
+			//DataDownloader.dataDownloader(arr);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

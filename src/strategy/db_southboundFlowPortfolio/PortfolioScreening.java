@@ -697,7 +697,9 @@ public class PortfolioScreening {
             		String holding = lineArr[2];
             		Double holdingD = Double.parseDouble(holding);
             		String value = lineArr[3];
-            		Double valueD = Double.parseDouble(value);
+            		Double valueD = 0.0;
+            		if(utils.Utils.isDouble(value))
+            			valueD = Double.parseDouble(value);
             		
             		Map<Date,ArrayList<Double>> stockData = sbDataMap.get(stock);
             		if(stockData == null)
@@ -718,6 +720,17 @@ public class PortfolioScreening {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * return sbDataMap
+	 */
+	public static Map<String, Map<Date,ArrayList<Double>>> getAllSbData_return(String sbDataPath) {
+		if(sbDataMap == null || sbDataMap.size() == 0) {
+			getAllSbData(sbDataPath);
+		}
+		
+		return sbDataMap;
 	}
 	
 	public static void getSbChgPercentileData(String rootPath) {

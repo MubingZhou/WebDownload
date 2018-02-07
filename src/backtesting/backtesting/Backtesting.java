@@ -25,7 +25,7 @@ public class Backtesting {
 	
 	public double initialFunding = 1000000.0;
 	public double tradingCost = 0.001; // in percentage
-	public ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
+	public ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingCal(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
 	
 	public Portfolio portfolio = new Portfolio(initialFunding);
 	// at this stage, assume using equal-value method

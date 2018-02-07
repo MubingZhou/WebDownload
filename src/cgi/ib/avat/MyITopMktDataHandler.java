@@ -54,11 +54,12 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 	 */
 	//public ArrayList<Object> avat = new ArrayList<Object> (); 
 	
-	public MyITopMktDataHandler(String stockCode, String AVAT_ROOT_PATH, String todayDate) {
+	public MyITopMktDataHandler(Contract contract, String OUTPUT_ROOT_PATH, String todayDate) {
 		super();
-		this.stockCode = stockCode;
+		this.contract = contract;
+		this.stockCode = contract.symbol();
 		this.todayDate =todayDate;
-		fileWriterMainPath = AVAT_ROOT_PATH + "realtime data\\" + todayDate + "\\";
+		fileWriterMainPath = utils.Utils.addBackSlashToPath(OUTPUT_ROOT_PATH) + todayDate + "\\";
 		
 		try {
 			File f = new File(fileWriterMainPath);

@@ -18,10 +18,11 @@ import com.ib.client.Contract;
 import com.ib.client.Types.BarSize;
 import com.ib.client.Types.DurationUnit;
 import com.ib.client.Types.WhatToShow;
+import com.ib.controller.ApiController;
 
 public class AvatUtils {
 	private static Logger logger = Logger.getLogger(AvatUtils.class.getName());
-	public static String allTrdingDatePath = "D:\\stock data\\all trading date - hk.csv";
+	public static String allTrdingDatePath = utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK;
 	
 	public static String dateFormat = "yyyyMMdd HH:mm:ss";
 	public static SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
@@ -264,7 +265,7 @@ public class AvatUtils {
 		
 			// ------- 没有完成这项工作，现在完成 --------
 			FileWriter fw = new FileWriter(prevVPath, true);
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate();
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingCal();
 			
 			Calendar thisCal = (Calendar) allTradingDate.get(0).clone();
 			thisCal.setTime(sdf2.parse(todayDate));
@@ -623,7 +624,7 @@ public class AvatUtils {
 			SimpleDateFormat sdf_temp = new SimpleDateFormat(dateFormat);
 			Date lastDate = sdf_temp.parse(lastDateStr);
 			
-			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingDate(allTrdingDatePath);
+			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingCal(allTrdingDatePath);
 			ArrayList<Date> allTradingDate = new ArrayList<Date> ();
 			Calendar lastDateCal = (Calendar) allTradingCal .get(0).clone();
 			lastDateCal.setTime((Date) lastDate.clone()); 
@@ -705,8 +706,13 @@ public class AvatUtils {
 						}
 						
 						while(!timePath1.after(readTime1)){ // timePath1要去追 readTime1
-							if(timePath1.equals(readTime1))
+							if(timePath1.equals(readTime1)) {
+								if(todayAvat == null)
+									System.out.println("stock=" + stock + " todayAvat null - date=" + thisTrdDateStr);
+								if(thisTimeVol == null)
+									System.out.println("stock=" + stock + " thisTimeVol null - date=" + thisTrdDateStr);
 								todayAvat += thisTimeVol;
+							}
 							
 							Date timePath0 = timePath.get(timePathInd);
 							logger.trace("readTime=" + sdf.format(readTime1) + " timePath1=" + sdf.format(timePath1) + " timePathInd=" + timePathInd);
@@ -781,7 +787,7 @@ public class AvatUtils {
 	}
 	
 	//-------------------------------- historical bar data (1min, 3min, ..., daily, ... ) ------------------------
-	public static boolean downloadHistoricalBarData(MyAPIController myController, ArrayList<Contract> conArr, 
+	public static boolean downloadHistoricalBarData(ApiController myController, ArrayList<Contract> conArr, 
 			String endDateTime /*yyyyMMdd HH:mm:ss*/, int duration, DurationUnit durationUnit, BarSize barSize, WhatToShow whatToShow,
 			String outputRootPath) {
 		
@@ -900,7 +906,7 @@ public class AvatUtils {
 	 * @param dateFormat
 	 * @return
 	 */
-	public static boolean downloadHistorical1MinData(MyAPIController myController, ArrayList<Contract> conArr, String date, String dateFormat) {
+	public static boolean downloadHistorical1MinData(ApiController myController, ArrayList<Contract> conArr, String date, String dateFormat) {
 		boolean isOK = true;
 		try {
 			Date d = new SimpleDateFormat(dateFormat).parse(date);
@@ -926,7 +932,7 @@ public class AvatUtils {
 	public static boolean downloadHistorical1MinData_20D(MyAPIController myController, ArrayList<Contract> conArr, String endDate, String dateFormat) {
 		boolean isOK = true;
 		try {
-			ArrayList<Calendar> allTrdCal = utils.Utils.getAllTradingDate();
+			ArrayList<Calendar> allTrdCal = utils.Utils.getAllTradingCal();
 			Calendar todayCal = (Calendar) allTrdCal.get(0).clone();
 			todayCal.setTime(new SimpleDateFormat(dateFormat).parse(endDate));
 			int todayInd = allTrdCal.indexOf(todayCal);

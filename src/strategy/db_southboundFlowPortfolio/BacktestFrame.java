@@ -43,6 +43,7 @@ public class BacktestFrame {
 															//如果是在isFixedAmount=true时，则每次rebal回到eachStockValue
 															//如果是在isFixedAmount=false时，则每次rebal回到整个portfolio的percentage
 	public static Double eachStockValueRebalanceThreshold = 0.01;  // 每只股票只有在超出了eachStockValue * 这个threshold的时候才进行rebal
+	public static int daysBetweenRelancingDate_Rolling = 0;
 	
 	public static double tradingCost = 0.0;
 	
@@ -144,7 +145,7 @@ public class BacktestFrame {
 	
 	public static void init() {
 		try {
-			allTradingDate = utils.Utils.getAllTradingDate(allTradingDatePath);
+			allTradingDate = utils.Utils.getAllTradingCal(allTradingDatePath);
 			
 			if(dateFormat.equals(""))
 				dateFormat = "yyyyMMdd";
@@ -250,7 +251,7 @@ public class BacktestFrame {
 			
 			int rebalCount = 0;
 			ArrayList<ArrayList<StockSingleDate>> allPortfolioScreeningData = new ArrayList<ArrayList<StockSingleDate>>(); 
-			int max_allPS_Data = 30; // max size for allPortfolioScreeningData
+			int max_allPS_Data = 20; // max size for allPortfolioScreeningData
 			
 			// -------------- now start... -------------------
 			//FileWriter fw_dailyCCASSChg ; // 仅仅是为了初始化
@@ -425,8 +426,11 @@ public class BacktestFrame {
 
 					// *********** rebalancing date *************
 					if(todayDateStr.equals(rebalDateArr.get(rebalCount))) {
-						daysBetweenRelancingDate = 5; // rolling 的概念(if don't want rolling, just comment this line),
-														// daysBetweenRelancingDate应该小于max_allPS_Data
+						if(daysBetweenRelancingDate_Rolling > 0)
+							daysBetweenRelancingDate = daysBetweenRelancingDate_Rolling; 
+									// rolling 的概念(if don't want rolling, just comment this line),
+									// daysBetweenRelancingDate应该小于max_allPS_Data
+						
 						logger.info("\t\tToday is a rebalancing date! daysBetweenRelancingDate=" + daysBetweenRelancingDate);
 						
 						Map<String, StockSingleDate> rebalStock_map = new HashMap<String, StockSingleDate>();  // 想要在rebal那天将每只股票的rank都列出来
@@ -458,10 +462,12 @@ public class BacktestFrame {
 									if(findStock.SB_cum_notional_chg == null) {
 										findStock.SB_cum_notional_chg = 0.0;
 									}
-									if(thisStock.SB_notional_chg == null)
+									if(thisStock.SB_notional_chg == null) {
 										thisStock.SB_notional_chg = 0.0;
+									}
 									
-									findStock.SB_cum_notional_chg = findStock.SB_cum_notional_chg 
+									findStock.SB_cum_notional_chg = 
+											findStock.SB_cum_notional_chg 
 											+ thisStock.SB_notional_chg;
 									rebalStock_map.put(thisStock.stockCode, findStock);
 									
@@ -496,13 +502,15 @@ public class BacktestFrame {
 						logger.debug("\t\ttodaySel2.size() = " + todaySel2 .size());
 						
 						// 按照SB_cum_notional_chg进行排序，然后对rank5进行赋值
-						for(StockSingleDate singleStock : todaySel2) {
-							singleStock.sorting_indicator = singleStock.SB_cum_notional_chg;
-						}
-						Collections.sort(todaySel2, StockSingleDate.getComparator(1));   // 升序排列，即cum notional chg越低的越靠前，这样cum notional chg越高的得分就越高
-						for(int kk = 0; kk < todaySel2.size(); kk++) {
-							StockSingleDate singleStock =  todaySel2.get(kk);
-							singleStock.rank5 = (double) kk;
+						if(rankingStrategy == 5 || rankingStrategy == 8) {
+							for(StockSingleDate singleStock : todaySel2) {
+								singleStock.sorting_indicator = singleStock.SB_cum_notional_chg;
+							}
+							Collections.sort(todaySel2, StockSingleDate.getComparator(1));   // 升序排列，即cum notional chg越低的越靠前，这样cum notional chg越高的得分就越高
+							for(int kk = 0; kk < todaySel2.size(); kk++) {
+								StockSingleDate singleStock =  todaySel2.get(kk);
+								singleStock.rank5 = (double) kk;
+							}
 						}
 						
 						// 将每只股票最近20天的ranking加总，然后求平均值，再排序
@@ -540,6 +548,15 @@ public class BacktestFrame {
 							if(rankingStrategy >= 6.0 && rankingStrategy < 7.0) {
 								thisStock.sorting_indicator = thisStock.rank6;
 							}
+							if(rankingStrategy == 8)  // ranking 7依赖 ranking 1
+								thisStock.sorting_indicator = (0
+										+ thisStock.rank1 
+										+ thisStock.rank2 
+										+ thisStock.rank3 
+										+ thisStock.rank4
+										)/8
+										+ thisStock.rank5 / 2
+										;   // 这个句子决定了最后的排序
 							thisStock.rankFinal = thisStock.sorting_indicator;
 						}
 						Collections.sort(todaySel2, StockSingleDate.getComparator(-1));  // 降序排列
@@ -839,7 +856,14 @@ public class BacktestFrame {
 							
 							direction_buy.add(1);
 							
-							Double priceToBuy = Double.parseDouble(stockPrice.DataGetter.getStockDataField(thisStockToBuy,stockPrice.DataGetter.StockDataField.adjclose, todayDateStr, "yyyyMMdd"));
+							Double priceToBuy = 1.0;
+							String priceStr = stockPrice.DataGetter.getStockDataField(
+											thisStockToBuy,
+											stockPrice.DataGetter.StockDataField.adjclose, 
+											todayDateStr, "yyyyMMdd");
+							if(utils.Utils.isDouble(priceStr))
+								priceToBuy = Double.parseDouble(priceStr);
+									
 							
 							Double thisWeighting = 0.0;
 							if(weightingStrategy == 1) {  // 每只股票都买固定的金额
@@ -1068,7 +1092,7 @@ public class BacktestFrame {
 								+ "1M ADV (USD mm),SB/FF,rank1,SB/3M ADV,rank2,"
 								+ "rank3(avg daily SB/FF ranking),rank4(avg daily SB/3M ADV ranking),"
 								+ "ranking strategy 1 rank,"
-								+ "cum notional chg (HKD mm),rank5,"
+								+ "cum notional chg (rank5 - HKD mm),"
 								+ "percentile,rank6,"
 								+ "rank diff,rank7,"
 								//+ "Total Ranking,"
@@ -1097,7 +1121,7 @@ public class BacktestFrame {
 									+ monthlySBChg_vol + "," + thisStock.rank2 + ","
 									+ thisStock.rank3 + "," + thisStock.rank4 + ","
 									+ thisStock.dummyRankingStrategy1Rank + ","
-									+ thisStock.SB_cum_notional_chg / 1000000 + "," + thisStock.rank5 + ","
+									+ thisStock.SB_cum_notional_chg / 1000000 + "," 
 									+ percentileData + "," + thisStock.rank6 + ","
 									+ thisStock.dummyRank7RankDiff + "," + thisStock.rank7 + ","
 									//+ thisStock.rankFinal + ","
@@ -1486,11 +1510,13 @@ public class BacktestFrame {
 				}
 				
 				
-				Date startDate2 = sdf_yyyyMMdd.parse("20170101");
+				Date startDate2 = sdf_yyyyMMdd.parse("20180101");
 				startDate2 = utils.Utils.getMostRecentDate(startDate2, allTradingDate_date);
 				int startInd2 = allTradingDate_date.indexOf(startDate2);
 				
-				Date endDate2 = sdf_yyyyMMdd.parse("20180126");
+				//String 
+				Date endDate2 = utils.Utils.getRefDate(new Date(), allTradingDate_date, -1);  // 上一个交易日
+				//Date endDate2 = sdf_yyyyMMdd.parse("20180130");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				

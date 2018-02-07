@@ -8,9 +8,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.apache.log4j.Logger;
+
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -26,7 +30,23 @@ import com.ib.client.Types.NewsType;
 import com.ib.client.Types.WhatToShow;
 import com.ib.controller.ApiConnection.ILogger;
 
+import cgi.ib.avat.MyAPIController;
+import cgi.ib.avat.MyIHistoricalDataHandler;
+import cgi.ib.avat.MyITopMktDataHandler;
+import cgi.ib.avat.MyAPIController.RequestType;
+
 public class ApiController implements EWrapper {
+	/*********** My Codes ****************/
+	private static Logger logger = Logger.getLogger(MyAPIController.class.getName());
+	
+	public ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
+	public ArrayList<MyIHistoricalDataHandler> histHandlerArr = new ArrayList<MyIHistoricalDataHandler>();
+	public Map<Integer, MyIHistoricalDataHandler> histHandlerMap = new HashMap<Integer, MyIHistoricalDataHandler>();
+	
+	public LinkedHashMap<Integer, RequestType> reqIdMap = new LinkedHashMap<Integer, RequestType> ();
+	/*********** My Codes End ****************/
+	
+	
 	private ApiConnection m_client;
 	private final ILogger m_outLogger;
 	private final ILogger m_inLogger;

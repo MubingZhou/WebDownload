@@ -40,7 +40,7 @@ public class Test {
 			String dateFormat = "yyyyMMdd HH:mm:ss";
 			SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
 			String todayDate = new SimpleDateFormat ("yyyyMMdd").format(new Date());
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingCal("D:\\stock data\\all trading date - hk.csv");
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
 			int port = 7496;

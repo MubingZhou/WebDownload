@@ -44,7 +44,7 @@ public class DrawDownAnalysis {
 			//ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>();
 			Collections.sort(allDaysArr ); // ascending
 			
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingCal("D:\\stock data\\all trading date - hk.csv");
 			
 			Calendar date1Cal = (Calendar) allDaysArr.get(0).clone();
 			date1Cal .setTime(sdf.parse(date1));
@@ -188,7 +188,7 @@ public class DrawDownAnalysis {
 			//ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>();
 			Collections.sort(allDaysArr ); // ascending
 			
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingCal("D:\\stock data\\all trading date - hk.csv");
 			
 			Calendar date1Cal = (Calendar) allDaysArr.get(0).clone();
 			date1Cal .setTime(sdf.parse(date1));
@@ -439,7 +439,7 @@ public class DrawDownAnalysis {
 			//ArrayList<Calendar> allDaysArr = new ArrayList<Calendar>();
 			Collections.sort(allDaysArr ); // ascending
 			
-			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
+			ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingCal("D:\\stock data\\all trading date - hk.csv");
 			
 			/*
 			Calendar date1Cal = (Calendar) allDaysArr.get(0).clone();

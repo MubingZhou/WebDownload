@@ -34,7 +34,7 @@ public class NorthboundHolding {
 	private static Logger logger = Logger.getLogger(NorthboundHolding.class);
 	
 	public static void main(String[] args) {
-		String dateStr = "20180126";
+		String dateStr = "20180205";
 		downloader(dateStr,dateStr,"yyyyMMdd");
 		combiner(dateStr,dateStr,"yyyyMMdd");
 	}
@@ -44,7 +44,7 @@ public class NorthboundHolding {
 			String[] urlPath = {SH_HOLDING_URL, SZ_HOLDING_URL};
 			boolean[] urlPathDownload = {isSH, isSZ};
 			
-			ArrayList<Calendar> allTrdCal = utils.Utils.getAllTradingDate(ASHARE_TRADING_DATE_FILE);
+			ArrayList<Calendar> allTrdCal = utils.Utils.getAllTradingCal(ASHARE_TRADING_DATE_FILE);
 			int allTrdCal_size = allTrdCal.size();
 			
 			//SimpleDateFormat sdf = new SimpleDateFormat(Utils.DATE_FORMAT); 

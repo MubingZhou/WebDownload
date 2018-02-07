@@ -47,8 +47,8 @@ public class Utils {
 	
 	public static final String SH_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SSE Southbound Stocks.csv";
 	public static final String SZ_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SZSE Southbound Stocks.csv";
-	public static final String HSI_STOCKLIST_PATH = "Z:\\Mubing\\stock data\\HSI HSCEI index\\HSI history from 2012.csv";
-	public static final String HSCEI_STOCKLIST_PATH = "Z:\\Mubing\\stock data\\HSI HSCEI index\\HSCEI history from 2012.csv";
+	public static final String HSI_STOCKLIST_PATH = utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HSI HSCEI index\\HSI history from 2010.csv";
+	public static final String HSCEI_STOCKLIST_PATH = utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HSI HSCEI index\\HSCEI history from 2010.csv";
 			
 	private static Logger logger = Logger.getLogger(Utils.class.getName());
 	
@@ -771,7 +771,7 @@ public class Utils {
 		 * @param filePath
 		 * @return
 		 */
-		public static ArrayList<Calendar> getAllTradingDate(String filePath){
+		public static ArrayList<Calendar> getAllTradingCal(String filePath){
 			ArrayList<Calendar> allTradingDate = new ArrayList<Calendar>();
 			
 			try {
@@ -798,7 +798,42 @@ public class Utils {
 			return allTradingDate;
 		}
 		
-		public static ArrayList<Calendar> getAllTradingDate(){
+		/**
+		 * get all trading date and sort them ascendingly, i.e. older dates in the front
+		 * @param filePath
+		 * @return
+		 */
+		public static ArrayList<Date> getAllTradingDate(String filePath){
+			ArrayList<Date> allTradingDate = new ArrayList<Date>();
+			
+			try {
+				BufferedReader bf  = utils.Utils.readFile_returnBufferedReader(filePath);
+				String line = bf.readLine();
+				String[] lineArr = line.split(",");
+				
+				String dateFormat = "dd/MM/yyyy";
+				SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+				
+				for(int i = 0; i < lineArr.length; i++) {
+					Calendar cal = Calendar.getInstance();
+					cal.setTime(sdf.parse(lineArr[i]));
+					allTradingDate.add(cal.getTime());
+				}
+				
+				// sorting - ascending, i.e. older date at the front
+				Collections.sort(allTradingDate);
+			}catch(Exception e) {
+				System.out.println("getting all trading date failed!");
+			}
+			
+			
+			return allTradingDate;
+		}
+		
+		public static ArrayList<Calendar> getAllTradingCal(){
+			return getAllTradingCal(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
+		}
+		public static ArrayList<Date> getAllTradingDate(){
 			return getAllTradingDate(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
 		}
 		
@@ -865,6 +900,53 @@ public class Utils {
 			Calendar mostRecentCal = getMostRecentDate(cal, calArr);
 			
 			return mostRecentCal.getTime();
+		}
+		
+		/**
+		 * 获得相对于“某个日期”位移一段时间的日期，shift为正数，表示往后shift。比如有三个日期是相连的：1月22日，1月25日，1月26日
+		 * 那么如果“某个日期”为1月25日，shift为1，则得到1月26日，如果shift为-1，则得到1月22日
+		 * 注：需要确保dateArr是按照由旧到新排列的
+		 * @param thisDate  “某个日期”
+		 * @param dateArr
+		 * @param shift
+		 * @return
+		 * @throws Exception
+		 */
+		public static Date getRefDate(Date thisDate, ArrayList<Date> dateArr, int shift) throws Exception{
+			Date toReturn = new Date();
+			
+			if(dateArr == null || dateArr.size() == 0) {
+				logger.error("utils.Utils.getRefDate: dateArr size 0 or null!");
+				return null;
+			}
+				
+			
+			if(thisDate.before(dateArr.get(0)) || thisDate.after(dateArr.get(dateArr.size()-1))) {
+				logger.error("utils.Utils.getRefDate: thisDate outside of dateArr range!");
+				return null;
+			}
+			
+			for(int i = 0; i < dateArr.size()-1; i++) {
+				Date dateArr_thisDate = dateArr.get(i);
+				Date dateArr_nextDate = dateArr.get(i+1);
+				if(!thisDate.before(dateArr_thisDate) 
+						&& !thisDate.after(dateArr_nextDate)) {  // thisDate在dateArr_thisDate和dateArr_nextDate之间
+					int toGetDateInd =  i + shift;
+					if(toGetDateInd < 0) {
+						logger.error("utils.Utils.getRefDate: shift range negative!");
+						return null;
+					}
+					if(toGetDateInd > dateArr.size()) {
+						logger.error("utils.Utils.getRefDate: shift range outside largest range!");
+						return null;
+					}
+					
+					toReturn = dateArr.get(toGetDateInd);
+				}
+			}
+			
+			return toReturn;
+				
 		}
 		
 		/**

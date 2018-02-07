@@ -25,6 +25,7 @@ import com.ib.client.Types.BarSize;
 import com.ib.client.Types.DurationUnit;
 import com.ib.client.Types.WhatToShow;
 import com.ib.controller.ApiConnection;
+import com.ib.controller.ApiController;
 import com.ib.controller.ApiController.IConnectionHandler;
 import com.ib.controller.ApiController.ITopMktDataHandler;
 
@@ -63,7 +64,7 @@ public class Main {
 			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			
 			boolean readyToExit = false;
-			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingDate("Z:\\Mubing\\stock data\\all trading date - hk.csv");
+			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingCal(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
 			ArrayList<Date> allTradingDate = new ArrayList<Date> ();
 			for(Calendar cal : allTradingCal) {
 				allTradingDate .add(cal.getTime());
@@ -118,7 +119,10 @@ public class Main {
 			ArrayList<String> stockList = new ArrayList<String>();
 			//ArrayList<String> industryList = new ArrayList<String>();
 			
-			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "stocklist.csv");
+			String stockListPath = AVAT_ROOT_PATH + "stocklist.csv";
+			if(isTestRun==1)
+				stockListPath = AVAT_ROOT_PATH + "stocklist-test.csv";
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockListPath);
 			//BufferedReader bf = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "additional-stocklist.csv");
 			stockList.addAll(Arrays.asList(bf.readLine().split(",")));
 			for(int i = 0; i < stockList.size(); i ++) {
@@ -153,10 +157,12 @@ public class Main {
 			logger.info("dowloading ends...");
 			
 			// --------------- avat--------------- 
-			AVAT.setting(myController, conArr, AVAT_ROOT_PATH);
-			logger.info("AVAT.setting ends...");
-			
-			AVAT.start();
+			if(!nowDate.after(sdf.parse(todayDate + " 16:10:00")) ) {   //在当日16：10之前，才run
+				AVAT.setting(myController, conArr, AVAT_ROOT_PATH);
+				logger.info("AVAT.setting ends...");
+				
+				AVAT.start();
+			}
 			// --------------- avat done --------------- 
 			logger.info("-------------------- All ends ----------------------");
 			//Thread.sleep(1000 * 500000);
@@ -321,7 +327,7 @@ public class Main {
 				System.out.println("");
 				for(int i = 0; i < 405; i++) {
 					Contract con = conArr.get(i);
-					MyITopMktDataHandler myTop = new MyITopMktDataHandler(con.symbol(), AVAT_ROOT_PATH, "20171020");
+					MyITopMktDataHandler myTop = new MyITopMktDataHandler(con, AVAT_ROOT_PATH, "20171020");
 					//myTop.fileWriterMainPath = AVAT_ROOT_PATH + "real time data\\";
 					//topMktDataHandlerArr.add(myTop);
 					//myController.reqMktDataType(MarketDataType.REALTIME);
@@ -428,6 +434,7 @@ public class Main {
 			*/
 			
 			System.out.println("========================== END ==========================");
+			System.exit(0);
 			
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -439,25 +446,25 @@ public class Main {
 	}
 	
 	public static boolean getHistorical1MinData_OneDay(String dateStr, String dateFormat) {
-		ArrayList<String> dateArr = new ArrayList<String>();
-		dateArr.add("20171213");
-		dateArr.add("20171212");
-		dateArr.add("20171211");
-		dateArr.add("20171208");
-		dateArr.add("20171207");
-		dateArr.add("20171206");
-		dateArr.add("20171205");
-		dateArr.add("20171204");
-		dateArr.add("20171201");
-		dateArr.add("20171130");
-		dateArr.add("20171129");
-		dateArr.add("20171128");
-		dateArr.add("20171127");
-		for(int i = 1000; i < dateArr.size(); i ++) {
-			String dateStr1  = dateArr.get(i);
-			AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr1, dateFormat);
-		}
-		
+//		ArrayList<String> dateArr = new ArrayList<String>();
+//		dateArr.add("20171213");
+//		dateArr.add("20171212");
+//		dateArr.add("20171211");
+//		dateArr.add("20171208");
+//		dateArr.add("20171207");
+//		dateArr.add("20171206");
+//		dateArr.add("20171205");
+//		dateArr.add("20171204");
+//		dateArr.add("20171201");
+//		dateArr.add("20171130");
+//		dateArr.add("20171129");
+//		dateArr.add("20171128");
+//		dateArr.add("20171127");
+//		for(int i = 1000; i < dateArr.size(); i ++) {
+//			String dateStr1  = dateArr.get(i);
+//			AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr1, dateFormat);
+//		}
+//		
 		boolean readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr, dateFormat);
 		//myController.disconnect();
 		//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
