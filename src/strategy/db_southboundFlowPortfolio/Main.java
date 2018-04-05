@@ -39,8 +39,11 @@ public class Main {
 	public static SimpleDateFormat sdf_yyyy_MM_dd = new SimpleDateFormat("yyyy-MM-dd");
 	//ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("D:\\stock data\\all trading date - hk.csv");
 	public static String allTradingDatePath = "Z:\\Mubing\\stock data\\all trading date - hk.csv";
+	public static String allMMATradingDatePath = "Z:\\Mubing\\stock data\\all MMA trading date - hk.csv";
 	public static ArrayList<Calendar> allTradingCal = new ArrayList<Calendar>();
 	public static ArrayList<Date> allTradingDate = new ArrayList<Date>();
+	public static ArrayList<Calendar> allMMATradingCal = new ArrayList<Calendar>();
+	public static ArrayList<Date> allMMATradingDate = new ArrayList<Date>();
 	//ArrayList<Calendar> allTradingDate = utils.Utils.getAllTradingDate("T:\\Mubing\\stock data\\all trading date - hk.csv");
 	//String MAIN_ROOT_PATH = "D:\\stock data\\southbound flow strategy - db";
 	public static String MAIN_ROOT_PATH = "Z:\\Mubing\\stock data\\southbound flow strategy - db";
@@ -62,10 +65,13 @@ public class Main {
 				notionalChgDataRootPath = "T:\\Mubing\\stock data\\southbound flow strategy - db\\";
 				southboundDataRootPath = "T:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound";
 				allTradingDatePath = "T:\\Mubing\\stock data\\all trading date - hk.csv";
+				allMMATradingDatePath = "T:\\Mubing\\stock data\\all MMA trading date - hk.csv";
 			}
 			
 			allTradingCal = utils.Utils.getAllTradingCal(allTradingDatePath);
 			allTradingDate = utils.Utils.getAllTradingDate(allTradingDatePath);
+			allMMATradingCal = utils.Utils.getAllTradingCal(allMMATradingDatePath);
+			allMMATradingDate = utils.Utils.getAllTradingDate(allMMATradingDatePath);
 			
 //			Please run this program in the morning 
 //			and DO NOT shut down the program after running
@@ -73,9 +79,15 @@ public class Main {
 			//downloadSBData();
 			
 			if(true) {
-				boolean isDownloadSBData = true;
-				boolean isBacktest = true;
+				boolean isDownloadSBData = false;
+				
+				boolean isBacktest = false;
+					boolean isOutputAVATStockPicks = false;
+					
 				boolean isDownloadPriceData = true;
+					boolean isShutDown_StockPrice = false;
+				
+				
 				
 				//downloadSBData();
 				if(isDownloadSBData) {
@@ -85,15 +97,16 @@ public class Main {
 					calAvgVolume();
 					logger.info("Calculate Average Volume - Done!");
 					
-					calDailyNotionalChg();
-					logger.info("Calculate Daily Notional Change - Done!");
+					//calDailyNotionalChg();
+					//logger.info("Calculate Daily Notional Change - Done!");
 					
-					calSBPercentile();
-					logger.info("Download Southbound Percentile - Done!");
+					//calSBPercentile();
+					//logger.info("Download Southbound Percentile - Done!");
 					
 				}
 				
 				if(isBacktest) {
+					BacktestFrame.isOutputAVATStockPicks = isOutputAVATStockPicks;
 					fullBacktesting();
 					logger.info("Full Back-testing - Done!");
 				}
@@ -111,138 +124,11 @@ public class Main {
 					}
 					webDownload.GetPrice.downloadData_2();
 					logger.info("Downloading Data - Done!");
-				}
-			}
-			
-			
-			
-			// ---------- code no use below ------------------
-			int mode = 88795;
-			/*
-			 * 0 - downloading data
-			 * 1 - full backtesting
-			 * 2 - drawdown analysis
-			 * 3 - reshape & calculate avg volume & turnover
-			 * 4 - reshape stock outstanding shares info - undone
-			 * 5 - 计算每只股票在每一天相对于前一天的notional chg
-			 * 6 - 计算每只股票每天的southbound flow相对于历史的southbound flow的percentile
-			 * 先download数据（包括outstanding shares的数据和southbound的数据），再run mode 3，再run mode 5（计算notional，可以不run）再run mode 6（计算historical percentile，也可以不run），然后再run mode 1
-			 */
-			
-			if(mode == 0) {
-				//需要的数据： southbound + outstanding shares数据
-				BufferedReader bf = utils.Utils.readFile_returnBufferedReader("D:\\stock data\\all stock list.csv");
-				String[] stockList = {};
-				for(int i = 0; i< stockList.length; i++) {
-					System.out.println("Stock = " + stockList[i]);
-					webDownload.GetPrice.getHistoricalData(stockList[i], stockList[i]+".csv", "D:\\stock data\\stock hist data - webb\\");
-					webbDownload.outstanding.DataDownloader.dataDownloader(stockList[i]);
-				}
-			}
-			
-			if(mode == 1) {
-				logger.info("============ Backtesting ============");
-				
-				
-			}
-			
-			if(mode == 2) {
-				String portFilePathRoot =  "D:\\stock data\\southbound flow strategy - db\\20170925 075008 - filter\\";
-				String portFilePath = portFilePathRoot + "portfolio.xml";
-				Portfolio pf = (Portfolio) XMLUtil.convertXmlFileToObject(Portfolio.class,portFilePath);
-				
-				String startDate = "20160704";
-				String endDate = "20160810";
-				String dateFormat = "yyyyMMdd";
-				
-				//DrawDownAnalysis.analysisBetweenDates_outputPath = portFilePathRoot + "drawdown_analysis " + startDate + " - " + endDate + ".csv";
-				//DrawDownAnalysis.pnlAnalysisBetweenDates(pf,startDate ,endDate ,dateFormat );
-				
-				//DrawDownAnalysis.maxDrawdown(pf, startDate, endDate, dateFormat);
-				ArrayList<Object> mvArr = pf.getMarketValue("20160101", "20171231", "yyyyMMdd");
-				ArrayList<Double> mv = (ArrayList<Double>) mvArr.get(0);
-				Double s = DrawDownAnalysis.sharpeRatio(mv, 0.0);
-				System.out.println("Sharpe = " + s);
-				
-				DrawDownAnalysis.comprehensiveAnalysis(pf, portFilePathRoot + "test.csv");
-			}
-			
-			if(mode == 3) {  // calculating stock volume and save
-				
-			
-			}
-			
-			if(mode == 4) {  // reshaping outstanding shares info - undone
-				logger.info("============== reshaping outstanding shares info ===============");
-				
-				Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
-				Calendar startCal = Calendar.getInstance();
-				startCal.setTime(sdf_yyyyMMdd.parse("20141201"));
-				Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingCal);
-				
-				int start_ind = allTradingCal.indexOf(startCal2);
-				Calendar dataStartCal = allTradingCal.get(start_ind - 60);
-				startCal = (Calendar) startCal2.clone();
-				
-				// create these filewriters
-				for(int i = 0; i < allTradingCal.size(); i++) {
-					Calendar thisCal = allTradingCal.get(i);
-					if(!thisCal.before(startCal)) {
-						String thisCal_str = sdf_yyyyMMdd.format(thisCal.getTime());
-						
-						String path = "D:\\stock data\\southbound flow strategy - db\\stock outstanding shares\\";
-						FileWriter fw = new FileWriter(path + thisCal_str + ".csv");
-						fw.write("stock,outstanding shares\n");
-						
-						fwMap.put(thisCal_str, fw);
-					}
-				}
-				
-				// write data
-				String stockDirPath = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
-				File f = new File(stockDirPath );
-				String[] fileList = f.list();
-				for(int i = 0; i < fileList.length; i++) {
-					logger.debug("File = " + fileList[i]);
-					String stock = fileList[i].substring(0, fileList[i].length() - 4);
 					
-					BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockDirPath + fileList[i]);
-					String line = "";
-					int count1 = 0;
-					int trdDateCount = 0;
-					int trdDateInd = allTradingCal.size() - 1;
-					while((line = bf.readLine()) != null) {
-						if(count1 == 0) {
-							count1 ++;
-							continue;
-						}
-						ArrayList<String> dataArr = new ArrayList<String>(Arrays.asList(line.split(",")));
-						String thisOsShares = dataArr.get(1);
-						
-						Calendar thisCal = Calendar.getInstance();
-						thisCal.setTime(sdf_yyyy_MM_dd.parse(dataArr.get(0)));
-						
-						if(thisCal.after(allTradingCal.get(trdDateInd)))
-							continue;
-						
-						while(!allTradingCal.get(trdDateInd).before(thisCal)) {
-							
-						}
-					}
-					
+					if(isShutDown_StockPrice)
+						Runtime.getRuntime().exec( "shutdown -s -t 1");
 				}
-				
 			}
-			
-			if(mode == 5) {
-				
-			}  // end of mode 5
-			
-			
-			if(mode == 6) {
-				
-			}  // end of mode 6
-			
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -309,14 +195,18 @@ public class Main {
 			// -------------------- path settings -------------------
 			BacktestFrame.allSbDataPath =SOUTHBOUND_DATA_PATH ;
 			BacktestFrame.allPriceDataPath = STOCK_PRICE_PATH;
-			BacktestFrame.allTradingDatePath = allTradingDatePath;
+			BacktestFrame.allTradingDatePath = allMMATradingDatePath;
 			PortfolioScreening.avgVolMainPath = MAIN_ROOT_PATH + "\\stock avg trd vol - 1M\\";
 			BacktestFrame.notionalChgDataRootPath = notionalChgDataRootPath;
 			BacktestFrame.percentileDataRootPath = percentileDataRootPath;
 			
 			// -------------------- Configurations -----------------------
 			String portFilePath = MAIN_ROOT_PATH + "\\" 
-					+ sdf2.format(new Date()) + " rolling " + sdf.format(utils.Utils.getRefDate(new Date(), allTradingDate, -1)) + "";  //rolling stock picks 20171219   buffer - 15-20   index 5days FULLLIST
+					+ sdf2.format(new Date()) 
+					//+ " 11M USD - roll 15days"
+					+ " 12.5M USD rolling " + sdf.format(utils.Utils.getRefDate(new Date(), allMMATradingDate, -1)) + ""
+					//rolling stock picks 20171219   buffer - 15-20   index 5days FULLLIST
+					;
 			/*
 			 * Rolling configurations:
 			 * rankingStrategy = 1;
@@ -330,7 +220,7 @@ public class Main {
 			File f = new File(portFilePath);
 			f.mkdir();
 			
-			double avgDailyValueThreshHold_USD =  7000000.0;  // 每天的平均成交额需要超过这个数才能入选
+			double avgDailyValueThreshHold_USD =  12500000.0;  // 每天的平均成交额需要超过这个数才能入选
 			int topNStocks = 100;   // 每次选多少只股票进行买入卖出
 			int topNStocksMode = 1;
 			/*
@@ -420,7 +310,7 @@ public class Main {
 				BacktestFrame.isToCalNotional = false;
 			
 			//-----------------------------------------
-			int[] topNStocksArr = {35};  //{5,10,15,20,25,30}
+			int[] topNStocksArr = {15}; //{3,5,7,9,10,11,13,15,17,19,20,21,23,25,27,29,30,31};
 			int[] weightingStrategyArr = {1,2};
 			int[] earlyUnwindStrategyArr = {1,2};
 			double[] avgDailyValueThreshHold_USDArr = {
@@ -434,21 +324,23 @@ public class Main {
 //			double[] rankingStrategy6_1_threshold_Arr = {0.9};
 //			int [] rankingStrategy6_1_holdDay_Arr = {3};
 			boolean[] isRebalanceEachTimeArr = {false, true};
-			int[] daysBetweenRelancingDate_Rolling_Arr = {15};  //{5,10,15,20,25,30,35,40}
+			int[] daysBetweenRelancingDate_Rolling_Arr = {5,10,15};  //{5,10,15,20,25,30,35,40}
 			
-			int size1 = topNStocksArr.length;
+			int size1 = 1;
+			//size1 = topNStocksArr.length;
 			//size1 = rankingStrategy6_1_threshold_Arr.length;
 			size1 = topNStocksArr.length;
 			
-			int size2 = weightingStrategyArr.length;
+			int size2 = 1;
+			//size2 = weightingStrategyArr.length;
 			//size2 = earlyUnwindStrategyArr.length;
 			//size2 = avgDailyValueThreshHold_USDArr.length;
 			//size2 = stockUniverseArr.length;
 			//size2 = rebalancingStrategyArr.length;
 			//size2 = rankingStrategy6_1_holdDay_Arr.length;
 			//size2 = isRebalanceEachTimeArr.length;
-			//size2 = daysBetweenRelancingDate_Rolling_Arr.length;
-			size2 = 1;
+			size2 = daysBetweenRelancingDate_Rolling_Arr.length;
+
 			for(int i = 0; i < size1; i++) {
 				topNStocks = topNStocksArr[i];
 				//rankingStrategy6_1_threshold = rankingStrategy6_1_threshold_Arr[i];
@@ -653,7 +545,7 @@ public class Main {
 	public static void calAvgVolume() {
 		try {
 			logger.info("============== calculating stock volume and save ===============");
-			Map<String, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
+			Map<Date, FileWriter> fwMap = new HashMap();  // map的key是yyyyMMdd形式的日期
 			Calendar startCal = Calendar.getInstance();
 			startCal.setTime(sdf_yyyyMMdd.parse("20180101"));
 			Calendar startCal2 = utils.Utils.getMostRecentDate(startCal, allTradingCal);
@@ -668,13 +560,14 @@ public class Main {
 				Calendar thisCal = allTradingCal.get(i);
 				if(!thisCal.before(startCal)) {
 					String thisCal_str = sdf_yyyyMMdd.format(thisCal.getTime());
+					Date thisCal_date = thisCal.getTime();
 					
 					String path = MAIN_ROOT_PATH + "\\stock avg trd vol - 1M\\";
 					//path = "D:\\stock data\\southbound flow strategy - db\\stock avg trd vol\\";
 					FileWriter fw = new FileWriter(path + thisCal_str + ".csv");
 					fw.write("stock,1M avg vol(shares),1M avg turnover(value)\n");
 					
-					fwMap.put(thisCal_str, fw);
+					fwMap.put(thisCal_date, fw);
 				}
 			}
 			
@@ -730,14 +623,19 @@ public class Main {
 					ArrayList<String> dataArr = data.get(j);
 					
 					String thisDate = dataArr.get(0);
+					//System.out.println("thisDate=" + thisDate);
+					
 					Date temp  = new Date();
-					if(utils.Utils.isDate(thisDate, "dd/MM/yyyy"))
+					
+					if(utils.Utils.isDate(thisDate, "dd/MM/yyyy")) {
 						temp = new SimpleDateFormat("dd/MM/yyyy").parse(thisDate);
+					}
 					if(utils.Utils.isDate(thisDate, "yyyy-MM-dd")) {
 						temp = new SimpleDateFormat("yyyy-MM-dd").parse(thisDate);
 					}
-					
+									
 					thisDate = sdf_yyyyMMdd.format(temp); // change the format
+					
 					
 					Double accVol = 0.0;
 					Double accTur = 0.0;
@@ -760,15 +658,21 @@ public class Main {
 						avgTur = accTur / numTrdDate;
 					}
 					
-					FileWriter fw = fwMap.get(thisDate);
-					fw.write(stock+","+String.valueOf(avgVol) + "," + String.valueOf(avgTur) + "\n");
+					FileWriter fw = fwMap.get(temp);
+					if(fw==null) {
+						System.out.println("fw null! date=" + new SimpleDateFormat("yyyyMMdd").format(temp));
+					}
+					fw.write(
+							stock+","
+							+String.valueOf(avgVol) + "," 
+							+ String.valueOf(avgTur) + "\n");
 				} // end of for(j)
 			}
 			
 			
 			// close all filewriters
-			Set<String> allDates = fwMap.keySet();
-			for(String thisDate : allDates) {
+			Set<Date> allDates = fwMap.keySet();
+			for(Date thisDate : allDates) {
 				FileWriter fw = fwMap.get(thisDate);
 				fw.close();
 			}
@@ -1161,12 +1065,14 @@ public class Main {
 	 */
 	public static void downloadSBData() {
 		try {
-			Date lastTrdDate = utils.Utils.getRefDate(new Date(), allTradingDate, -1);
+			Date lastTrdDate = utils.Utils.getRefDate(new Date(), allMMATradingDate, -1);
 			String dateStr_yyyyMMdd = sdf_yyyyMMdd.format(lastTrdDate);
+			//dateStr_yyyyMMdd = "20180323";
 			
 			String southboundDateFormat = "yyyy-MM-dd";
 			SimpleDateFormat sdf_2 = new SimpleDateFormat (southboundDateFormat); 
 			String dateStr_2 = sdf_2.format(lastTrdDate);
+			//dateStr_2 = "2018-03-29";
 			
 			// ---------- southbound ------------
 			String shPath = southboundDataRootPath + "\\sh";
@@ -1174,11 +1080,12 @@ public class Main {
 			String outputPath = southboundDataRootPath + "\\combined";
 			DataDownloader.FILE_OUTPUT_PATH = southboundDataRootPath;
 			
+			logger.info(" -Southbound data download date=" + dateStr_2);
 			DataDownloader.dataDownloader(dateStr_2, dateStr_2, southboundDateFormat, true, true);
 			DataCombiner.dataCombiner(shPath, szPath, outputPath);
 			
 			// ---------- northbound ------------
-			logger.info("dateStr_yyyyMMdd=" + dateStr_yyyyMMdd);
+			logger.info(" -Northbound dateStr_yyyyMMdd=" + dateStr_yyyyMMdd);
 			webDownLoadHKEX.NorthboundHolding.downloader(dateStr_yyyyMMdd,dateStr_yyyyMMdd,"yyyyMMdd");
 			webDownLoadHKEX.NorthboundHolding.combiner(dateStr_yyyyMMdd,dateStr_yyyyMMdd,"yyyyMMdd");
 		}catch(Exception e) {

@@ -20,9 +20,11 @@ public class DataConversion {
 		// --------------------- stock price conversion -------------------
 		//convertToSingleFile_fundamentalDdata("","");
 		String hkStockDataInputPath = "Z:\\Mubing\\stock data\\all stock list - bbg.csv";
+//		String hkStockDataInputPath = "T:\\db southbound\\indices data.csv";
 		String aShareDataInputPath = "Z:\\Mubing\\stock data\\";
 		
 		String hkStockDataOutputPath = "Z:\\Mubing\\stock data\\stock hist data - bbg\\";
+//		String hkStockDataOutputPath = "T:\\db southbound\\indices data\\";
 		String aShareDataOutputPath = "Z:\\Mubing\\stock data\\A share data\\historical data\\20171203 all\\";
 		
 		int market = 2;
@@ -38,7 +40,12 @@ public class DataConversion {
 		// -------------------- south bound conversion ---------------
 		String sbInputPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\combined";
 		String sbOutputPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\by stock";
-		convertSouthboundByStock(sbInputPath, sbOutputPath);
+		//convertSouthboundByStock(sbInputPath, sbOutputPath);
+		
+		//------------------- bbg download conversion (new) ------------------
+		String bbgDownloadDataInputpath = "T:\\db southbound\\indices data2.csv";
+		String bbgDownloadDataIOutputpath = "T:\\db southbound\\indices data2\\";
+		convertToSingleFile_bbg_new(bbgDownloadDataInputpath, bbgDownloadDataIOutputpath);
 	}
 	
 	/**
@@ -70,6 +77,7 @@ public class DataConversion {
 			String line = "";
 			 
 			int fixLine = 9;
+			//int fixLine = 7;
 			if(market == 2)
 				fixLine = 10;
 			/*
@@ -188,6 +196,7 @@ public class DataConversion {
 								}else {
 									continue;
 								}
+								//open=high=low=close;
 							}
 						}else
 							continue;
@@ -217,7 +226,8 @@ public class DataConversion {
 								+ low + ","
 								+ close + ","
 								+ vol + ","
-								+ shareDouble);
+								+ shareDouble
+								);
 						
 						// HK market
 						if(market == 2) {
@@ -274,10 +284,112 @@ public class DataConversion {
 						+ low + ","
 						+ close + ","
 						+ vol + ","
-						+ shareDouble + 
-						"\n");
+						+ shareDouble 
+						+ "\n");
 			}
 			fw.close();
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+			System.out.println("line=" + count);
+		}
+	}
+	
+	/**
+	 * 新版的BBG的spread sheet导出的数据
+	 */
+	public static void convertToSingleFile_bbg_new(String inputFileName, String outputRootPath) {
+		/*
+		 * market:
+		 * 1 - A share
+		 * 2 - HK market
+		 */
+		
+		int count = 1;  
+		if(!outputRootPath.substring(outputRootPath.length() - 1, outputRootPath.length()).equals("\\"))
+			outputRootPath = outputRootPath + "\\";
+		
+		try {
+			// inputFileName = "T:\\Mubing\\stock data\\A share data\\northbound stock data.csv"
+			//String rootPath = "T:\\Mubing\\stock data\\A share data\\";
+			//String inputFileName = rootPath + "northbound stock data.csv";
+			//String outputRootPath = rootPath + "historical data\\";
+			
+			FileWriter fw = new FileWriter("D:\\test.csv");
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(inputFileName);
+			fw.close();
+			
+			String line = "";
+			 
+			int fixLine = 6;
+			//int[] dataLine = {2,3,4,5};
+			/*
+			 * 数据格式如下，一共X行,第一行是日期，第一行第一格子是ticker，第2至X行是data，所有的数据都是按照String存储的（除了date）
+			 * 								
+				300706 CH Equity	Date	25/9/2017	26/9/2017	27/9/2017	28/9/2017	29/9/2017	9/10/2017	10/10/2017
+									PX_OPEN	#N/A N/A	11.96	15.8	17.38	19.12	21.03	23.13
+									PX_HIGH	#N/A N/A	14.36	15.8	17.38	19.12	21.03	23.13
+									PX_LOW	#N/A N/A	11.96	15.8	17.38	19.12	21.03	23.13
+									PX_LAST	9.97	14.36	15.8	17.38	19.12	21.03	23.13
+									PX_VOLUME	#N/A N/A	5700	2000	2000	4500	5200	6600
+									EQY_SH_OUT	17170.411	17170.411	17170.411	17170.411	17170.411
+
+							
+			 */
+			
+			ArrayList<String> dateArr = new ArrayList<String> ();
+			ArrayList<ArrayList<String>> innerLineData = new ArrayList<ArrayList<String>>();
+			
+			
+			SimpleDateFormat sdf0 = new SimpleDateFormat ("dd/MM/yyyy");
+			SimpleDateFormat sdf1 = new SimpleDateFormat ("yyyyMMdd");
+			
+			while((line = bf.readLine()) != null) {
+				int innerLine = Math.floorMod(count, fixLine);
+				ArrayList<String> lineArr = new ArrayList<String>(Arrays.asList(line.split(",")));	
+				
+				if(innerLine == 1) {
+					String stock = lineArr.get(0);
+					
+					
+					fw = new FileWriter(outputRootPath + stock + ".csv");
+					
+					dateArr.addAll(new ArrayList<String> (lineArr.subList(2, lineArr.size())));
+					logger.info("stock=" + stock + " dateArr.size=" + dateArr.size());
+					
+				}else {
+					if(innerLine!=0) {
+						ArrayList<String> innerLine_rowData = new ArrayList<String> (lineArr.subList(2, lineArr.size()));
+						innerLineData.add(innerLine_rowData);
+					}
+					
+					if(Math.floorMod(count + 1, fixLine) == 1) {  //读到这个section的最后 一行，写入文件
+						for(int j = 0; j < dateArr.size(); j++) {
+							String dataLine = dateArr.get(j);
+							ArrayList<String> dateLineArr = new ArrayList<String>();
+							
+							//to convert the data
+							for(int k = 0; k < innerLineData.size(); k++) {
+								String data = innerLineData
+										.get(k)
+										.get(j);
+								dateLineArr.add(data);
+								dataLine += "," + data;
+							}
+							
+							if(!utils.Utils.isDouble(dateLineArr.get(dateLineArr.size()-1))) {  //如果最后一个数据不是实数，则忽略这条数据
+								continue;
+							}
+							fw.write(dataLine + "\n");
+						}
+						fw.close();
+						dateArr.clear();
+						innerLineData.clear();
+					}
+				}
+				count++;
+			}
+			
 			
 		}catch(Exception e) {
 			e.printStackTrace();

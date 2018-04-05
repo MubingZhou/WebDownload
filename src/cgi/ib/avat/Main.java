@@ -34,6 +34,8 @@ public class Main {
 	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
 	//public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
+	public static String STOCKLIST_PATH_HISTORICAL_DATA = AVAT_ROOT_PATH + "stocklist - historical data.csv";
+	//public static String STOCKLIST_PATH_HISTORICAL_DATA = AVAT_ROOT_PATH + "stocklist.csv";
 	
 	// IB controller  
 	public static MyLogger inLogger = new MyLogger();
@@ -62,14 +64,13 @@ public class Main {
 			AVAT.bilateralTrdCost = bilateralTrdCost;
 			AvatUtils.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
 			AVAT.AVAT_ROOT_PATH = AVAT_ROOT_PATH;
-			
+		
 			boolean readyToExit = false;
 			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingCal(utils.PathConifiguration.ALL_TRADING_DATE_PATH_HK);
 			ArrayList<Date> allTradingDate = new ArrayList<Date> ();
 			for(Calendar cal : allTradingCal) {
 				allTradingDate .add(cal.getTime());
-			}
-			
+			}			
 			
 			// ------------ MODE -----------
 			int mode = 123456;
@@ -89,11 +90,14 @@ public class Main {
 			int port = 7497;   	// 7497 - paper account
 								// 7496 - real account
 			//int clientId = (int) (Math.random() * 100) + 1;  // a self-specified unique client ID
-			int clientId = 1;
+			int clientId = 0;
 			if(isTestRun == 1)
 				clientId = 53;
 			
 			//****** the main controller **********
+			connect(host, port, clientId);
+			
+			/*
 			myController = new MyAPIController(myConnectionHandler, inLogger, outLogger	);
 			myController.connect(host, port, clientId, null);
 			
@@ -114,6 +118,27 @@ public class Main {
 				System.out.println("Not connected!");
 				return;
 			}
+			*/
+			
+			//---------- temp: download historical 1 min data - multiple days ------------
+			String[] temp_dateArrStr = {"20180404"}; //"20180207","20180206","20180205"
+			for(int j = 0; j < temp_dateArrStr.length; j++) {
+				//connect(host, port, clientId);
+				
+				String dateStr = temp_dateArrStr[j];
+				logger.info("=========== downloading " + dateStr + " ============");
+				//Date date = sdf_yyyyMMdd.parse(dateStr);
+				
+				boolean temp_isEnd = getHistorical1MinData_OneDay(dateStr, dateFormat_yyyyMMdd);
+				while(!temp_isEnd) {
+					Thread.sleep(1000 * 5);
+				}
+				logger.info("=========== downloading " + dateStr + " end ============");
+				
+				//disconnect();
+			}
+			Thread.sleep(1000 * 5000000);
+
 			
 			//======== constructing contracts ===========
 			ArrayList<String> stockList = new ArrayList<String>();
@@ -138,6 +163,7 @@ public class Main {
 			}
 			//industryList.addAll(Arrays.asList(bf.readLine().split(",")));
 			bf.close();
+			
 			
 			// --------------- downloading historical data --------------- 
 			Date nowDate = sdf.parse(todayDate + " " + sdf_HHmmss.format(new Date()));
@@ -441,33 +467,119 @@ public class Main {
 		}
 	}
 	
+	/**
+	 * connected to IB API
+	 * @param host
+	 * @param port
+	 * @param clientId
+	 * @return
+	 */
+	public static boolean connect(String host, int port, int clientId) {
+		boolean getConnected = false;
+		try {
+			myController = new MyAPIController(myConnectionHandler, inLogger, outLogger	);
+			myController.connect(host, port, clientId, null);
+			
+			// create EClient
+			//MyEReaderSignal signal = new MyEReaderSignal();
+			//ApiConnection myConnection = new ApiConnection(myController, inLogger, outLogger);
+			myClient = myController.client();  
+			//myClient.eConnect(host, port, clientId, true);
+			if(myClient.isConnected()){
+				System.out.println("Is connected!");
+				try {
+					Thread.sleep(1000*3);   
+					getConnected = true;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			else{
+				System.out.println("Not connected!");
+				return getConnected;
+			}
+		}catch(Exception e	) {
+			e.printStackTrace();
+		}
+		
+		
+		return getConnected;
+	}
+	
+	/**
+	 * get disconnected from IB API
+	 * @return
+	 */
+	public static boolean disconnect() {
+		boolean getDisconnect = false;
+		
+		try {
+			if(!myClient.isConnected()) {
+				myController.disconnect();
+				getDisconnect = true;
+			}else {
+				getDisconnect = true;
+			}
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		return getDisconnect ;
+	}
+	
 	public void getRecentNDayTickData(Contract con, String endDate, int NDays, String filePath) {
 		
 	}
 	
 	public static boolean getHistorical1MinData_OneDay(String dateStr, String dateFormat) {
-//		ArrayList<String> dateArr = new ArrayList<String>();
-//		dateArr.add("20171213");
-//		dateArr.add("20171212");
-//		dateArr.add("20171211");
-//		dateArr.add("20171208");
-//		dateArr.add("20171207");
-//		dateArr.add("20171206");
-//		dateArr.add("20171205");
-//		dateArr.add("20171204");
-//		dateArr.add("20171201");
-//		dateArr.add("20171130");
-//		dateArr.add("20171129");
-//		dateArr.add("20171128");
-//		dateArr.add("20171127");
-//		for(int i = 1000; i < dateArr.size(); i ++) {
-//			String dateStr1  = dateArr.get(i);
-//			AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr1, dateFormat);
-//		}
-//		
-		boolean readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr, dateFormat);
-		//myController.disconnect();
-		//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
+		boolean readyToExit = false;
+		try {
+//			ArrayList<String> dateArr = new ArrayList<String>();
+//			dateArr.add("20171213");
+//			dateArr.add("20171212");
+//			dateArr.add("20171211");
+//			dateArr.add("20171208");
+//			dateArr.add("20171207");
+//			dateArr.add("20171206");
+//			dateArr.add("20171205");
+//			dateArr.add("20171204");
+//			dateArr.add("20171201");
+//			dateArr.add("20171130");
+//			dateArr.add("20171129");
+//			dateArr.add("20171128");
+//			dateArr.add("20171127");
+//			for(int i = 1000; i < dateArr.size(); i ++) {
+//				String dateStr1  = dateArr.get(i);
+//				AvatUtils.downloadHistorical1MinData(myController, conArr, dateStr1, dateFormat);
+//			}
+//			
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(STOCKLIST_PATH_HISTORICAL_DATA);
+			//BufferedReader bf = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "additional-stocklist.csv");
+			
+			ArrayList<Contract> conArr_histData = new ArrayList<Contract>();
+			ArrayList<String> stockList = new ArrayList<String>(); 
+			stockList.addAll(Arrays.asList(bf.readLine().split(",")));
+			
+			for(int i = 0; i < stockList.size(); i ++) {
+				String symbol = stockList.get(i);
+				
+				Contract con1 = new Contract();
+				con1.symbol(symbol);
+				con1.exchange("SEHK");
+				con1.secType("STK");
+				con1.currency("HKD");
+				
+				conArr_histData.add(con1);
+			}
+			readyToExit = AvatUtils.downloadHistorical1MinData(myController, conArr_histData, dateStr, dateFormat);
+			//myController.disconnect();
+			//AvatUtils.preparePrevCrossSectionalAvat2(conArr,"20170929", "yyyyMMdd");
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+
 		return readyToExit;
 	}
 

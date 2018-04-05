@@ -45,8 +45,8 @@ public class Utils {
 	// csv file storing all trading date
 	public static final String TRADING_DATE_FILE_PATH = "D:\\stock data\\all trading date.csv";
 	
-	public static final String SH_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SSE Southbound Stocks.csv";
-	public static final String SZ_SOUTHBOUND_STOCKLIST_PATH = "D:\\stock data\\southbound data\\SZSE Southbound Stocks.csv";
+	public static final String SH_SOUTHBOUND_STOCKLIST_PATH = utils.Utils.addBackSlashToPath(utils.PathConifiguration.STOCK_DATA_ROOT_PATH) + "Southbound stocks\\SSE Southbound Stocks.csv" ;
+	public static final String SZ_SOUTHBOUND_STOCKLIST_PATH = utils.Utils.addBackSlashToPath(utils.PathConifiguration.STOCK_DATA_ROOT_PATH) + "Southbound stocks\\SZSE Southbound Stocks.csv" ;
 	public static final String HSI_STOCKLIST_PATH = utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HSI HSCEI index\\HSI history from 2010.csv";
 	public static final String HSCEI_STOCKLIST_PATH = utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HSI HSCEI index\\HSCEI history from 2010.csv";
 			
@@ -768,6 +768,7 @@ public class Utils {
 		
 		/**
 		 * get all trading date and sort them ascendingly, i.e. older dates in the front
+		 * date should be in "dd/MM/yyyy"
 		 * @param filePath
 		 * @return
 		 */
@@ -901,6 +902,8 @@ public class Utils {
 			
 			return mostRecentCal.getTime();
 		}
+		
+
 		
 		/**
 		 * 获得相对于“某个日期”位移一段时间的日期，shift为正数，表示往后shift。比如有三个日期是相连的：1月22日，1月25日，1月26日
@@ -1078,5 +1081,24 @@ public class Utils {
 		else
 			return path;
 	}
-	  
+
+	/**
+	 * Extract the numbers from a string. e.g. if str="sdf345sdrew2134", then the function will return "3452134" (in the form of String)
+	 * @param str
+	 * @return
+	 */
+	public static String getNumFromString(String str) {
+		String num = "";
+		
+		if(str != null && !"".equals(str)){
+			for(int i=0;i<str.length();i++){
+				if(str.charAt(i)>=48 && str.charAt(i)<=57){
+					num+=str.charAt(i);
+				}
+			}
+		}
+		
+		return num;
+	}
+	
 }

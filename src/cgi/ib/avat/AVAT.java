@@ -56,6 +56,9 @@ public class AVAT {
 	public static ArrayList<Date> avatTimePath = new ArrayList<Date> ();
 	public static Map<String, Double> avatLotSize = new HashMap<String, Double> ();
 	public static Map<String, Double> prevVolume = new HashMap<String, Double>(); // previous day's volume for every stock
+	public static ArrayList<String> stockWachlist = new ArrayList<String>();
+	public static Map<String, String> voiceMap_m = new HashMap<String, String> ();   // male voice
+	public static Map<String, String> voiceMap_f = new HashMap<String, String> ();   // female voice
 	
 	// --------- other variables ---------
 	public static String TRADING_DATE_PATH = "D:\\stock data\\all trading date - hk.csv";
@@ -249,6 +252,23 @@ public class AVAT {
 			// ------ avat lot size --------
 			avatLotSize = AvatUtils.getLotSize();
 			logger.info("get lot size - done");
+			
+			// ------- get watchlist stocks (The machine will use another voice if a stock belongs to the watchlist) ------
+			String stockWachlistPath = utils.Utils.addBackSlashToPath(AVAT_ROOT_PATH) + "\\avat para\\stock_watchlist.csv";
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockWachlistPath);  // should be a line
+			String line = "";
+			while((line = bf.readLine()) != null)
+				stockWachlist.addAll(Arrays.asList(line.split(",")));
+			bf.close();
+			
+			
+			// --------- get voice map -------
+			String voiceF = "voices\\";
+			for(int i = 0; i <= 9; i++) {
+				String n = String.valueOf(i);
+				voiceMap_m.put(n, voiceF + n + ".wav");
+				voiceMap_f.put(n, voiceF + n + "_f.wav");
+			}
 			
 			// ------- 设置弹出窗口的容器 ----------
 		   avatDisplayFrame.setLocation(0,0);
@@ -613,6 +633,8 @@ public class AVAT {
 			
 			// --------- 浏览各个AvatRecordSingleStock ----------- 
 			Set<String> thisBuyStocksSet = new HashSet<String>();
+			Map<String, String> thisBuyStockReasons = new HashMap<String, String>();
+			
 			//logger.info("********* 1111 **********");
 			for(AvatRecordSingleStock singleRec : avatRecord) {
 				/*
@@ -621,7 +643,7 @@ public class AVAT {
 				 * 		1. 时间是11:00之前；并且
 				 * 		(	2.1 当前的avat5D ratio超过2，并且股价上涨超过1.5%；或者
 				 * 			2.2 avat20D ratio超过1，并且股价上涨超过1.5%；或者
-				 * 			2.3. 当时的volume超过了昨天全天的volume)
+				 * 			2.3. 当时的volume超过了昨天全天的volume)；并且
 				 * 		3. turnover 大于一个threshold 
 				 * 		4. 已经买过的股票如果三注码都加满，则不再买入；同一注码重复出现，不再重复下注
 				 * 
@@ -670,7 +692,7 @@ public class AVAT {
 					//buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
 					
 					Double toBuyAmt = 0.0;
-					int[] buyTracer = {0,0,0};  //看看到底是因为哪个信号使得要买入
+					int[] buyTracer = {0,0,0,0};  //看看到底是因为哪个信号使得要买入
 					
 					Map<Integer, HoldingRecord> thisHoldingMap = holdingRecords.get(singleRec.stockCode);
 					// ---------- 是否出现buy signal------------
@@ -738,6 +760,7 @@ public class AVAT {
 					
 						//logger.info("      ********* 3301 **********");
 						// --------- submit orders ---------
+						String buyReason = "";
 						if(isPlaceOrder) {
 							MyIOrderHandler myOrderH1 = new MyIOrderHandler (con, order1); 
 							myOrderH1.isTransmit = transmitToIB;
@@ -765,8 +788,6 @@ public class AVAT {
 							if(thisHoldingMap == null)
 								thisHoldingMap = new HashMap<Integer, HoldingRecord>();
 							//logger.info("      ********* 3307 **********");
-							
-							String buyReason = "";
 							if(buyTracer[0] == 1) {
 								hld1.buyCond2_1 = 1;
 								hld2.buyCond2_1 = 1;
@@ -805,6 +826,7 @@ public class AVAT {
 						}
 						
 						thisBuyStocksSet.add(stockCode);
+						thisBuyStockReasons.put(stockCode, buyReason);
 						//logger.info("      ********* 3333 **********");
 						//buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + "222" + " buyReason=" + "123" + "\n";
 						/*
@@ -848,46 +870,36 @@ public class AVAT {
 					try {
 						if(thisBuyStocks.size() > 0) {
 							int repeatTimes = 1;
+							
 							for(int i = 0; i < repeatTimes; i++) {
 								   for(int j = 0; j < thisBuyStocks.size(); j++) {
 									   String stock = thisBuyStocks.get(j);
-									   char[] c = stock.toCharArray();
-										for(int k = 0; k < c.length; k++) {
-											switch(c[k]) {
-											case '1':
-												PlayWAV.play("1.wav");
-												break;
-											case '2':
-												PlayWAV.play("2.wav");
-												break;
-											case '3':
-												PlayWAV.play("3.wav");
-												break;
-											case '4':
-												PlayWAV.play("4.wav");
-												break;
-											case '5':
-												PlayWAV.play("5.wav");
-												break;
-											case '6':
-												PlayWAV.play("6.wav");
-												break;
-											case '7':
-												PlayWAV.play("7.wav");
-												break;
-											case '8':
-												PlayWAV.play("8.wav");
-												break;
-											case '9':
-												PlayWAV.play("9.wav");
-												break;
-											case '0':
-												PlayWAV.play("0.wav");
-												break;
-											default:
-												break;
+									   char[] c = stock.toCharArray();	
+									   
+									   String reason = thisBuyStockReasons.get(stock);
+									   String[] reasons = reason.split(";");
+									   String reasonWeWant = "volume";
+									   boolean getWeWant = false;
+									   for(int m=0; m < reasons.length; m++) {
+										   if(reasons[m].equals(reasonWeWant)) {
+											   getWeWant = true;
+											   break;
+										   }
+									   }
+									   
+									   if(getWeWant ) {  // if out of special reason we pick this stock, we make a special voice
+										   PlayWAV.play("voices\\dingdong.wav");
+									   }
+									   
+									   if(stockWachlist.indexOf(stock) == -1) {  // the stock is not in the watchlist
+										   for(int k = 0; k < c.length; k++) {
+												PlayWAV.play(voiceMap_m.get(String.valueOf(c[k])));
 											}
-										}
+									   }else {
+										   for(int k = 0; k < c.length; k++) {
+												PlayWAV.play(voiceMap_f.get(String.valueOf(c[k])));
+											}
+									   }
 										
 										Thread.sleep(500);
 										if(false && j < thisBuyStocks.size()-1) {

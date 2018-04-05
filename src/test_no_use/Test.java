@@ -20,6 +20,8 @@ import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+import utils.PlayWAV;
+
 import java.net.*;
 
 @SuppressWarnings("unused")
@@ -37,9 +39,88 @@ public class Test {
 		try {			
 			
 			//getPrice();
-			getSBFromHKEx();
+			//getSBFromHKEx();
+			
+			ArrayList<String> stockListStrArr= utils.Utils.getSouthboundStocks("20180314", "yyyyMMdd", true, true);
+			System.out.println(stockListStrArr.indexOf("839"));
 			
 			
+			//utils.Utils.getSouthboundStocks("20180305", "yyyyMMdd", true, true);
+			//Thread.sleep(1000*3);
+			System.out.println("Read to play!");
+			
+			utils.PlayWAV.play("voices\\dingdong.wav");
+			utils.PlayWAV.play("voices\\0.wav");
+			utils.PlayWAV.play("voices\\1.wav");
+			utils.PlayWAV.play("voices\\2.wav");
+			
+//			utils.PlayWAV.play("voices\\dingdong.wav");
+//			utils.PlayWAV.play("voices\\1.wav");
+//			utils.PlayWAV.play("voices\\2.wav");
+//			utils.PlayWAV.play("voices\\3.wav");
+			
+//			utils.PlayWAV.play("3_f.wav");
+//			utils.PlayWAV.play("4_f.wav");
+//			utils.PlayWAV.play("5_f.wav");
+//			utils.PlayWAV.play("6_f.wav");
+			//utils.PlayWAV.play("voices\\0_f.wav");
+//			utils.PlayWAV.play("8_f.wav");
+//			utils.PlayWAV.play("9_f.wav");
+			System.out.println("Done!");
+			
+			//Runtime.getRuntime().exec( "shutdown -s -t 1");
+			
+//			Map<String, String> voiceMap_m = new HashMap<String, String> ();   // male voice
+//			Map<String, String> voiceMap_f = new HashMap<String, String> ();   // female voice
+//			String voiceF = "voices\\";
+//			for(int i = 0; i <= 9; i++) {
+//				String n = String.valueOf(i);
+//				voiceMap_m.put(n, voiceF + n + ".wav");
+//				voiceMap_f.put(n, voiceF + n + "_f.wav");
+//			}
+//			System.out.println("voice map=" + voiceMap_m.get("2"));
+//			
+//			ArrayList<String> thisBuyStocks = new ArrayList<String>();
+//			thisBuyStocks.add("2689");
+//			ArrayList<String> stockWachlist = new ArrayList<String>();
+//			stockWachlist.add("26891");
+//			if(thisBuyStocks.size() > 0) {
+//				int repeatTimes = 1;
+//				
+//				for(int i = 0; i < repeatTimes; i++) {
+//					   for(int j = 0; j < thisBuyStocks.size(); j++) {
+//						   String stock = thisBuyStocks.get(j);
+//						   char[] c = stock.toCharArray();	
+//						   
+//						   if(stockWachlist.indexOf(stock) == -1) {  // the stock is not in the watchlist
+//							   for(int k = 0; k < c.length; k++) {
+//									PlayWAV.play(voiceMap_m.get(String.valueOf(c[k])));
+//								}
+//						   }else {
+//							   for(int k = 0; k < c.length; k++) {
+//								   System.out.println("voice file: " + voiceMap_f.get(String.valueOf(c[k])));
+//									PlayWAV.play(voiceMap_f.get(String.valueOf(c[k])));
+//								}
+//						   }
+//							
+//							Thread.sleep(500);
+//							if(false && j < thisBuyStocks.size()-1) {
+//								PlayWAV.play("tungLF.wav");
+//								PlayWAV.play("maiLF.wav");
+//							}
+//							//Thread.sleep(1);
+//							
+//					   }
+//					   
+//					   if(i == 0 && repeatTimes > 1) {
+//						   PlayWAV.play("chungLT.wav");
+//							PlayWAV.play("fukHT.wav");
+//							PlayWAV.play("1.wav");
+//							PlayWAV.play("chiMR.wav");
+//					   }
+//					   	
+//				   }
+//			}
 //			
 //			//新建一个DatagramSocket
 //	        DatagramSocket server = new DatagramSocket(5050);

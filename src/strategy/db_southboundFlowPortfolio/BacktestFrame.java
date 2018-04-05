@@ -44,6 +44,7 @@ public class BacktestFrame {
 															//如果是在isFixedAmount=false时，则每次rebal回到整个portfolio的percentage
 	public static Double eachStockValueRebalanceThreshold = 0.01;  // 每只股票只有在超出了eachStockValue * 这个threshold的时候才进行rebal
 	public static int daysBetweenRelancingDate_Rolling = 0;
+	public static boolean isOutputAVATStockPicks = false;  // if to output stock picks for AVAT
 	
 	public static double tradingCost = 0.0;
 	
@@ -1205,6 +1206,22 @@ public class BacktestFrame {
 				fw_stockPicks.write("\n");
 			}
 			fw_stockPicks.close();
+			
+			// output stock picks for AVAT
+			if(isOutputAVATStockPicks) {
+				FileWriter fw_avat = new FileWriter("Z:\\AVAT\\avat para\\stock_watchlist.csv");
+				ArrayList<String> thisDateStock = stockPicks.get(allDates.get(allDates.size()-1));  // get last day's stock picks
+				for(int k = 0; k < thisDateStock.size(); k++) {
+					if(k != 0) {  // 写表头
+						fw_avat.write(",");
+					}
+					fw_avat.write(thisDateStock.get(k));
+				}
+				fw_avat.close();
+			}
+			
+			
+			
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -1516,7 +1533,7 @@ public class BacktestFrame {
 				
 				//String 
 				Date endDate2 = utils.Utils.getRefDate(new Date(), allTradingDate_date, -1);  // 上一个交易日
-				//Date endDate2 = sdf_yyyyMMdd.parse("20180130");
+				//Date endDate2 = sdf_yyyyMMdd.parse("20180329");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				

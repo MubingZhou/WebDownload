@@ -35,8 +35,9 @@ public class NorthboundHolding {
 	
 	public static void main(String[] args) {
 		String dateStr = "20180205";
-		downloader(dateStr,dateStr,"yyyyMMdd");
-		combiner(dateStr,dateStr,"yyyyMMdd");
+		String endStr = "20180227";
+		downloader(dateStr,endStr,"yyyyMMdd");
+		combiner(dateStr,endStr,"yyyyMMdd");
 	}
 	
 	public static void downloader(Date startDate, Date endDate, boolean isSH, boolean isSZ) {

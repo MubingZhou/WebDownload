@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 public class Main {
 
@@ -21,13 +23,37 @@ public class Main {
 		System.out.println("******************** Web Download From HKEX ********************");
 		try {
 			//String[] dates = {"2017-08-04"};
-			String[] dates = {"2018-02-05"};
+			String[] dates = {"2018-02-06"};
 			//String[] dates = {"2017-07-03"};
+//			
+//			for(int i = 0; i < dates.length; i++) {
+//				String date = dates[i];
+//				
+//				downloadMain(date);
+//			}
 			
-			for(int i = 0; i < dates.length; i++) {
-				String date = dates[i];
+			ArrayList<Date> allTradingDate = utils.Utils.getAllTradingDate();
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			Date startDate = utils.Utils.getMostRecentDate(sdf.parse("2018-03-27"), allTradingDate);
+			Date endDate = utils.Utils.getMostRecentDate(sdf.parse("2018-03-27"), allTradingDate);
+			int startDateInd = allTradingDate.indexOf(startDate);
+			int endDateInd = allTradingDate.indexOf(endDate);
+			
+			for(int i = startDateInd; i <= endDateInd; i++) {
+				String date = sdf.format(allTradingDate.get(i));
 				
-				downloadMain(date);
+				Thread t = new Thread(new Runnable(){
+					   public void run(){
+						   try {
+							   System.out.println("********* date = " + date + " **********");
+							   downloadMain(date);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					   }
+				});
+				t.start();
+				
 			}
 			
 		} catch (Exception e1) {
@@ -45,7 +71,7 @@ public class Main {
 		//UtilityFunction.trustAllCertificates();
 		
 		// creating directories
-		String dateDir = Utils.OUTPUT_ROOT_PATH + "//" + date;
+		String dateDir = utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\CCASS holding - by stock by date\\" + date;				
 		File dateDir_file = new File(dateDir);
 		if(!dateDir_file.exists() && !dateDir_file.isDirectory()){
 			dateDir_file.mkdir();
@@ -58,7 +84,7 @@ public class Main {
 		}*/
 		
 		//ArrayList<String> stockCodeList = getCGITopHoldingStocks(Utils.OUTPUT_ROOT_PATH + "\\cgi stock list.csv");
-		ArrayList<String> stockCodeList = getCGITopHoldingStocks("Z:\\Mubing\\stock data\\temp stock list.csv");
+		ArrayList<String> stockCodeList = getCGITopHoldingStocks(utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\CCASS stock list - row.csv");
 		
 		
 		////////////// downloading webpage and parse /////////////////

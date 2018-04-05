@@ -808,7 +808,7 @@ public class AvatUtils {
 				String fileName = outputRootPath + stockCode + ".csv";
 				File f = new File(fileName);
 				if(f.exists()) {
-					//logger.debug("    [historical bar] i=" + i + " stock=" + stockCode + " Already existed!" );
+					logger.debug("    [historical bar] i=" + i + " stock=" + stockCode + " Already existed!" );
 					continue;
 				}else
 					logger.debug("[historical bar] i=" + i + " Downloading " + conArr.get(i).symbol());

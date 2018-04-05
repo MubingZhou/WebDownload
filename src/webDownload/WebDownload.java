@@ -12,8 +12,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +34,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
+import cgi.ib.avat.AVAT;
 
 
 
@@ -56,23 +60,41 @@ public class WebDownload {
 	private static String httpsConnectionAgent = "Mozilla/31.0 (compatible; MSIE 10.0; Windows NT; DigExt)";
 		
 	public static void main(String[] args) {
-		long startTime = System.currentTimeMillis();    //»ñÈ¡¿ªÊ¼Ê±¼ä
+		long startTime = System.currentTimeMillis();    //ï¿½ï¿½È¡ï¿½ï¿½Ê¼Ê±ï¿½ï¿½
 		System.out.println("******************** Web Download ********************");
 		try {
-			String[] dates = {"2017-08-03"};
+			String[] dates = {"2018-02-06"};
 			//String[] dates = {"2017-07-28","2017-07-31","2017-08-01","2017-08-02","2017-08-03"};
 			
-			for(int i = 0; i < dates.length; i++) {
-				String date = dates[i];
+			ArrayList<Date> allTradingDate = utils.Utils.getAllTradingDate();
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			Date startDate = utils.Utils.getMostRecentDate(sdf.parse("2015-01-01"), allTradingDate);
+			Date endDate = utils.Utils.getMostRecentDate(sdf.parse("2015-01-31"), allTradingDate);
+			int startDateInd = allTradingDate.indexOf(startDate);
+			int endDateInd = allTradingDate.indexOf(endDate);
+			
+			for(int i = startDateInd; i < endDateInd; i++) {
+				String date = sdf.format(allTradingDate.get(i));
 				
-				downloadMain(date);
+				Thread t = new Thread(new Runnable(){
+					   public void run(){
+						   try {
+							   System.out.println("********* date = " + date + " **********");
+							   downloadMain(date);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					   }
+				});
+				t.start();
+				
 			}
 			
 		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
-		long endTime = System.currentTimeMillis();    //»ñÈ¡½áÊøÊ±¼ä
-		System.out.println("Total running time: " + (endTime - startTime)/1000 + "s");    //Êä³ö³ÌÐòÔËÐÐÊ±¼ä
+		long endTime = System.currentTimeMillis();    //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+		System.out.println("Total running time: " + (endTime - startTime)/1000 + "s");    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 
 	}
 	
@@ -96,7 +118,9 @@ public class WebDownload {
 			holderDir_file.mkdir();
 		}
 		
-		ArrayList<String> stockCodeList = getCGITopHoldingStocks(ConstVal.FILE_OUTPUT_PATH + "\\cgi stock list.csv");
+		//ArrayList<String> stockCodeList = getCGITopHoldingStocks(ConstVal.FILE_OUTPUT_PATH + "\\cgi stock list.csv");
+		String stockListPath = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\outstanding stock list.csv";
+		ArrayList<String> stockCodeList = getCGITopHoldingStocks(stockListPath);
 	
 	////////////// downloading webpage and parse /////////////////
 		//double fixedTimePeriod = 5; //5s
@@ -128,9 +152,9 @@ public class WebDownload {
 				// pause for a random number of secs
 				Thread.sleep((long) (Math.random()*3 + 2) * 1000);
 				
-				long endTime_i = System.currentTimeMillis();    //»ñÈ¡½áÊøÊ±¼ä
+				long endTime_i = System.currentTimeMillis();    //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 				double runningTime = ((double) endTime_i - startTime_i) / 1000; // s
-				System.out.println("======== running time"  + runningTime + "s ==========");    //Êä³ö³ÌÐòÔËÐÐÊ±¼ä
+				System.out.println("======== running time"  + runningTime + "s ==========");    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 				
 			} // end of "for"
 			
@@ -330,7 +354,7 @@ public class WebDownload {
 	 * @return
 	 */
 	public static String getDownloadedWebpageFilePath(String date){
-		return ConstVal.FILE_OUTPUT_PATH + "\\" + date;
+		return ConstVal.FILE_OUTPUT_PATH + "\\CCASS\\" + date;
 	}
 	
 	/**
