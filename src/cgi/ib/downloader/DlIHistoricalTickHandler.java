@@ -20,7 +20,7 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 	private static SimpleDateFormat sdf = new SimpleDateFormat (dateFormat);
 	private static SimpleDateFormat sdf_date = new SimpleDateFormat ("yyyyMMdd");
 	private static SimpleDateFormat sdf_time = new SimpleDateFormat("HH:mm:ss");
-		
+	
 	private int numOfData_trades = 0;  // used to judge if have received all data
 	private long lastTime_midpoint = 0;
 	public ArrayList<Object> getData_trades() {
@@ -33,8 +33,8 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 	private long lastTime_bidnask = 0;
 	private long lastTime_trades = 0;
 	
-	private int isEnd_trades = 0;
-	private int isNo_trades = 0;
+	private int isEnd_trades = 0;   // whether finished receiving all data
+	private int isNo_trades = 0;	// whether no trades are received in this round (if so, the contract expires after the last time for futures)
 	
 	private ArrayList<Object> data_trades = new ArrayList<Object>(); 
 	
@@ -42,11 +42,15 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 	public String stockCode;
 	public FileWriter fileWriter;
 	public String rootPath; 
+	public int request_numOfData = 0;
+	public String type;   // TRADES, BID_ASK, MIDPOINT
 	
-	public DlIHistoricalTickHandler(String stockCode, String rootPath) {
+	public DlIHistoricalTickHandler(String stockCode, String rootPath, String type, int request_numOfData) {
 		super();
 		this.stockCode = stockCode;
 		this.rootPath = utils.Utils.addBackSlashToPath(rootPath);
+		this.request_numOfData = request_numOfData;
+		this.type = type;
 		try {
 			boolean isAppend = true;
 			fileWriter = new FileWriter(this.rootPath + stockCode + ".csv", isAppend); 
@@ -65,6 +69,7 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 		
 		isNo_trades = 0;
 		
+		numOfData_trades = 0;
 	}
 	
 	@Override
@@ -125,6 +130,8 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 			isNo_trades = 1;
 			for(int i = 0; i < ticks.size(); i++) {
 				isNo_trades = 0;
+				lastTime_trades = new Date().getTime();   
+				
 				HistoricalTickLast tick = ticks.get(i);
 				Long timeL = tick.time() * 1000;
 				String time = unixDate2StringTime(timeL);
@@ -136,18 +143,22 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 				fileWriter.write(toWrite);
 				//fileWriter.flush();
 				
-				System.out.println(toWrite);
-				if(done) {
-					System.out.println("Done; Num=" + numOfData_trades);
-				}else {
-					System.out.println("Not Done");
-				}
+//				System.out.println(toWrite);
+//				if(done) {
+//					System.out.println("Done; Num=" + numOfData_trades);
+//				}else {
+//					System.out.println("Not Done");
+//				}
 				
 				
 				ArrayList<Object> data = new ArrayList<Object>();
-				data.add(timeL);
+				data.add(timeL);  // mili sec
+				data.add(tick.mask());
 				data.add(tick.price());
 				data.add(tick.size());
+				data.add(tick.exchange());
+				data.add(tick.specialConditions());
+				
 				
 				data_trades.add(data);   // 将所有的数据存到trades data里面
 				numOfData_trades++;

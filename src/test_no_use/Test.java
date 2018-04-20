@@ -13,8 +13,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPReply;
 import org.apache.log4j.Logger;
 
 @SuppressWarnings("unused")
@@ -31,7 +29,9 @@ public class Test {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
 		try {		
 			
-			
+			Integer a = 10;
+			Integer b = 3;
+			System.out.println(a / b);
 	        
 			//getPrice();
 			//getSBFromHKEx();
@@ -383,39 +383,6 @@ public class Test {
 	}
 	
 	
-	public static boolean ftpUploadFile(String url,int port,String username, String password, String path, String filename, InputStream input) {  
-	    boolean success = false;  
-	    FTPClient ftp = new FTPClient();  
-	    try {  
-	        int reply;  
-	        ftp.connect(url, port);//连接FTP服务器  
-	        //如果采用默认端口，可以使用ftp.connect(url)的方式直接连接FTP服务器  
-	        ftp.login(username, password);//登录  
-	        reply = ftp.getReplyCode();  
-	        if (!FTPReply.isPositiveCompletion(reply)) {  
-	            ftp.disconnect();  
-	            return success;  
-	        }
-	        System.out.println("Login successful!");
-	        
-	        ftp.changeWorkingDirectory(path);  
-	        ftp.storeFile(filename, input);           
-	          
-	        input.close();  
-	        ftp.logout();  
-	        success = true;  
-	    } catch (IOException e) {  
-	        e.printStackTrace();  
-	    } finally {  
-	        if (ftp.isConnected()) {  
-	            try {  
-	                ftp.disconnect();  
-	            } catch (IOException ioe) {  
-	            }  
-	        }  
-	    }  
-	    return success;  
-	}  
 
 }
 

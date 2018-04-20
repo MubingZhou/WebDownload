@@ -1,7 +1,11 @@
 package cgi.ib.downloader;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.apache.log4j.Logger;
 
@@ -17,6 +21,7 @@ import webbDownload.outstanding.DataDownloader;
 
 public class DataDownloander {
 	private static Logger logger  =Logger.getLogger(DataDownloader.class);
+	public static ArrayList<Date> allTrdDate = new ArrayList<Date>(); 
 	
 	public static void main(String[] args) {
 		try {
@@ -26,21 +31,41 @@ public class DataDownloander {
 			int port = 7497;   	// 7497 - paper account
 								// 7496 - real account
 			int clientId = 23;
-			
-			Contract con1 = new Contract();
-			con1.symbol("HSI");
-			con1.exchange("HKFE");
-			con1.secType("FUT");
-			con1.currency("HKD");
-			con1.lastTradeDateOrContractMonth("201804");
-			
-			
 			MyAPIController apiController = DownloaderUtils.connect(host, port, clientId);
-			DlIHistoricalTickHandler handler = new DlIHistoricalTickHandler("HIJ8 Index", rootPath);
-			apiController.reqHistoricalTicks(con1, "20180409 09:00:00", null, 950, "TRADES", 1, true, handler);
-			Thread.sleep(1000 * 3);
-			apiController.reqHistoricalTicks(con1, "20180409 09:16:01", null, 950, "TRADES", 1, true, handler);
 			
+//			Contract con1 = new Contract();
+//			con1.symbol("HSI");
+//			con1.exchange("HKFE");
+//			con1.secType("FUT");
+//			con1.currency("HKD");
+//			con1.lastTradeDateOrContractMonth("201804");
+			
+			ArrayList<Contract> conArr = genFutContract("HSI", "201701", "201804", "HKFE","FUT", "HKD");
+			String requestType = "TRADES";  //TRADES, BID_ASK, MIDPOINT
+			int numOfData = 1000;  // max 1000
+			
+			for(int i = 0; i < conArr.size(); i++) {
+				Contract con  = conArr.get(i);
+				String firstTrdDateStr = getFirstTrdDate(con.lastTradeDateOrContractMonth());
+				
+				DlIHistoricalTickHandler handler = new DlIHistoricalTickHandler(con.symbol()+con.lastTradeDateOrContractMonth(), rootPath, requestType, numOfData);
+				
+				boolean isGetAllData = false;
+				while(!isGetAllData) {
+					apiController.reqHistoricalTicks(con, "20180409 09:00:00", null, 950, "TRADES", 1, true, handler);
+				}
+				
+				//System.out.println(firstTrdDateStr);
+				
+			}
+			
+			
+//			
+//			
+//			apiController.reqHistoricalTicks(con1, "20180409 09:00:00", null, 950, "TRADES", 1, true, handler);
+//			Thread.sleep(1000 * 3);
+//			apiController.reqHistoricalTicks(con1, "20180409 09:16:01", null, 950, "TRADES", 1, true, handler);
+//			
 			
 			
 		}catch(Exception e){
@@ -198,9 +223,70 @@ public class DataDownloander {
 			e.printStackTrace();
 			isOK = false;
 		}
-		
-		
-		
 	
+	}
+	
+	public static ArrayList<Contract> genFutContract(String uly, String fromDate /*yyyyMM*/, String endDate/*yyyyMM*/, String exchange, String type, String currency){
+		ArrayList<Contract> conArr = new ArrayList<Contract>();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMM");  
+		ArrayList<String> monthArr = new ArrayList<String>();
+		
+		try {
+			Integer fromDate_int = Integer.parseInt(fromDate);
+			Integer endDate_int = Integer.parseInt(endDate);
+			while(fromDate_int <= endDate_int) {
+				//System.out.println(fromDate_int);
+				Contract con1 = new Contract();
+				con1.symbol(uly);
+				con1.exchange(exchange);
+				con1.secType(type);
+				con1.currency(currency);
+				con1.lastTradeDateOrContractMonth(fromDate);
+				conArr.add(con1);
+				
+				// get next month
+				Integer y = fromDate_int / 100;
+				Integer m = fromDate_int - 100 * y;
+				Integer next_m = m + 1;
+				if(next_m > 12) {
+					y ++;
+					next_m = next_m - 12; 
+				}
+				
+				fromDate_int = 100 * y + next_m;	// next month
+				fromDate = String.valueOf(fromDate_int);
+			}
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return conArr;
+	}
+	
+	public static String getFirstTrdDate(String conMonth /*yyyyMM*/) {
+		String ftd = "";
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		if(allTrdDate == null || allTrdDate.size() == 0) {
+			allTrdDate = utils.Utils.getAllTradingDate();
+		}
+		
+		try {
+			Date d = sdf.parse(conMonth + "01");
+			int i  = 0;
+			for(; i < allTrdDate.size(); i++) {
+				Date date = allTrdDate.get(i);
+				if(!date.before(d))
+					break;
+			}
+			
+			ftd = sdf.format(allTrdDate.get(i - 5));
+			
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return ftd;
 	}
 }
