@@ -20,7 +20,7 @@ public class DataDownloander {
 	
 	public static void main(String[] args) {
 		try {
-			String rootPath = "Z:\\Mubing\\HK_Future\\Data";
+			String rootPath = "D:\\stock data\\HK_Futures\\Data";
 			
 			String host = "127.0.0.1";   //  "127.0.0.1" the local host
 			int port = 7497;   	// 7497 - paper account
@@ -37,9 +37,9 @@ public class DataDownloander {
 			
 			MyAPIController apiController = DownloaderUtils.connect(host, port, clientId);
 			DlIHistoricalTickHandler handler = new DlIHistoricalTickHandler("HIJ8 Index", rootPath);
-			apiController.reqHistoricalTicks(con1, "20180409 09:00:00", null, 1000, "TRADES", 1, true, handler);
-			Thread.sleep(1000 * 10);
-			apiController.reqHistoricalTicks(con1, "20180410 09:00:00", null, 1000, "TRADES", 1, true, handler);
+			apiController.reqHistoricalTicks(con1, "20180409 09:00:00", null, 950, "TRADES", 1, true, handler);
+			Thread.sleep(1000 * 3);
+			apiController.reqHistoricalTicks(con1, "20180409 09:16:01", null, 950, "TRADES", 1, true, handler);
 			
 			
 			

@@ -133,7 +133,7 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 				String toWrite = date + "," + time + "," + String.valueOf(tick.mask()) + "," + String.valueOf(tick.price())
 				+ "," + String.valueOf(tick.size()) + "," + String.valueOf(tick.exchange())
 				+ "," + String.valueOf(tick.specialConditions())  + "\n";
-				//fileWriter.write(toWrite);
+				fileWriter.write(toWrite);
 				//fileWriter.flush();
 				
 				System.out.println(toWrite);
