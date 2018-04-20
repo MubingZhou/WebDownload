@@ -15,8 +15,8 @@ import com.ib.client.TickAttr;
 import com.ib.client.TickType;
 import com.ib.controller.ApiController.ITopMktDataHandler;
 
-public class MyITopMktDataHandler implements ITopMktDataHandler{
-	private static Logger logger = Logger.getLogger(MyITopMktDataHandler.class.getName());
+public class AvatITopMktDataHandler implements ITopMktDataHandler{
+	private static Logger logger = Logger.getLogger(AvatITopMktDataHandler.class.getName());
 	private static String dateFormat = "yyyyMMdd HH:mm:ss";
 	private static SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
 	private String tradeInfo = "";
@@ -54,7 +54,7 @@ public class MyITopMktDataHandler implements ITopMktDataHandler{
 	 */
 	//public ArrayList<Object> avat = new ArrayList<Object> (); 
 	
-	public MyITopMktDataHandler(Contract contract, String OUTPUT_ROOT_PATH, String todayDate) {
+	public AvatITopMktDataHandler(Contract contract, String OUTPUT_ROOT_PATH, String todayDate) {
 		super();
 		this.contract = contract;
 		this.stockCode = contract.symbol();

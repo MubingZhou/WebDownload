@@ -10,8 +10,8 @@ import com.ib.client.OrderState;
 import com.ib.client.OrderStatus;
 import com.ib.controller.ApiController.IOrderHandler;
 
-public class MyIOrderHandler implements IOrderHandler,Serializable {
-	private static Logger logger = Logger.getLogger(MyIOrderHandler.class.getName());
+public class AvatIOrderHandler implements IOrderHandler,Serializable {
+	private static Logger logger = Logger.getLogger(AvatIOrderHandler.class.getName());
 	
 	private int orderId = -1;
 	public Contract contract;
@@ -25,7 +25,7 @@ public class MyIOrderHandler implements IOrderHandler,Serializable {
 	
 	public boolean isTransmit = true;
 	
-	public MyIOrderHandler (Contract con, Order order) {
+	public AvatIOrderHandler (Contract con, Order order) {
 		this.contract = con.clone();
 		this.order = order;
 	}

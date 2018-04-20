@@ -37,12 +37,12 @@ public class AVAT {
 	// -------- main variables -------------
 	public static ArrayList<Contract> conArr = new ArrayList<Contract>();
 	public static Map<String, Contract> conMap = new HashMap<String, Contract>();
-	public static MyAPIController myController;
+	public static AvatAPIController myController;
 	public static String AVAT_ROOT_PATH = "";
 	public static String AVAT_ORDER_PATH = "";
 	public static String AVAT_REALTIME_DATA_PATH = "";
 	public static String avatRtDataRootPath = "";    // 用来存储avat realtime data的
-	public static ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
+	public static ArrayList<AvatITopMktDataHandler> topMktDataHandlerArr = new ArrayList<AvatITopMktDataHandler>();
 	public static int numOfTopMktDataStock = 0;
 	public static double bilateralTrdCost = 0.003;
 	public static int isTestRun = 0;
@@ -91,7 +91,7 @@ public class AVAT {
 	private static boolean transmitToIB = true;  // 是否transmit 到 IB server (true - 是; false - 否，也就是说，不将order传给IB，只存在本地)
 	private static Double fixedBuyAmount = 500000.0;
 	
-	public static void setting(MyAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
+	public static void setting(AvatAPIController myController0, ArrayList<Contract> conArr0, String AVAT_ROOT_PATH0) {
 		myController = myController0;
 		conArr = (ArrayList<Contract>) conArr0.clone();
 		AVAT_ROOT_PATH = AVAT_ROOT_PATH0;
@@ -199,7 +199,7 @@ public class AVAT {
 			isMonitoringExecutions = false;
 			
 			// cancel request for top market data
-			for(MyITopMktDataHandler myTop : topMktDataHandlerArr) {
+			for(AvatITopMktDataHandler myTop : topMktDataHandlerArr) {
 				myController.cancelTopMktData(myTop);
 				logger.info("Cancel top market data. Stock=" + myTop.stockCode);
 			}
@@ -293,7 +293,7 @@ public class AVAT {
 			Contract con = conArr.get(i);
 			if(con == null)
 				continue;
-			MyITopMktDataHandler myTop = new MyITopMktDataHandler(con, avatRtDataRootPath, todayDate);
+			AvatITopMktDataHandler myTop = new AvatITopMktDataHandler(con, avatRtDataRootPath, todayDate);
 			//myTop.fileWriterMainPath = AVAT_ROOT_PATH + "real time data\\";
 			topMktDataHandlerArr.add(myTop);
 			myController.reqTopMktData(con, "233,375", false, false, myTop);
@@ -345,7 +345,7 @@ public class AVAT {
 				
 				logger.debug("-- topMktDataHandlerArr.size=" + topMktDataHandlerArr.size());
 				for(int i = 0; i < topMktDataHandlerArr.size(); i++) { // 每一个handler负责一只股票
-					MyITopMktDataHandler myTop = topMktDataHandlerArr.get(i);
+					AvatITopMktDataHandler myTop = topMktDataHandlerArr.get(i);
 					
 					Double trdRtVolume = myTop.latestTrdRTVolume;
 					String stock = myTop.stockCode;
@@ -668,7 +668,7 @@ public class AVAT {
 					//double priceChg = 0.02;
 					
 					if(singleRec.avatRatio5D > avatThld5D) {   // 如果股价变动是负的，则short
-						if(priceChg >= 0.015) {
+						if(priceChg >= -1000) { // if this is a very negative number, it means there is no threshold...
 							buyCond2_1 = 1;
 							isBuy = true;
 						}
@@ -676,7 +676,7 @@ public class AVAT {
 					}
 						
 					if(singleRec.avatRatio20D > avatThld20D ) {
-						if(priceChg >= 0.015) {
+						if(priceChg >= -1000) {
 							buyCond2_2 = 1;
 							isBuy = true;
 						}
@@ -762,12 +762,12 @@ public class AVAT {
 						// --------- submit orders ---------
 						String buyReason = "";
 						if(isPlaceOrder) {
-							MyIOrderHandler myOrderH1 = new MyIOrderHandler (con, order1); 
+							AvatIOrderHandler myOrderH1 = new AvatIOrderHandler (con, order1); 
 							myOrderH1.isTransmit = transmitToIB;
 							//logger.info("      ********* 3302 **********");
 							
 							myController.placeOrModifyOrder(con, order1, myOrderH1);
-							MyIOrderHandler myOrderH2 = new MyIOrderHandler (con, order2); 
+							AvatIOrderHandler myOrderH2 = new AvatIOrderHandler (con, order2); 
 							myOrderH2.isTransmit = transmitToIB;
 							myController.placeOrModifyOrder(con, order2, myOrderH2);
 							//logger.info("      ********* 3303 **********");
@@ -1051,7 +1051,7 @@ public class AVAT {
 			String dayEndStr = todayDate + " 23:10:00";
 			Date dayEndDate = sdf.parse(dayEndStr);
 			
-			MyITradeReportHandler myTradeReportHandler = new MyITradeReportHandler(executionsRecPath);
+			AvatITradeReportHandler myTradeReportHandler = new AvatITradeReportHandler(executionsRecPath);
 			logger.info("getting into execution monitor....");
 			while(isMonitoringExecutions) {
 				// ---------- MyITradeReportHandler的一些setting -----------
@@ -1176,9 +1176,9 @@ public class AVAT {
 						sellOrder2.totalQuantity(sellQty2);  //
 						sellOrder2.transmit(true);
 						
-						MyIOrderHandler sellOrderHandler1 = new MyIOrderHandler(con, sellOrder1);
+						AvatIOrderHandler sellOrderHandler1 = new AvatIOrderHandler(con, sellOrder1);
 						myController.placeOrModifyOrder(con, sellOrder1, sellOrderHandler1);  // sell order 放了就放了，不用monitor 
-						MyIOrderHandler sellOrderHandler2 = new MyIOrderHandler(con, sellOrder2);
+						AvatIOrderHandler sellOrderHandler2 = new AvatIOrderHandler(con, sellOrder2);
 						myController.placeOrModifyOrder(con, sellOrder2, sellOrderHandler2);  // sell order 放了就放了，不用monitor 
 					
 						int count2 = 0;

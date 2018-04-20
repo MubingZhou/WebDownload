@@ -14,8 +14,8 @@ import com.ib.client.OrderState;
 import com.ib.client.OrderStatus;
 import com.ib.controller.ApiController.ILiveOrderHandler;
 
-public class MyILiveOrderHandler implements ILiveOrderHandler{
-	private static Logger logger = Logger.getLogger(MyILiveOrderHandler.class.getName());
+public class AvatILiveOrderHandler implements ILiveOrderHandler{
+	private static Logger logger = Logger.getLogger(AvatILiveOrderHandler.class.getName());
 	
 	public boolean isEnd = false;
 	public String liveOrderRecPath = "";
@@ -29,7 +29,7 @@ public class MyILiveOrderHandler implements ILiveOrderHandler{
 	public ArrayList<ArrayList<Object>> openOrderArr = new ArrayList<ArrayList<Object>>();
 	public ArrayList<ArrayList<Object>> orderStatusArr = new ArrayList<ArrayList<Object>>();
 	
-	public MyILiveOrderHandler(String path) {
+	public AvatILiveOrderHandler(String path) {
 		this.liveOrderRecPath = path;
 		
 		try {
@@ -41,7 +41,7 @@ public class MyILiveOrderHandler implements ILiveOrderHandler{
 			logger.info("[MyILiveOrderHandler - FileWriter Creation failed!]");
 		}
 	}
-	public MyILiveOrderHandler() {
+	public AvatILiveOrderHandler() {
 		 toWrite = false;
 	}
 	

@@ -16,7 +16,7 @@ import com.ib.controller.Profile.Type;
 
 
 public class AdvisorUtil {
-	static List<Group> getGroups( String xml) {
+	public static List<Group> getGroups( String xml) {
 		try {
 			return getGroups_( xml);
 		} catch (IOException e) {
@@ -97,7 +97,7 @@ public class AdvisorUtil {
 		return list;
 	}
 
-	static List<Profile> getProfiles( String xml) {
+	public static List<Profile> getProfiles( String xml) {
 		try {
 			return getProfiles_( xml);
 		} catch (IOException e) {
@@ -204,7 +204,7 @@ public class AdvisorUtil {
 		return list;
 	}
 
-	static List<Alias> getAliases( String xml) {
+	public static List<Alias> getAliases( String xml) {
 		try {
 			return getAliases_( xml);
 		} catch (IOException e) {

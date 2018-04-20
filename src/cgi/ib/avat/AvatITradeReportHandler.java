@@ -11,8 +11,8 @@ import com.ib.client.Contract;
 import com.ib.client.Execution;
 import com.ib.controller.ApiController.ITradeReportHandler;
 
-public class MyITradeReportHandler implements ITradeReportHandler {
-	Logger logger = Logger.getLogger(MyITradeReportHandler.class.getName());
+public class AvatITradeReportHandler implements ITradeReportHandler {
+	Logger logger = Logger.getLogger(AvatITradeReportHandler.class.getName());
 	
 	public int isEnd = 0;
 	public int isCalledByMonitor = 0;
@@ -24,7 +24,7 @@ public class MyITradeReportHandler implements ITradeReportHandler {
 	public ArrayList<ArrayList<Object>> commissionReportArr = new ArrayList<ArrayList<Object>>();
 	
 	
-	public MyITradeReportHandler(String executionRecordPath) {
+	public AvatITradeReportHandler(String executionRecordPath) {
 		this.executionRecordPath = executionRecordPath;
 		
 		try {

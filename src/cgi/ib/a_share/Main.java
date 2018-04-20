@@ -3,9 +3,9 @@ package cgi.ib.a_share;
 import com.ib.client.Contract;
 import com.ib.controller.ApiConnection;
 
-import cgi.ib.avat.MyAPIController;
-import cgi.ib.avat.MyIConnectionHandler;
-import cgi.ib.avat.MyLogger;
+import cgi.ib.MyLogger;
+import cgi.ib.avat.AvatAPIController;
+import cgi.ib.avat.AvatIConnectionHandler;
 
 public class Main {
 

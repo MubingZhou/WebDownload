@@ -30,18 +30,18 @@ import com.ib.client.Types.NewsType;
 import com.ib.client.Types.WhatToShow;
 import com.ib.controller.ApiConnection.ILogger;
 
-import cgi.ib.avat.MyAPIController;
-import cgi.ib.avat.MyIHistoricalDataHandler;
-import cgi.ib.avat.MyITopMktDataHandler;
-import cgi.ib.avat.MyAPIController.RequestType;
+import cgi.ib.avat.AvatAPIController;
+import cgi.ib.avat.AvatIHistoricalDataHandler;
+import cgi.ib.avat.AvatITopMktDataHandler;
+import cgi.ib.avat.AvatAPIController.RequestType;
 
 public class ApiController implements EWrapper {
 	/*********** My Codes ****************/
-	private static Logger logger = Logger.getLogger(MyAPIController.class.getName());
+	private static Logger logger = Logger.getLogger(AvatAPIController.class.getName());
 	
-	public ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
-	public ArrayList<MyIHistoricalDataHandler> histHandlerArr = new ArrayList<MyIHistoricalDataHandler>();
-	public Map<Integer, MyIHistoricalDataHandler> histHandlerMap = new HashMap<Integer, MyIHistoricalDataHandler>();
+	public ArrayList<AvatITopMktDataHandler> topMktDataHandlerArr = new ArrayList<AvatITopMktDataHandler>();
+	public ArrayList<AvatIHistoricalDataHandler> histHandlerArr = new ArrayList<AvatIHistoricalDataHandler>();
+	public Map<Integer, AvatIHistoricalDataHandler> histHandlerMap = new HashMap<Integer, AvatIHistoricalDataHandler>();
 	
 	public LinkedHashMap<Integer, RequestType> reqIdMap = new LinkedHashMap<Integer, RequestType> ();
 	/*********** My Codes End ****************/

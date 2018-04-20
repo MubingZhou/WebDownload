@@ -56,17 +56,17 @@ import com.ib.controller.ApiController;
 import com.ib.controller.Group;
 import com.ib.controller.Profile;
 
-public class MyAPIController extends ApiController{
-	private static Logger logger = Logger.getLogger(MyAPIController.class.getName());
+public class AvatAPIController extends ApiController{
+	private static Logger logger = Logger.getLogger(AvatAPIController.class.getName());
 	
-	ArrayList<MyITopMktDataHandler> topMktDataHandlerArr = new ArrayList<MyITopMktDataHandler>();
-	ArrayList<MyIHistoricalDataHandler> histHandlerArr = new ArrayList<MyIHistoricalDataHandler>();
-	Map<Integer, MyIHistoricalDataHandler> histHandlerMap = new HashMap<Integer, MyIHistoricalDataHandler>();
+	ArrayList<AvatITopMktDataHandler> topMktDataHandlerArr = new ArrayList<AvatITopMktDataHandler>();
+	ArrayList<AvatIHistoricalDataHandler> histHandlerArr = new ArrayList<AvatIHistoricalDataHandler>();
+	Map<Integer, AvatIHistoricalDataHandler> histHandlerMap = new HashMap<Integer, AvatIHistoricalDataHandler>();
 	
 	LinkedHashMap<Integer, RequestType> reqIdMap = new LinkedHashMap<Integer, RequestType> ();
 	
 	// ---------------------------------------- Constructor and Connection handling ----------------------------------------
-	public MyAPIController( IConnectionHandler handler, ILogger inLogger, ILogger outLogger) {
+	public AvatAPIController( IConnectionHandler handler, ILogger inLogger, ILogger outLogger) {
 		super(handler, inLogger, outLogger);
 	}
 	
@@ -212,7 +212,7 @@ public class MyAPIController extends ApiController{
 	}
 
 	// ---------------------------------------- Top Market Data handling ----------------------------------------
-    public void reqTopMktData(Contract contract, String genericTickList, boolean snapshot, boolean regulatorySnapshot, MyITopMktDataHandler handler) {
+    public void reqTopMktData(Contract contract, String genericTickList, boolean snapshot, boolean regulatorySnapshot, AvatITopMktDataHandler handler) {
 		super.reqTopMktData(contract, genericTickList, snapshot, regulatorySnapshot, handler);
 		//super.client().reqIds(numIds);
 		handler.contract = contract;
@@ -304,7 +304,7 @@ public class MyAPIController extends ApiController{
 
 
 	// ---------------------------------------- Trade reports ----------------------------------------
-    public void reqExecutions( ExecutionFilter filter, MyITradeReportHandler handler) {
+    public void reqExecutions( ExecutionFilter filter, AvatITradeReportHandler handler) {
 		super.reqExecutions(filter, handler);
 		//handler.isCalledByMonitor = 1;
     }
@@ -326,7 +326,7 @@ public class MyAPIController extends ApiController{
 
 
 	// ---------------------------------------- Trading and Option Exercise ----------------------------------------
-	public void placeOrModifyOrder(Contract contract, final Order order, final MyIOrderHandler handler) {
+	public void placeOrModifyOrder(Contract contract, final Order order, final AvatIOrderHandler handler) {
 		super.placeOrModifyOrder(contract, order, handler);
 		
 		// recorder orderId
@@ -354,19 +354,19 @@ public class MyAPIController extends ApiController{
 
 
 	// ---------------------------------------- Live order handling ----------------------------------------
-	public void reqLiveOrders( MyILiveOrderHandler handler) {
+	public void reqLiveOrders( AvatILiveOrderHandler handler) {
 		super.reqLiveOrders(handler);
 	}
 
-	public void takeTwsOrders( MyILiveOrderHandler handler) {
+	public void takeTwsOrders( AvatILiveOrderHandler handler) {
 		super.takeTwsOrders(handler);
 	}
 
-	public void takeFutureTwsOrders( MyILiveOrderHandler handler) {
+	public void takeFutureTwsOrders( AvatILiveOrderHandler handler) {
 		super.takeFutureTwsOrders(handler);
 	}
 
-	public void removeLiveOrderHandler(MyILiveOrderHandler handler) {
+	public void removeLiveOrderHandler(AvatILiveOrderHandler handler) {
 		super.removeLiveOrderHandler(handler);
 		try {
 			//handler.fw.close();
@@ -396,7 +396,7 @@ public class MyAPIController extends ApiController{
 	// ----------------------------------------- Historical data handling ----------------------------------------
 	/** @param endDateTime format is YYYYMMDD HH:MM:SS [TMZ]
 	 *  @param duration is number of durationUnits */
-    public void reqHistoricalData(Contract contract, String endDateTime, int duration, DurationUnit durationUnit, BarSize barSize, WhatToShow whatToShow, boolean rthOnly, boolean keepUpToDate, MyIHistoricalDataHandler handler) {
+    public void reqHistoricalData(Contract contract, String endDateTime, int duration, DurationUnit durationUnit, BarSize barSize, WhatToShow whatToShow, boolean rthOnly, boolean keepUpToDate, AvatIHistoricalDataHandler handler) {
 		super.reqHistoricalData(contract, endDateTime, duration, durationUnit, barSize, whatToShow, rthOnly, keepUpToDate, handler);
     
 		int reqId = super.m_reqId;
@@ -408,7 +408,7 @@ public class MyAPIController extends ApiController{
     }
     
 
-    public void cancelHistoricalData( MyIHistoricalDataHandler handler) {
+    public void cancelHistoricalData( AvatIHistoricalDataHandler handler) {
 		super.cancelHistoricalData(handler);
 		handler.isActive = 0;
     }

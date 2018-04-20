@@ -14,8 +14,8 @@ import com.ib.client.HistoricalTickBidAsk;
 import com.ib.client.HistoricalTickLast;
 import com.ib.controller.ApiController.IHistoricalTickHandler;
 
-public class MyIHistoricalTickHandler implements IHistoricalTickHandler{
-	private static Logger logger = Logger.getLogger(MyITopMktDataHandler.class.getName());
+public class AvatIHistoricalTickHandler implements IHistoricalTickHandler{
+	private static Logger logger = Logger.getLogger(AvatITopMktDataHandler.class.getName());
 	private static String dateFormat = "yyyyMMdd HH:mm:ss";
 	private static SimpleDateFormat sdf = new SimpleDateFormat (dateFormat); 
 	
@@ -40,7 +40,7 @@ public class MyIHistoricalTickHandler implements IHistoricalTickHandler{
 	public String stockCode;
 	public FileWriter fileWriter;
 	
-	public MyIHistoricalTickHandler(String stockCode) {
+	public AvatIHistoricalTickHandler(String stockCode) {
 		super();
 		
 		this.stockCode = stockCode;

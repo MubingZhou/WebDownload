@@ -11,8 +11,8 @@ import org.apache.log4j.Logger;
 import com.ib.client.Contract;
 import com.ib.controller.Bar;
 
-public class MyIHistoricalDataHandler implements IHistoricalDataHandler{
-	private static Logger logger = Logger.getLogger(MyITopMktDataHandler.class.getName());
+public class AvatIHistoricalDataHandler implements IHistoricalDataHandler{
+	private static Logger logger = Logger.getLogger(AvatITopMktDataHandler.class.getName());
 	
 	public String stockCode;
 	public Contract contract;
@@ -24,7 +24,7 @@ public class MyIHistoricalDataHandler implements IHistoricalDataHandler{
 	
 	//public String AVAT_ROOT_PATH = "Z:\\AVAT\\";
 	
-	public MyIHistoricalDataHandler(String stockCode, String downloadRooPath) {
+	public AvatIHistoricalDataHandler(String stockCode, String downloadRooPath) {
 		super();
 		this.stockCode = stockCode;
 		

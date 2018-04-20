@@ -201,6 +201,14 @@ public class Utils {
 			return isOK;
 		}
 		
+		public static Double safeParseDouble(String s, Double defaultV) {
+			if(isDouble(s))
+				return Double.parseDouble(s);
+			else
+				return defaultV;
+			
+		}
+		
 		/**
 		 * check if a String is a int
 		 * @param str

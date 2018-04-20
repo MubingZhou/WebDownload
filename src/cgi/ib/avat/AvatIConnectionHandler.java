@@ -6,8 +6,8 @@ import org.apache.log4j.Logger;
 
 import com.ib.controller.ApiController.IConnectionHandler;
 
-public class MyIConnectionHandler implements IConnectionHandler{
-	public static Logger logger = Logger.getLogger(MyIConnectionHandler.class.getName());
+public class AvatIConnectionHandler implements IConnectionHandler{
+	public static Logger logger = Logger.getLogger(AvatIConnectionHandler.class.getName());
 	
 	@Override
 	public void connected() {

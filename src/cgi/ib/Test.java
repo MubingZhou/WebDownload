@@ -23,13 +23,12 @@ import com.ib.client.Types.WhatToShow;
 import com.ib.controller.ApiConnection;
 
 import cgi.ib.avat.AvatRecordSingleStock;
-import cgi.ib.avat.MyAPIController;
-import cgi.ib.avat.MyIConnectionHandler;
-import cgi.ib.avat.MyIHistoricalDataHandler;
-import cgi.ib.avat.MyIHistoricalTickHandler;
-import cgi.ib.avat.MyIRealTimeBarHandler;
-import cgi.ib.avat.MyITopMktDataHandler;
-import cgi.ib.avat.MyLogger;
+import cgi.ib.avat.AvatAPIController;
+import cgi.ib.avat.AvatIConnectionHandler;
+import cgi.ib.avat.AvatIHistoricalDataHandler;
+import cgi.ib.avat.AvatIHistoricalTickHandler;
+import cgi.ib.avat.AvatIRealTimeBarHandler;
+import cgi.ib.avat.AvatITopMktDataHandler;
 
 
 public class Test {
@@ -49,9 +48,9 @@ public class Test {
 			MyLogger inLogger = new MyLogger();
 			MyLogger outLogger = new MyLogger();
 			
-			MyIConnectionHandler myConnectionHandler = new MyIConnectionHandler();
+			AvatIConnectionHandler myConnectionHandler = new AvatIConnectionHandler();
 			//****** the main controller **********
-			MyAPIController myController = new MyAPIController(myConnectionHandler, inLogger, outLogger	);
+			AvatAPIController myController = new AvatAPIController(myConnectionHandler, inLogger, outLogger	);
 			myController.connect(host, port, clientId, null);
 			
 			// create EClient
@@ -112,11 +111,11 @@ public class Test {
 			
 			
 			// ==== requesting real time bars ========
-			ArrayList<MyIRealTimeBarHandler> rtBarHandlerArr = new ArrayList<MyIRealTimeBarHandler>();
+			ArrayList<AvatIRealTimeBarHandler> rtBarHandlerArr = new ArrayList<AvatIRealTimeBarHandler>();
 			if(false) {
 				boolean rthOnly_realtime = true;
 				for(int i = 0; i < conArr.size(); i++) {
-					MyIRealTimeBarHandler myRt = new MyIRealTimeBarHandler(conArr.get(i).symbol());
+					AvatIRealTimeBarHandler myRt = new AvatIRealTimeBarHandler(conArr.get(i).symbol());
 					rtBarHandlerArr.add(myRt);
 					myController.reqRealTimeBars(conArr.get(i), WhatToShow.TRADES, rthOnly_realtime, myRt);
 				}
@@ -125,7 +124,7 @@ public class Test {
 			
 			// ========== requesting historical bar data ========
 			//System.out.println("here68423");
-			ArrayList<MyIHistoricalDataHandler> histHandlerArr = new ArrayList<MyIHistoricalDataHandler>();
+			ArrayList<AvatIHistoricalDataHandler> histHandlerArr = new ArrayList<AvatIHistoricalDataHandler>();
 			if(false) {
 				int numOfRead = 2;
 				boolean rthOnly = true;
@@ -133,7 +132,7 @@ public class Test {
 				for(int i = 0; i < conArr.size(); i++) {
 					logger.debug("i=" + i + " Downloading " + conArr.get(i).symbol());
 					
-					MyIHistoricalDataHandler myHist = new MyIHistoricalDataHandler(conArr.get(i).symbol(),"D:\\stock data\\IB\\historical data\\");
+					AvatIHistoricalDataHandler myHist = new AvatIHistoricalDataHandler(conArr.get(i).symbol(),"D:\\stock data\\IB\\historical data\\");
 					histHandlerArr.add(myHist);
 					myController.reqHistoricalData(conArr.get(i), "20170928 16:30:00", 20, DurationUnit.DAY, BarSize._1_min, WhatToShow.TRADES, rthOnly, false, myHist);
 					//myController.reqHistoricalData(contract, endDateTime, duration, durationUnit, barSize, whatToShow, rthOnly, keepUpToDate, handler);
@@ -149,7 +148,7 @@ public class Test {
 						while(cum != numOfRead) { 
 							cum = 0;
 							for(int j = startInd; j <= i; j++) {
-								MyIHistoricalDataHandler thisHist = histHandlerArr.get(j);
+								AvatIHistoricalDataHandler thisHist = histHandlerArr.get(j);
 								int isEnd = thisHist.isEnd;
 								cum += isEnd;
 							}
@@ -165,7 +164,7 @@ public class Test {
 			}
 			
 			//============== requesting historical tick data ===============
-			ArrayList<MyIHistoricalTickHandler> histTickHandlerArr = new ArrayList<MyIHistoricalTickHandler>();
+			ArrayList<AvatIHistoricalTickHandler> histTickHandlerArr = new ArrayList<AvatIHistoricalTickHandler>();
 			if(true) {
 				int numOfRead = 1;
 				int counter  = 1;
@@ -183,7 +182,7 @@ public class Test {
 					int numOfData = 1000;
 					long nextTimeL = startTimeL;
 					String lastTimeS = startTimeS;
-					MyIHistoricalTickHandler myHistTick = new MyIHistoricalTickHandler(conArr.get(i).symbol());
+					AvatIHistoricalTickHandler myHistTick = new AvatIHistoricalTickHandler(conArr.get(i).symbol());
 					histTickHandlerArr.add(myHistTick);
 					
 					//myController.reqHistoricalTicks(conArr.get(i), startTimeS, null, numOfData, dataType, 1, true, myHistTick);
@@ -245,7 +244,7 @@ public class Test {
 			
 			//========= pre-close actions ============
 			for(int i = 0; i < rtBarHandlerArr.size(); i++) {
-				MyIRealTimeBarHandler myRt = rtBarHandlerArr.get(i);
+				AvatIRealTimeBarHandler myRt = rtBarHandlerArr.get(i);
 				myRt.fileWriter.close();
 			}
 			

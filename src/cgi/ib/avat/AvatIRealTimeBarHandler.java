@@ -11,14 +11,14 @@ import com.ib.client.Contract;
 import com.ib.controller.ApiController.IRealTimeBarHandler;
 import com.ib.controller.Bar;
 
-public class MyIRealTimeBarHandler implements IRealTimeBarHandler{
+public class AvatIRealTimeBarHandler implements IRealTimeBarHandler{
 	public String stockCode;
 	public Contract contract;
 	public FileWriter fileWriter;
 	
-	private static Logger logger = Logger.getLogger(MyITopMktDataHandler.class.getName());
+	private static Logger logger = Logger.getLogger(AvatITopMktDataHandler.class.getName());
 	
-	public MyIRealTimeBarHandler(String stockCode) {
+	public AvatIRealTimeBarHandler(String stockCode) {
 		super();
 		this.stockCode = stockCode;
 		try {

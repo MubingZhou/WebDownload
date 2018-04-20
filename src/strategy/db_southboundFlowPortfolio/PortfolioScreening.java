@@ -126,7 +126,7 @@ public class PortfolioScreening {
 			bf_avgVol.close();
 			
 			// ----------- get notional chg data ------------
-			if(notionalChgData == null || notionalChgData.size() == 0) {
+			if(false && (notionalChgData == null || notionalChgData.size() == 0)) {
 				getNotionalChgData(notionalChgDataRootPath);
 			}
 			
@@ -1212,7 +1212,7 @@ public class PortfolioScreening {
 					
 					String[] lineArr = line.split(",");
 					String stock = lineArr[0];
-					Double notionalChg = Double.parseDouble(lineArr[1]);
+					Double notionalChg = utils.Utils.safeParseDouble(lineArr[1],0.0);
 					
 					todayDataMap.put(stock, notionalChg);
 				}

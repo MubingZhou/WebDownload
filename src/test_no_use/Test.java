@@ -1,28 +1,21 @@
 package test_no_use;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.HttpURLConnection;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPReply;
 import org.apache.log4j.Logger;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-
-import utils.PlayWAV;
-
-import java.net.*;
 
 @SuppressWarnings("unused")
 public class Test {
@@ -36,37 +29,39 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
-		try {			
+		try {		
 			
+			
+	        
 			//getPrice();
 			//getSBFromHKEx();
 			
-			ArrayList<String> stockListStrArr= utils.Utils.getSouthboundStocks("20180314", "yyyyMMdd", true, true);
-			System.out.println(stockListStrArr.indexOf("839"));
-			
-			
-			//utils.Utils.getSouthboundStocks("20180305", "yyyyMMdd", true, true);
-			//Thread.sleep(1000*3);
-			System.out.println("Read to play!");
-			
-			utils.PlayWAV.play("voices\\dingdong.wav");
-			utils.PlayWAV.play("voices\\0.wav");
-			utils.PlayWAV.play("voices\\1.wav");
-			utils.PlayWAV.play("voices\\2.wav");
-			
+//			ArrayList<String> stockListStrArr= utils.Utils.getSouthboundStocks("20180314", "yyyyMMdd", true, true);
+//			System.out.println(stockListStrArr.indexOf("839"));
+//			
+//			
+//			//utils.Utils.getSouthboundStocks("20180305", "yyyyMMdd", true, true);
+//			//Thread.sleep(1000*3);
+//			System.out.println("Read to play!");
+//			
 //			utils.PlayWAV.play("voices\\dingdong.wav");
+//			utils.PlayWAV.play("voices\\0.wav");
 //			utils.PlayWAV.play("voices\\1.wav");
 //			utils.PlayWAV.play("voices\\2.wav");
-//			utils.PlayWAV.play("voices\\3.wav");
-			
-//			utils.PlayWAV.play("3_f.wav");
-//			utils.PlayWAV.play("4_f.wav");
-//			utils.PlayWAV.play("5_f.wav");
-//			utils.PlayWAV.play("6_f.wav");
-			//utils.PlayWAV.play("voices\\0_f.wav");
-//			utils.PlayWAV.play("8_f.wav");
-//			utils.PlayWAV.play("9_f.wav");
-			System.out.println("Done!");
+//			
+////			utils.PlayWAV.play("voices\\dingdong.wav");
+////			utils.PlayWAV.play("voices\\1.wav");
+////			utils.PlayWAV.play("voices\\2.wav");
+////			utils.PlayWAV.play("voices\\3.wav");
+//			
+////			utils.PlayWAV.play("3_f.wav");
+////			utils.PlayWAV.play("4_f.wav");
+////			utils.PlayWAV.play("5_f.wav");
+////			utils.PlayWAV.play("6_f.wav");
+//			//utils.PlayWAV.play("voices\\0_f.wav");
+////			utils.PlayWAV.play("8_f.wav");
+////			utils.PlayWAV.play("9_f.wav");
+//			System.out.println("Done!");
 			
 			//Runtime.getRuntime().exec( "shutdown -s -t 1");
 			
@@ -386,6 +381,41 @@ public class Test {
 		}
 		
 	}
+	
+	
+	public static boolean ftpUploadFile(String url,int port,String username, String password, String path, String filename, InputStream input) {  
+	    boolean success = false;  
+	    FTPClient ftp = new FTPClient();  
+	    try {  
+	        int reply;  
+	        ftp.connect(url, port);//连接FTP服务器  
+	        //如果采用默认端口，可以使用ftp.connect(url)的方式直接连接FTP服务器  
+	        ftp.login(username, password);//登录  
+	        reply = ftp.getReplyCode();  
+	        if (!FTPReply.isPositiveCompletion(reply)) {  
+	            ftp.disconnect();  
+	            return success;  
+	        }
+	        System.out.println("Login successful!");
+	        
+	        ftp.changeWorkingDirectory(path);  
+	        ftp.storeFile(filename, input);           
+	          
+	        input.close();  
+	        ftp.logout();  
+	        success = true;  
+	    } catch (IOException e) {  
+	        e.printStackTrace();  
+	    } finally {  
+	        if (ftp.isConnected()) {  
+	            try {  
+	                ftp.disconnect();  
+	            } catch (IOException ioe) {  
+	            }  
+	        }  
+	    }  
+	    return success;  
+	}  
 
 }
 

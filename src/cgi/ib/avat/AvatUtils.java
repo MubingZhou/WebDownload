@@ -794,7 +794,7 @@ public class AvatUtils {
 		boolean isOK = true;
 		try {
 			//String outputPath = ibRootPath + "historical ";
-			ArrayList<MyIHistoricalDataHandler> histHandlerArr = myController.histHandlerArr;
+			ArrayList<AvatIHistoricalDataHandler> histHandlerArr = myController.histHandlerArr;
 			int numOfRead = 20;
 			boolean rthOnly = true;
 			int counter  = 1;
@@ -813,7 +813,7 @@ public class AvatUtils {
 				}else
 					logger.debug("[historical bar] i=" + i + " Downloading " + conArr.get(i).symbol());
 				
-				MyIHistoricalDataHandler myHist = new MyIHistoricalDataHandler(stockCode, outputRootPath);
+				AvatIHistoricalDataHandler myHist = new AvatIHistoricalDataHandler(stockCode, outputRootPath);
 				histHandlerArr.add(myHist);
 				myController.reqHistoricalData(conArr.get(i), endDateTime, duration, durationUnit, barSize, whatToShow, rthOnly, false, myHist);
 				inQueueStockNum ++;
@@ -826,7 +826,7 @@ public class AvatUtils {
 					while(cum < inQueueStockNum) {
 						cum = 0;
 						for(int j = 0; j < inQueueStockNum; j++) {
-							MyIHistoricalDataHandler thisHist = histHandlerArr.get(inQueueStockNum_i.get(j));
+							AvatIHistoricalDataHandler thisHist = histHandlerArr.get(inQueueStockNum_i.get(j));
 							int isEnd = thisHist.isEnd;
 							cum += isEnd;
 						}
@@ -835,7 +835,7 @@ public class AvatUtils {
 						cumFailedNum ++;
 						if(cumFailedNum == 20) {  //把没有end的全部取消掉
 							for(int j = 0; j < inQueueStockNum; j++) {
-								MyIHistoricalDataHandler thisHist = histHandlerArr.get(inQueueStockNum_i.get(j));
+								AvatIHistoricalDataHandler thisHist = histHandlerArr.get(inQueueStockNum_i.get(j));
 								int isEnd = thisHist.isEnd;
 								int isActive = thisHist.isActive;
 								if(isEnd != 1 ) {
@@ -929,7 +929,7 @@ public class AvatUtils {
 		return isOK;
 	}
 	
-	public static boolean downloadHistorical1MinData_20D(MyAPIController myController, ArrayList<Contract> conArr, String endDate, String dateFormat) {
+	public static boolean downloadHistorical1MinData_20D(AvatAPIController myController, ArrayList<Contract> conArr, String endDate, String dateFormat) {
 		boolean isOK = true;
 		try {
 			ArrayList<Calendar> allTrdCal = utils.Utils.getAllTradingCal();

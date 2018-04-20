@@ -1,5 +1,6 @@
 package webDownLoadHKEX;
 
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -20,6 +21,22 @@ import org.jsoup.nodes.Document;
 
 public class DataGetter {
 	public static StringBuilder params = new StringBuilder();
+	
+	public static void main(String[] args) {
+		try {
+			String p = "Z:\\Mubing\\stock data\\HK CCASS - WEBB SITE\\southbound\\temp.csv";
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(p);
+			String line = bf.readLine();
+			String[] stockList = line.split(",");
+			for(String stock : stockList) {
+				dataGetter(stock, "2018-04-12");
+			}
+			
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
 	public static boolean dataGetter(String stockCode, String dateStr) {
         boolean isOK = true;
@@ -55,6 +72,7 @@ public class DataGetter {
             setParams("ddlShareholdingYear", sdf_year.format(date));
             setParams("btnSearch.y", "15");
             setParams("btnSearch.x", "15");
+            setParams("txtParticipantID", "A00003");
             
             conn.setRequestProperty( "Content-Length", Integer.toString( params.toString().getBytes("utf-8").length ));
             conn.setRequestProperty("Cookie", getCookie("http://www.hkexnews.hk"));

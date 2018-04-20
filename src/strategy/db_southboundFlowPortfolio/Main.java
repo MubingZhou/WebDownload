@@ -79,9 +79,9 @@ public class Main {
 			//downloadSBData();
 			
 			if(true) {
-				boolean isDownloadSBData = false;
+				boolean isDownloadSBData = true;
 				
-				boolean isBacktest = false;
+				boolean isBacktest = true;
 					boolean isOutputAVATStockPicks = false;
 					
 				boolean isDownloadPriceData = true;
@@ -310,7 +310,7 @@ public class Main {
 				BacktestFrame.isToCalNotional = false;
 			
 			//-----------------------------------------
-			int[] topNStocksArr = {15}; //{3,5,7,9,10,11,13,15,17,19,20,21,23,25,27,29,30,31};
+			int[] topNStocksArr = {35}; //{3,5,7,9,10,11,13,15,17,19,20,21,23,25,27,29,30,31};
 			int[] weightingStrategyArr = {1,2};
 			int[] earlyUnwindStrategyArr = {1,2};
 			double[] avgDailyValueThreshHold_USDArr = {
@@ -324,7 +324,7 @@ public class Main {
 //			double[] rankingStrategy6_1_threshold_Arr = {0.9};
 //			int [] rankingStrategy6_1_holdDay_Arr = {3};
 			boolean[] isRebalanceEachTimeArr = {false, true};
-			int[] daysBetweenRelancingDate_Rolling_Arr = {5,10,15};  //{5,10,15,20,25,30,35,40}
+			int[] daysBetweenRelancingDate_Rolling_Arr = {15};  //{5,10,15,20,25,30,35,40}
 			
 			int size1 = 1;
 			//size1 = topNStocksArr.length;
@@ -1067,12 +1067,12 @@ public class Main {
 		try {
 			Date lastTrdDate = utils.Utils.getRefDate(new Date(), allMMATradingDate, -1);
 			String dateStr_yyyyMMdd = sdf_yyyyMMdd.format(lastTrdDate);
-			//dateStr_yyyyMMdd = "20180323";
+			//dateStr_yyyyMMdd = "20180404";
 			
 			String southboundDateFormat = "yyyy-MM-dd";
 			SimpleDateFormat sdf_2 = new SimpleDateFormat (southboundDateFormat); 
 			String dateStr_2 = sdf_2.format(lastTrdDate);
-			//dateStr_2 = "2018-03-29";
+			//dateStr_2 = "2018-04-04";
 			
 			// ---------- southbound ------------
 			String shPath = southboundDataRootPath + "\\sh";

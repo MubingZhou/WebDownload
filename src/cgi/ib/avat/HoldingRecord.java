@@ -48,8 +48,8 @@ public class HoldingRecord  implements Serializable {
 	public String buyReason = "";
 	
 	// order handler 
-	public MyIOrderHandler buyOrderHanlder = null;
-	public MyIOrderHandler sellOrderHanlder = null;
+	public AvatIOrderHandler buyOrderHanlder = null;
+	public AvatIOrderHandler sellOrderHanlder = null;
 	//public MyIOrderHandler myOrderH2 = null;
 	
 	/*
@@ -62,7 +62,7 @@ public class HoldingRecord  implements Serializable {
 	}
 	*/
 	
-	public HoldingRecord(MyIOrderHandler handler, long orderTimeStamp) {
+	public HoldingRecord(AvatIOrderHandler handler, long orderTimeStamp) {
 		this.buyOrderHanlder = handler;
 		this.stockCode = handler.contract.symbol();
 		this.contract = handler.contract;

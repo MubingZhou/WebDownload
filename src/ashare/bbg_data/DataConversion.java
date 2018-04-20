@@ -43,9 +43,15 @@ public class DataConversion {
 		//convertSouthboundByStock(sbInputPath, sbOutputPath);
 		
 		//------------------- bbg download conversion (new) ------------------
-		String bbgDownloadDataInputpath = "T:\\db southbound\\indices data2.csv";
-		String bbgDownloadDataIOutputpath = "T:\\db southbound\\indices data2\\";
-		convertToSingleFile_bbg_new(bbgDownloadDataInputpath, bbgDownloadDataIOutputpath);
+		String bbgDownloadDataInputpath = "T:\\test_data\\data\\index 20180409.csv";
+		String bbgDownloadDataIOutputpath = "T:\\test_data\\data\\indices";
+		//convertToSingleFile_bbg_new(bbgDownloadDataInputpath, bbgDownloadDataIOutputpath);
+		
+		//------------------- bbg freefloat conversion (new) ------------------
+		String bbgFFIn = "T:\\test_data\\data\\freefloat 20180409.csv";
+		String bbgFFOut = "T:\\test_data\\data\\freefloat";
+		convertFreefloat(bbgFFIn, bbgFFOut);
+				
 	}
 	
 	/**
@@ -648,4 +654,48 @@ public class DataConversion {
 		return null;
 		
 	}
+
+	public static void convertFreefloat(String inputFileName, String outputRootPath) {
+		try {
+			/*
+			 * 								
+									Date	25/9/2017	26/9/2017	27/9/2017	28/9/2017	29/9/2017	9/10/2017	10/10/2017
+				1 HK Equity			FF		95			95			95			95			...
+				2 HK Equity			FF		95			95			95			95			...
+							
+			 */
+			ArrayList<String> dateArrStr = new ArrayList<String>(); 			
+			
+			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(inputFileName);
+			String line = "";
+			int c = 0;
+			
+			while((line = bf.readLine()) != null) {
+				String[] lineArr = line.split(",");
+				if(c == 0) { // first line
+					c++;
+					dateArrStr = new ArrayList<String>(Arrays.asList(lineArr));
+					dateArrStr.remove(0);
+					dateArrStr.remove(0);  // remove the first 2 elements
+					continue;
+				}
+				
+				String stock = lineArr[0].split(" ")[0];
+				FileWriter fw = new FileWriter(utils.Utils.addBackSlashToPath(outputRootPath) + stock + ".csv");
+				for(int i = 0; i < dateArrStr.size(); i++) {
+					int j = i + 2;
+					Double ff = utils.Utils.safeParseDouble(lineArr[j], 0.0);
+					if(ff > 0.0) {
+						fw.write(dateArrStr.get(i) + "," + String.valueOf(ff) + "\n");
+					}
+				}
+				fw.close();
+				
+			} // end of while
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
 }

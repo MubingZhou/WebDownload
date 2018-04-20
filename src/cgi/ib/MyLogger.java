@@ -1,4 +1,4 @@
-package cgi.ib.avat;
+package cgi.ib;
 
 import org.apache.log4j.Logger;
 

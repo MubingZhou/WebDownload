@@ -29,9 +29,11 @@ import com.ib.controller.ApiController;
 import com.ib.controller.ApiController.IConnectionHandler;
 import com.ib.controller.ApiController.ITopMktDataHandler;
 
+import cgi.ib.MyLogger;
+
 public class Main {
 	public static Logger logger = Logger.getLogger(Main.class.getName());
-	public static String AVAT_ROOT_PATH = "Z:\\AVAT\\";
+	public static String AVAT_ROOT_PATH = "D:\\AVAT\\";
 	//public static String AVAT_ROOT_PATH = "T:\\AVAT\\";
 	public static double bilateralTrdCost = 0.003;
 	public static String STOCKLIST_PATH_HISTORICAL_DATA = AVAT_ROOT_PATH + "stocklist - historical data.csv";
@@ -40,8 +42,8 @@ public class Main {
 	// IB controller  
 	public static MyLogger inLogger = new MyLogger();
 	public static MyLogger outLogger = new MyLogger();
-	public static MyIConnectionHandler myConnectionHandler = new MyIConnectionHandler();
-	public static MyAPIController myController;
+	public static AvatIConnectionHandler myConnectionHandler = new AvatIConnectionHandler();
+	public static AvatAPIController myController;
 	public static ApiConnection myClient; 
 	public static ArrayList<Contract> conArr = new ArrayList<Contract> ();
 	public static boolean isDownloadEnds = false;   // if downloading historical data ends
@@ -121,23 +123,23 @@ public class Main {
 			*/
 			
 			//---------- temp: download historical 1 min data - multiple days ------------
-			String[] temp_dateArrStr = {"20180404"}; //"20180207","20180206","20180205"
-			for(int j = 0; j < temp_dateArrStr.length; j++) {
-				//connect(host, port, clientId);
-				
-				String dateStr = temp_dateArrStr[j];
-				logger.info("=========== downloading " + dateStr + " ============");
-				//Date date = sdf_yyyyMMdd.parse(dateStr);
-				
-				boolean temp_isEnd = getHistorical1MinData_OneDay(dateStr, dateFormat_yyyyMMdd);
-				while(!temp_isEnd) {
-					Thread.sleep(1000 * 5);
-				}
-				logger.info("=========== downloading " + dateStr + " end ============");
-				
-				//disconnect();
-			}
-			Thread.sleep(1000 * 5000000);
+//			String[] temp_dateArrStr = {"20180419"}; //"20180207","20180206","20180205"
+//			for(int j = 0; j < temp_dateArrStr.length; j++) {
+//				//connect(host, port, clientId);
+//				
+//				String dateStr = temp_dateArrStr[j];
+//				logger.info("=========== downloading " + dateStr + " ============");
+//				//Date date = sdf_yyyyMMdd.parse(dateStr);
+//				
+//				boolean temp_isEnd = getHistorical1MinData_OneDay(dateStr, dateFormat_yyyyMMdd);
+//				while(!temp_isEnd) {
+//					Thread.sleep(1000 * 5);
+//				}
+//				logger.info("=========== downloading " + dateStr + " end ============");
+//				
+//				//disconnect();
+//			}
+//			Thread.sleep(1000 * 5000000);
 
 			
 			//======== constructing contracts ===========
@@ -256,7 +258,7 @@ public class Main {
 				boolean transmitToIB = true;
 				order.transmit(transmitToIB);  // false - 只在api平台有这个order
 				
-				MyIOrderHandler myOrderH = new MyIOrderHandler (con, order); 
+				AvatIOrderHandler myOrderH = new AvatIOrderHandler (con, order); 
 				myController.placeOrModifyOrder(con, order, myOrderH);
 				
 				int isSubmitted = -1;
@@ -305,12 +307,12 @@ public class Main {
 				if(false) {
 					// monitor order
 					String liveOrderRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\live order records.csv";
-					MyILiveOrderHandler myLiveOrder = new MyILiveOrderHandler(liveOrderRecPath);
+					AvatILiveOrderHandler myLiveOrder = new AvatILiveOrderHandler(liveOrderRecPath);
 					myController.takeTwsOrders(myLiveOrder);
 					
 					// monitor executions
 					String exeRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\execution records.csv";
-					MyITradeReportHandler myTradeReport = new MyITradeReportHandler(exeRecPath);
+					AvatITradeReportHandler myTradeReport = new AvatITradeReportHandler(exeRecPath);
 					ExecutionFilter filter = new ExecutionFilter();
 					filter.secType("FUT");
 					myController.reqExecutions(filter, myTradeReport);
@@ -345,7 +347,7 @@ public class Main {
 				
 				System.out.println("DONE");
 				
-				MyIHistoricalDataHandler myHist = new MyIHistoricalDataHandler("75", "D:\\no use\\");
+				AvatIHistoricalDataHandler myHist = new AvatIHistoricalDataHandler("75", "D:\\no use\\");
 				myController.reqHistoricalData(con, "2017-12-27 16:00:00", 1, DurationUnit.DAY, BarSize._1_day, WhatToShow.ADJUSTED_LAST, true, false, myHist);
 				
 			}
@@ -353,7 +355,7 @@ public class Main {
 				System.out.println("");
 				for(int i = 0; i < 405; i++) {
 					Contract con = conArr.get(i);
-					MyITopMktDataHandler myTop = new MyITopMktDataHandler(con, AVAT_ROOT_PATH, "20171020");
+					AvatITopMktDataHandler myTop = new AvatITopMktDataHandler(con, AVAT_ROOT_PATH, "20171020");
 					//myTop.fileWriterMainPath = AVAT_ROOT_PATH + "real time data\\";
 					//topMktDataHandlerArr.add(myTop);
 					//myController.reqMktDataType(MarketDataType.REALTIME);
@@ -409,7 +411,7 @@ public class Main {
 				filter.secType("STK");
 				
 				String executionsRecPath = AVAT_ROOT_PATH + "orders\\" + todayDate + "\\executions records.csv";
-				MyITradeReportHandler myTradeReportHandler = new MyITradeReportHandler(executionsRecPath);
+				AvatITradeReportHandler myTradeReportHandler = new AvatITradeReportHandler(executionsRecPath);
 				myTradeReportHandler.isCalledByMonitor = 1;
 				myController.reqExecutions(filter, myTradeReportHandler);
 				//System.out.println("here11234--------");
@@ -477,7 +479,7 @@ public class Main {
 	public static boolean connect(String host, int port, int clientId) {
 		boolean getConnected = false;
 		try {
-			myController = new MyAPIController(myConnectionHandler, inLogger, outLogger	);
+			myController = new AvatAPIController(myConnectionHandler, inLogger, outLogger	);
 			myController.connect(host, port, clientId, null);
 			
 			// create EClient
