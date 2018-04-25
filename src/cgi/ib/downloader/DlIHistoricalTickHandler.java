@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -22,21 +24,14 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 	private static SimpleDateFormat sdf_time = new SimpleDateFormat("HH:mm:ss");
 	
 	private int numOfData_trades = 0;  // used to judge if have received all data
-	private long lastTime_midpoint = 0;
-	public ArrayList<Object> getData_trades() {
-		return data_trades;
-	}
-	public void setData_trades(ArrayList<Object> data_trades) {
-		this.data_trades = data_trades;
-	}
 
-	private long lastTime_bidnask = 0;
-	private long lastTime_trades = 0;
+	private long lastTime = 0; // last time we download the data (not the trade time)
 	
-	private int isEnd_trades = 0;   // whether finished receiving all data
-	private int isNo_trades = 0;	// whether no trades are received in this round (if so, the contract expires after the last time for futures)
+	//private int isEnd_trades = 0;   // whether finished receiving all data
+	//private int isNo_trades = 0;	// whether no trades are received in this round (if so, the contract expires after the last time for futures)
+	private boolean isNoData  = false;   // whether there is no data this round 
 	
-	private ArrayList<Object> data_trades = new ArrayList<Object>(); 
+	private Map<Long, Object> data_trades = new HashMap<Long, Object>();  // long - time in miliseconds
 	
 
 	public String stockCode;
@@ -44,6 +39,7 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 	public String rootPath; 
 	public int request_numOfData = 0;
 	public String type;   // TRADES, BID_ASK, MIDPOINT
+	public boolean writeOrder = true; // true - write data in asc time order (oldest data first), false - desc time order
 	
 	public DlIHistoricalTickHandler(String stockCode, String rootPath, String type, int request_numOfData) {
 		super();
@@ -58,22 +54,25 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		initialize();	
 	}
 	public void initialize() {
-		isEnd_trades = 0;
-		data_trades = new ArrayList<Object>(); 
+		//isEnd_trades = 0;
+		data_trades = null;
+		data_trades = new HashMap<Long, Object>(); 
 		
-		lastTime_midpoint = 0;
-		lastTime_bidnask = 0;
-		lastTime_trades = 0;
+		lastTime = 0;
 		
-		isNo_trades = 0;
+		isNoData = false;
+		
+		//isNo_trades = 0;
 		
 		numOfData_trades = 0;
 	}
 	
 	@Override
-	public void historicalTick(int reqId, List<HistoricalTick> ticks, boolean last) {   // mid point
+	public void historicalTick(int reqId, List<HistoricalTick> ticks) {   // mid point
 		try {
 			ArrayList<Long> timeArr = new ArrayList<Long>();
 			
@@ -88,17 +87,15 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 				timeArr.add(tick.time() * 1000);
 			}
 			
-			lastTime_midpoint = findMax(timeArr);
+			lastTime = findMax(timeArr);
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public void historicalTickBidAsk(int reqId, List<HistoricalTickBidAsk> ticks, boolean done) {  // bid & ask
-		try {
-			ArrayList<Long> timeArr = new ArrayList<Long>();
-			
+	public void historicalTickBidAsk(int reqId, List<HistoricalTickBidAsk> ticks) {  // bid & ask
+		try {			
 			for(int i = 0; i < ticks.size(); i++) {
 				HistoricalTickBidAsk tick = ticks.get(i);
 				String time = unixDate2StringTime(tick.time() * 1000);
@@ -108,14 +105,10 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 				+ "," + String.valueOf(tick.sizeBid()) + "," + String.valueOf(tick.priceAsk())
 				+ "," + String.valueOf(tick.sizeAsk())  + "\n";
 				fileWriter.write(toWrite);
-				fileWriter.flush();
-				
-				
-				
-				timeArr.add(tick.time() * 1000);
+
 			}
 			
-			lastTime_bidnask = findMax(timeArr);
+
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -123,60 +116,51 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 	}
 
 	@Override
-	public void historicalTickLast(int reqId, List<HistoricalTickLast> ticks, boolean done) {  // trades
+	public void historicalTickLast(int reqId, List<HistoricalTickLast> ticks) {  // trades
 		try {
-			ArrayList<Long> timeArr = new ArrayList<Long>();
+			System.out.println("Got data, size=" + ticks.size());
 			
-			isNo_trades = 1;
-			for(int i = 0; i < ticks.size(); i++) {
-				isNo_trades = 0;
-				lastTime_trades = new Date().getTime();   
-				
+			if(ticks == null || ticks.size() == 0) {
+				isNoData = true;
+				return;
+			}
+			ArrayList<String> toWriteArr = new ArrayList<String> (); 
+			for(int i = 0; i < ticks.size(); i++) {			
 				HistoricalTickLast tick = ticks.get(i);
 				Long timeL = tick.time() * 1000;
+				lastTime = timeL;
 				String time = unixDate2StringTime(timeL);
 				String date = unixDate2StringDate(timeL);
 				
-				String toWrite = date + "," + time + "," + String.valueOf(tick.mask()) + "," + String.valueOf(tick.price())
-				+ "," + String.valueOf(tick.size()) + "," + String.valueOf(tick.exchange())
-				+ "," + String.valueOf(tick.specialConditions())  + "\n";
-				fileWriter.write(toWrite);
-				//fileWriter.flush();
-				
-//				System.out.println(toWrite);
-//				if(done) {
-//					System.out.println("Done; Num=" + numOfData_trades);
-//				}else {
-//					System.out.println("Not Done");
-//				}
-				
-				
-				ArrayList<Object> data = new ArrayList<Object>();
-				data.add(timeL);  // mili sec
-				data.add(tick.mask());
-				data.add(tick.price());
-				data.add(tick.size());
-				data.add(tick.exchange());
-				data.add(tick.specialConditions());
-				
-				
-				data_trades.add(data);   // 将所有的数据存到trades data里面
+				String toWrite = date + "," + time + "," 
+						//+ String.valueOf(tick.mask()) + "," 
+						+ String.valueOf(tick.price()) + "," 
+						+ String.valueOf(tick.size()) + "," 
+						//+ String.valueOf(tick.exchange()) + "," 
+						//+ String.valueOf(tick.specialConditions())  
+						+ "\n";
+				toWriteArr.add(toWrite);
 				numOfData_trades++;
-				
-				timeArr.add(timeL);
-			}
-			isEnd_trades = 1;
-			//flushData_trades();
+				//System.out.println("i=" + i + " numOfData_trades=" + numOfData_trades + "\n" + toWrite);
+			}			
 			
-			if(isNo_trades == 0)
-				lastTime_trades = findMax(timeArr);
+			int t1 = 0;
+			int t2 = 0;
+			if(!writeOrder) {  // reverse order
+				t1 = -1;
+				t2 = toWriteArr.size()-1;
+			}
+			for(int i = 0; i < toWriteArr.size(); i++) {
+				fileWriter.write(toWriteArr.get(t1 * i + t2));
+			}
+			fileWriter.flush();
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
 	
-	public boolean flushData_trades(ArrayList<Object> thisTradeData) {
+	public boolean flushData_trades(Map<Long, Object> thisTradeData) {
 		boolean ok = true;
 		try {
 			for(int i = 0; i < thisTradeData.size(); i++) {
@@ -243,34 +227,15 @@ public class DlIHistoricalTickHandler extends MyIHistoricalTickHandler{
 		
 		return max;
 	}
-
-	public long getLastTime_trades() {
-		return lastTime_trades;
-	}
-
-	public long getLastTime_bidnask() {
-		return lastTime_bidnask;
-	}
-
-	public long getLastTime_midpoint() {
-		return lastTime_midpoint;
-	}
-
 	
-	public int getIsEnd_trades() {
-		return isEnd_trades;
-	}
-
-	public void setIsEnd_trades(int isEnd_trades) {
-		this.isEnd_trades = isEnd_trades;
-	}
-	public int getIsNo_trades() {
-		return isNo_trades;
-	}
-	public void setIsNo_trades(int isNo_trades) {
-		this.isNo_trades = isNo_trades;
+	public Long getLastDataTime() {
+		return lastTime;
 	}
 	
+	public boolean isNoData() {
+		return isNoData;
+	}
+
 	public void close() {
 		try {
 			fileWriter.close();

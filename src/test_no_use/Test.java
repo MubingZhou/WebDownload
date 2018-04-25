@@ -1,6 +1,7 @@
 package test_no_use;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,9 +30,7 @@ public class Test {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
 		try {		
 			
-			Integer a = 10;
-			Integer b = 3;
-			System.out.println(a / b);
+			replaceSpace("T:\\HK_Futures\\HI1_Index", "T:\\HK_Futures\\HI1_Index_copy");
 	        
 			//getPrice();
 			//getSBFromHKEx();
@@ -382,6 +381,33 @@ public class Test {
 		
 	}
 	
+	
+	public static void replaceSpace(String dir, String copyPath) {
+		try{
+			File f = new File(dir);
+			File[] fList = f.listFiles();
+			
+			
+			for(File file : fList) {
+				String fileName = file.getName();
+				String path = utils.Utils.addBackSlashToPath(dir) + fileName;
+				FileWriter fw  = new FileWriter(utils.Utils.addBackSlashToPath(copyPath) + fileName);
+				BufferedReader bf = utils.Utils.readFile_returnBufferedReader(path);
+				String line = "";
+				while((line = bf.readLine()) != null) {
+					String copyL = line.replace(" ", ",");
+					fw.write(copyL);
+					fw.write("\n");
+				}
+				bf.close();
+				fw.close();
+			}
+			
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
 
 }

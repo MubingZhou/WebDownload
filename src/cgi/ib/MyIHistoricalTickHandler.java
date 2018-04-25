@@ -21,7 +21,7 @@ public class MyIHistoricalTickHandler implements IHistoricalTickHandler{
 
 	
 	@Override
-	public void historicalTick(int reqId, List<HistoricalTick> ticks, boolean last) {   // mid point
+	public void historicalTick(int reqId, List<HistoricalTick> ticks) {   // mid point
 		try {
 	
 		}catch(Exception e) {
@@ -30,7 +30,7 @@ public class MyIHistoricalTickHandler implements IHistoricalTickHandler{
 	}
 
 	@Override
-	public void historicalTickBidAsk(int reqId, List<HistoricalTickBidAsk> ticks, boolean done) {  // bid & ask
+	public void historicalTickBidAsk(int reqId, List<HistoricalTickBidAsk> ticks) {  // bid & ask
 		try {
 
 		}catch(Exception e) {
@@ -40,7 +40,7 @@ public class MyIHistoricalTickHandler implements IHistoricalTickHandler{
 	}
 
 	@Override
-	public void historicalTickLast(int reqId, List<HistoricalTickLast> ticks, boolean done) {  // trades
+	public void historicalTickLast(int reqId, List<HistoricalTickLast> ticks) {  // trades
 		try {
 	
 		}catch(Exception e) {

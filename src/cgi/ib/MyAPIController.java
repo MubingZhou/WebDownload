@@ -1777,9 +1777,9 @@ public class MyAPIController implements EWrapper{
     
     public interface IHistoricalTickHandler {
 
-        void historicalTick(int reqId, List<HistoricalTick> ticks, boolean last);        
-        void historicalTickBidAsk(int reqId, List<HistoricalTickBidAsk> ticks, boolean done);        
-        void historicalTickLast(int reqId, List<HistoricalTickLast> ticks, boolean done);
+        void historicalTick(int reqId, List<HistoricalTick> ticks);        
+        void historicalTickBidAsk(int reqId, List<HistoricalTickBidAsk> ticks);        
+        void historicalTickLast(int reqId, List<HistoricalTickLast> ticks);
         
     }
 
@@ -1800,7 +1800,7 @@ public class MyAPIController implements EWrapper{
         IHistoricalTickHandler handler = m_historicalTicksMap.get(reqId);
         
         if (handler != null) {
-            handler.historicalTick(reqId, ticks, last);
+            handler.historicalTick(reqId, ticks);
         }
         
         recEOM();
@@ -1811,7 +1811,7 @@ public class MyAPIController implements EWrapper{
         IHistoricalTickHandler handler = m_historicalTicksMap.get(reqId);
         
         if (handler != null) {
-            handler.historicalTickBidAsk(reqId, ticks, done);
+            handler.historicalTickBidAsk(reqId, ticks);
         }
         
         recEOM();
@@ -1822,7 +1822,7 @@ public class MyAPIController implements EWrapper{
         IHistoricalTickHandler handler = m_historicalTicksMap.get(reqId);
         
         if (handler != null) {
-            handler.historicalTickLast(reqId, ticks, done);
+            handler.historicalTickLast(reqId, ticks);
         }
         
         recEOM();

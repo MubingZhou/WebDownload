@@ -197,7 +197,7 @@ public class Main {
 			
 			
 			
-			
+			//-------------- dead codes below ----------------
 			
 			if(mode == 0) {
 				//AvatUtils.downloadHistorical1MinData_20D(myController, conArr, "20170908", "yyyyMMdd");

@@ -1,7 +1,7 @@
 package utils;
 
 public class PathConifiguration {
-	public static String STOCK_DATA_ROOT_PATH = "T:\\Mubing\\stock data";
+	public static String STOCK_DATA_ROOT_PATH = "Z:\\Mubing\\stock data";
 	public static String ALL_TRADING_DATE_PATH_HK = STOCK_DATA_ROOT_PATH + "\\all trading date - hk.csv" ;   // trading date for HK market
 	
 	public static String ALL_MMA_TRADING_DATE_PATH = STOCK_DATA_ROOT_PATH + "\\all MMA trading date - hk.csv" ;  
