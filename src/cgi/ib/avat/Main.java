@@ -123,7 +123,7 @@ public class Main {
 			*/
 			
 			//---------- temp: download historical 1 min data - multiple days ------------
-//			String[] temp_dateArrStr = {"20180419"}; //"20180207","20180206","20180205"
+//			String[] temp_dateArrStr = {"20180427"}; //"20180207","20180206","20180205"
 //			for(int j = 0; j < temp_dateArrStr.length; j++) {
 //				//connect(host, port, clientId);
 //				

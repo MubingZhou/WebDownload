@@ -188,8 +188,9 @@ public class Main {
 			boolean isRebalanceEachTime = false;   
 			double eachStockValueRebalanceThreshold = 0.01;
 			int daysBetweenRelancingDate_Rolling = 15;   // 在rolling的情况下，rolling的observation period
-			blackList.add("607");
-			blackList.add("1250");
+			//blackList.add("607");   // if want to add stocks to blacklist, uncomment this line
+			//blackList.add("1250");
+			
 			
 			
 			// -------------------- path settings -------------------

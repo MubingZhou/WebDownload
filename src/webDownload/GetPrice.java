@@ -202,8 +202,8 @@ public class GetPrice { // download stock data (price, vol etc.) from webb-site
 			stockCodeList.clear();
 			stockCodeList.addAll(stocksInMap);
 			
-			int startInd = 0;
-			int endInd = stockCodeList.size();
+			int startInd = 0; //2000;
+			int endInd =   stockCodeList.size();
 			stockCodeList = new ArrayList<String>( stockCodeList.subList(startInd, endInd) );
 			//List<String> stockCodeList = stockCodeList0.subList(100, stockCodeList0.size() );
 			System.out.println("********************* Start ind = " + startInd + "     End ind = " + endInd + " *************************");
