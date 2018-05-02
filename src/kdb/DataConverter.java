@@ -15,10 +15,11 @@ public class DataConverter {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		String in = "";
-		String outRoot = "";
+		String in = "H:\\H share data";
+		String outRoot = "H:\\H share data by date";
 		
 		convertFromWindData(in, outRoot);
+		//System.out.println(rightStockCode("000001.SZ"));
 	}
 
 	/**
@@ -54,12 +55,12 @@ public class DataConverter {
 						
 						String ticker = rightStockCode(dateArr[0]);   // If the future configuration is different, please modify here
 						Date date = sdf_hyphen.parse(dateArr[2]); // date
-						String oStr = dateArr[3];
-						String hStr = dateArr[4];
-						String lStr = dateArr[5];
-						String cStr = dateArr[6];
-						String vStr = dateArr[7]; // vol
-						String tStr = dateArr[8]; // turnover
+						String oStr = dateArr[4];
+						String hStr = dateArr[5];
+						String lStr = dateArr[6];
+						String cStr = dateArr[7];
+						String vStr = dateArr[8]; // vol
+						String tStr = dateArr[9]; // turnover
 						
 						Double close = Double.parseDouble(cStr);
 						Double open = utils.Utils.safeParseDouble(oStr, close);
@@ -107,7 +108,8 @@ public class DataConverter {
 		String out="";
 		boolean getNonZero = false;
 		
-		String[] arr = in.split(".");
+		String[] arr = in.split("\\.");  // to split by ".", need to use "\.", but "\" is expressed by "\\" in Java
+		//System.out.println(arr.length);
 		String suffix = arr[arr.length-1];
 		
 		if(suffix.equalsIgnoreCase("HK")) {

@@ -13,6 +13,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1107,6 +1108,287 @@ public class Utils {
 		}
 		
 		return num;
+	}
+	
+	/**
+	 * To check if the input string contains numbers
+	 * @param input
+	 * @return
+	 */
+	public static boolean isContainNumbers(String input) {
+		boolean output = false;
+		
+		for(int i = 0; i < input.length(); i++){
+			char c = input.charAt(i);
+			int n = (int)c;
+			
+			if( n >= 48 && n <= 57){
+				output = true;
+				break;
+			}
+		}
+		
+		return output;
+	}
+	
+	
+	/**
+	 * to convert daily sectional data from TDX to the format accepted by AmiBroker
+	 * @param readFilePath
+	 * @param writeFilePath
+	 * @param todayDate
+	 */
+	public static void convertTDX2AB_Daily(String readFilePath, String writeFilePath, String todayDate) {
+		try {
+			BufferedReader br = readFile_returnBufferedReader(addBackSlashToPath(readFilePath )+ "自选股" + todayDate + ".txt");
+			BufferedReader br2 = readFile_returnBufferedReader(addBackSlashToPath(readFilePath )+ "沪深主要指数" + todayDate + ".txt");
+			
+			// writing files
+			FileWriter fw = new FileWriter(addBackSlashToPath(writeFilePath) + "A Share - Strutured Fund - ETF" + todayDate + ".txt");
+			FileWriter fw2 = new FileWriter(addBackSlashToPath(writeFilePath) + "A Indexes" + todayDate + ".txt");
+			
+			String txt  = null;
+			ArrayList<String> items = new ArrayList<String>();     // 用来存储自己想要的列
+			items.add("代码");
+			items.add("名称");	items.add("今开");	items.add("最高");	
+			items.add("最低");	items.add("现价"); 	items.add("总量");	
+			items.add("流通股(亿)"); 	items.add("总股本(亿)");
+			//ArrayList<Integer> itemsIndex = new ArrayList<Integer>();
+			
+			ArrayList<String> items2 = new ArrayList<String>();     // 用来存储自己想要的列
+			items2.add("代码");
+			items2.add("名称");	items2.add("今开");	items2.add("最高");	
+			items2.add("最低");	items2.add("现价"); 	items2.add("总量");
+			//ArrayList<Integer> itemsIndex2 = new ArrayList<Integer>();
+			
+			
+			// conversion
+			convertTDX2AB_Daily_temp(br, fw, items, todayDate, 1);
+			convertTDX2AB_Daily_temp(br2, fw2, items2, todayDate, 2);  // 沪深指数数据
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Only designed for function convertTDX2AB_Daily
+	 * @param br
+	 * @param fw
+	 * @param items
+	 * @param todayDate
+	 * @param type
+	 */
+	private static void convertTDX2AB_Daily_temp(BufferedReader br, FileWriter fw, ArrayList<String> items, String todayDate, int type) {
+		try {
+			ArrayList<Integer> itemsIndex = new ArrayList<Integer>();
+			
+			String txt = "";
+			int isFirstLine = 1;
+			int numCol = 0;   // num of columns
+			int jjj = 0;
+			while((txt = br.readLine())!=null){//使用readLine方法，一次读一行
+				String[] txtArr = txt.split("\t");
+				
+				if(isFirstLine == 1){  // 获取表头，找到自己想要的列的序号
+					isFirstLine = 0;
+					
+					List<String> listA = Arrays.asList(txtArr);
+					ArrayList<String> txtArrList = new ArrayList<String>(listA);   // 将String[]转换成ArrayList
+					  
+					for(int i = 0; i < items.size(); i++){
+						itemsIndex.add(txtArrList.indexOf(items.get(i)));   // 得到items中每个item的列号
+						//System.out.println("item = " + items.get(i) + " index = " + itemsIndex.get(i));
+						
+						// 写表头???
+						fw.write(items.get(i) + ",");
+						if(items.get(i).equals("代码"))
+							fw.write("日期,");
+					}
+					fw.write("\n");
+					
+					numCol = txtArr.length;
+				}
+				else{
+					if(txtArr.length == numCol){   // 除去那些不符合要求的行
+						String output = "";
+						
+						// 先检查是否停牌了
+						int isHaltTrading = 0;   // 是否停牌
+						String closeStr = "";    // 停牌时的收盘价
+						String tempStr1 = txtArr[itemsIndex.get(items.indexOf("今开"))];
+						String tempStr2 = txtArr[itemsIndex.get(items.indexOf("总量"))];
+						if(!isContainNumbers(tempStr1)){
+							isHaltTrading = 1;
+							closeStr = txtArr[itemsIndex.get(items.indexOf("现价"))];
+							//System.out.println("== 停牌 close = " + closeStr);
+						}
+						//System.out.println("========== tempStr = " + tempStr);
+						
+						
+						for(int i = 0; i < items.size(); i++){
+							String str = txtArr[itemsIndex.get(i)];
+							
+							// 处理停牌的情况, 停牌时，开盘价，最低价，最高价都是“--”，要替换成收盘价呢
+							if(isHaltTrading == 1){  
+								if(items.get(i).equals("今开") || items.get(i).equals("最高") || items.get(i).equals("最低")){
+									str = closeStr;
+								}
+							}
+							
+							str = removeSpaceTab(str);
+							
+							// "代码"加后缀（前缀）
+							if(items.get(i).equals("代码")){
+								str = addSuffixPrefixForAShares_TDX(str, type);
+								str = "tdx_" + str + "," + todayDate;
+							}
+							
+							// 处理停牌的情况，开高低收，四个价格应该都一样
+							//if(items.get(i).equals("总量")){
+							//	isHaltTrading = Integer.parseInt(str) == 0?1:0;
+							//}
+							
+							// 流通股都乘以1亿
+							if(items.get(i).equals("流通股(亿)") || items.get(i).equals("总股本(亿)")){
+								Double floatingShares = safeParseDouble(str, 0.0)  * 10000 * 10000;
+								DecimalFormat df = new DecimalFormat("0"); 
+								
+								//str = floatingShares.toString();
+								str = df.format(floatingShares.doubleValue());
+							}
+							
+							// 本来单位是“手”，这里改为股
+							if(items.get(i).equals("总量")){
+								Double volume = safeParseDouble(str, 0.0) * 100;
+								DecimalFormat df = new DecimalFormat("0"); 
+								
+								//str = floatingShares.toString();
+								str = df.format(volume.doubleValue());
+							}
+							
+							if( i == items.size() - 1){
+								output = output + str;
+							}
+							else{
+								output = output + str + ",";
+							}
+							
+						} // END of "for(int i = 0; i < items.size(); i++)"
+						
+						// 将output输出到文件中
+						fw.write(output + "\n");
+						
+						// only for displaying
+						if(jjj < 0){
+							System.out.println(output);
+							
+						}
+						jjj++;
+					}
+					else{
+						//System.out.println("=========" + txt);
+					} // END of "if(txtArr.length == numCol)"
+					
+				} // END of "if(isFirstLine == 1)"
+				
+			}   // END of "while((txt = br.readLine())!=null)"
+			br.close();
+			fw.close();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * add suffix and prefix for A shares (only for function convertTDX2AB_Daily_temp)
+	 * @param stockCode
+	 * @param type
+	 * @return
+	 */
+	private static String addSuffixPrefixForAShares_TDX(String stockCode, int type){
+		// type:
+		//	1 - Stock, structured fund, ETF
+		//	2 - Index
+		
+		String output = "";
+		String suffix = "";
+		String prefix = "";
+		
+		String suffixSH = ".SH";
+		String suffixSZ = ".SZ";
+		String prefixSH = "SH";
+		String prefixSZ = "SZ";
+		
+		if(type == 1)
+		{
+			if(stockCode.length() == 6){   // 处理六位数的情况，比如stockCode = "002123"
+				String first2Charac = stockCode.substring(0, 2);
+				String first3Charac = stockCode.substring(0, 3);
+				
+				if(first2Charac.equals("60")){
+					suffix = suffixSH;
+					//prefix = prefixSH;   // 如何制定suffix和prefix是开发者自己的事情
+				}
+				
+				if(first2Charac.equals("00") || first2Charac.equals("30")){
+					suffix = suffixSZ;
+					//prefix = prefixSZ;   // 如何制定suffix和prefix是开发者自己的事情
+				}
+				
+				if(first3Charac.equals("159") || first3Charac.equals("150") ){   // 159 - 深市的ETF，150 - 深市的分级基金
+					suffix = suffixSZ;
+				}
+				
+				if(first2Charac.equals("50") || first2Charac.equals("51")){
+					suffix = suffixSH;
+				}
+				
+			}
+			if(stockCode.length() < 6){  // 比如原本code应该是 “000050”结果不知为何变成了“50”，这种情况不会发生在以60开头的股票上，也就是只可能发生在深市的股票上
+				suffix = suffixSZ;
+				//prefix = prefixSZ;
+			}
+		}
+		
+		if(type == 2){
+			// 如果是指数的话，以000或者00开头的一般是上海的指数，以399开头的一般是深圳的指数
+			String first3Charac = stockCode.substring(0, 3);
+			
+			if(first3Charac.equals("000")){
+				suffix = suffixSH;
+			}
+			if(first3Charac.equals("399")){
+				suffix = suffixSZ;
+			}
+			
+			// 对于上证指数的一些特殊情况
+			if(stockCode.equals("999999") || stockCode.equals("1A0001")){
+				suffix = suffixSH;
+				stockCode = "000001";
+			}
+		}
+		
+		output = prefix + stockCode + suffix;
+		return output;
+	}
+	
+	/**
+	 * Remove space and tab within a string
+	 * @param input
+	 * @return
+	 */
+	public static String removeSpaceTab(String input){    // 移除空格和制表符
+		String output = "";
+		
+		for(int i = 0; i < input.length(); i++){
+			char c = input.charAt(i);
+			int n = (int)c;
+			
+			if( !(n == 9 || n == 32) ) {  
+				output = output + c;
+			}
+		}
+		return output;
 	}
 	
 }
