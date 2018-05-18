@@ -24,8 +24,10 @@ import org.jsoup.select.Elements;
 
 public class DataDownloader { // downloading southbound CCASS data
 	public static String WEBB_URL_OUTSTANDING = "https://webb-site.com/dbpub/outstanding.asp?sc=";
-	public static String FILE_OUTPUT_PATH = utils.PathConifiguration.HK_STOCK_OUTSTANDING_DATA;
-	public static String ALL_STOCK_LIST_PATH = utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\outstanding stock list.csv";
+	public static String FILE_OUTPUT_PATH = 
+			utils.PathConifiguration.HK_STOCK_OUTSTANDING_DATA;
+	public static String ALL_STOCK_LIST_PATH = 
+			utils.PathConifiguration.STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\outstanding stock list.csv";
 	private static boolean isTrustedAllCertificates = false;
 	
 	/**
@@ -36,9 +38,11 @@ public class DataDownloader { // downloading southbound CCASS data
 	public static void dataDownloader() {  // downloading by stock
 		try{
 			
-			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(ALL_STOCK_LIST_PATH);
+			BufferedReader bf = 
+					utils.Utils.readFile_returnBufferedReader(ALL_STOCK_LIST_PATH);
 			String bf_line = bf.readLine();
-			ArrayList<String> allStockList = new ArrayList<String>(Arrays.asList(bf_line.split(",")));
+			ArrayList<String> allStockList = 
+					new ArrayList<String>(Arrays.asList(bf_line.split(",")));
 			
 			dataDownloader(allStockList);
 			

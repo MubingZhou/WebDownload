@@ -79,7 +79,7 @@ public class Main {
 			//downloadSBData();
 			
 			if(true) {
-				boolean isDownloadSBData = true;
+				boolean isDownloadSBData = false;
 				
 				boolean isBacktest = true;
 					boolean isOutputAVATStockPicks = false;
@@ -1068,12 +1068,12 @@ public class Main {
 		try {
 			Date lastTrdDate = utils.Utils.getRefDate(new Date(), allMMATradingDate, -1);
 			String dateStr_yyyyMMdd = sdf_yyyyMMdd.format(lastTrdDate);
-			//dateStr_yyyyMMdd = "20180404";
+			//dateStr_yyyyMMdd = "20180503";
 			
 			String southboundDateFormat = "yyyy-MM-dd";
 			SimpleDateFormat sdf_2 = new SimpleDateFormat (southboundDateFormat); 
 			String dateStr_2 = sdf_2.format(lastTrdDate);
-			//dateStr_2 = "2018-04-04";
+			//dateStr_2 = "2018-05-04";
 			
 			// ---------- southbound ------------
 			String shPath = southboundDataRootPath + "\\sh";

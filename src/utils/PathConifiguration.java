@@ -13,7 +13,9 @@ public class PathConifiguration {
 	public static String STOCK_PRICE_PATH = STOCK_DATA_ROOT_PATH + "\\stock hist data - webb";
 	public static String SOUTHBOUND_DATA_PATH = STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\southbound\\combined";
 	
-	public static String HK_STOCK_OUTSTANDING_DATA = STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\outstanding";
+	public static String HK_STOCK_OUTSTANDING_DATA = 
+			STOCK_DATA_ROOT_PATH + "\\HK CCASS - WEBB SITE\\outstanding";
+	
 	
 	public void updatePathStr(String new_STOCK_DATA_ROOT_PATH) {
 		STOCK_DATA_ROOT_PATH = new_STOCK_DATA_ROOT_PATH;

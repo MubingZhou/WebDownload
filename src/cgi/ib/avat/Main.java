@@ -99,6 +99,9 @@ public class Main {
 			//****** the main controller **********
 			connect(host, port, clientId);
 			
+			// test codes
+			// myClient.reqIds(-1);
+			
 			/*
 			myController = new MyAPIController(myConnectionHandler, inLogger, outLogger	);
 			myController.connect(host, port, clientId, null);
@@ -139,7 +142,7 @@ public class Main {
 //				
 //				//disconnect();
 //			}
-//			Thread.sleep(1000 * 5000000);
+			//Thread.sleep(1000 * 5000000);
 
 			
 			//======== constructing contracts ===========

@@ -208,81 +208,84 @@ public class AVAT {
 			
 		}catch(Exception e) {
 			e.printStackTrace();
+			
+			try {
+				utils.Utils.beepNTimes(5);
+				Thread.sleep(1000);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		}
 	}
 	
-	private static void prepare() {
-		try {
-			allTradingDate = utils.Utils.getAllTradingCal(TRADING_DATE_PATH);
-			
-			// ------- avat - prepare historical avat --------
-			AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
-			logger.info("prepare prev cross sectional avat - done");
-			
-			// ------- avat - historical avat ---------
-			avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
-			logger.info("get prev cross sectional avat - done");
-			
-				//Thread.sleep(1000 * 10000000);
-			
-			// ------- avat - yesterday close ---------
-			avatPrevClose = AvatUtils.getPrevClose();
-			logger.info("get prev close - done");
-			
-			// ------- avat - industry ---------
-			ArrayList<Object> data = AvatUtils.getIndustry();
-			avatIndustry = (Map<String, String>) data.get(0);
-			avatIndustry_byIndustry = (Map<String, ArrayList<String>>) data.get(1);  // industry - stock list
-			logger.info("get industry - done");
-			
-			// ------ avat index members ----------
-			avatIndexMembers = AvatUtils.getIndexMembers();
-			logger.info("get index memebers - done");
-			
-			// ------- avat time path by 1min ---------
-			avatTimePath = AvatUtils.getTimePath();
-			logger.info("get time path - done");
-			
-			// -------- avat get today's auction --------
-			//Map<String, Double> todayAuction = AvatUtils.getTodayAuction();
-			
-			// ------ avat - get previous day's volume --------
-			prevVolume = AvatUtils.getPreviousVolume(conArr);   // 这个volume不包好unreportable的volume
-			
-			// ------ avat lot size --------
-			avatLotSize = AvatUtils.getLotSize();
-			logger.info("get lot size - done");
-			
-			// ------- get watchlist stocks (The machine will use another voice if a stock belongs to the watchlist) ------
-			String stockWachlistPath = utils.Utils.addBackSlashToPath(AVAT_ROOT_PATH) + "\\avat para\\stock_watchlist.csv";
-			BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockWachlistPath);  // should be a line
-			String line = "";
-			while((line = bf.readLine()) != null)
-				stockWachlist.addAll(Arrays.asList(line.split(",")));
-			bf.close();
-			
-			
-			// --------- get voice map -------
-			String voiceF = "voices\\";
-			for(int i = 0; i <= 9; i++) {
-				String n = String.valueOf(i);
-				voiceMap_m.put(n, voiceF + n + ".wav");
-				voiceMap_f.put(n, voiceF + n + "_f.wav");
-			}
-			
-			// ------- 设置弹出窗口的容器 ----------
-		   avatDisplayFrame.setLocation(0,0);
-		   avatDisplayFrame.setSize(300, 700);
-		   avatDisplayFrame.setVisible(true);
-		   
-		   buyOrdersFrame.setLocation(0,300);
-		   buyOrdersFrame.setSize(300, 700);
-		   buyOrdersFrame.setVisible(true);
-	   
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	private static void prepare() throws Exception{
+		allTradingDate = utils.Utils.getAllTradingCal(TRADING_DATE_PATH);
+		
+		// ------- avat - prepare historical avat --------
+		AvatUtils.preparePrevCrossSectionalAvat2(conArr, todayDate, "yyyyMMdd");
+		logger.info("prepare prev cross sectional avat - done");
+		
+		// ------- avat - historical avat ---------
+		avatHist = AvatUtils.getPrevCrossSectionalAvat(conArr);
+		logger.info("get prev cross sectional avat - done");
+		
+			//Thread.sleep(1000 * 10000000);
+		
+		// ------- avat - yesterday close ---------
+		avatPrevClose = AvatUtils.getPrevClose();
+		logger.info("get prev close - done");
+		
+		// ------- avat - industry ---------
+		ArrayList<Object> data = AvatUtils.getIndustry();
+		avatIndustry = (Map<String, String>) data.get(0);
+		avatIndustry_byIndustry = (Map<String, ArrayList<String>>) data.get(1);  // industry - stock list
+		logger.info("get industry - done");
+		
+		// ------ avat index members ----------
+		avatIndexMembers = AvatUtils.getIndexMembers();
+		logger.info("get index memebers - done");
+		
+		// ------- avat time path by 1min ---------
+		avatTimePath = AvatUtils.getTimePath();
+		logger.info("get time path - done");
+		
+		// -------- avat get today's auction --------
+		//Map<String, Double> todayAuction = AvatUtils.getTodayAuction();
+		
+		// ------ avat - get previous day's volume --------
+		prevVolume = AvatUtils.getPreviousVolume(conArr);   // 这个volume不包好unreportable的volume
+		
+		// ------ avat lot size --------
+		avatLotSize = AvatUtils.getLotSize();
+		logger.info("get lot size - done");
+		
+		// ------- get watchlist stocks (The machine will use another voice if a stock belongs to the watchlist) ------
+		String stockWachlistPath = utils.Utils.addBackSlashToPath(AVAT_ROOT_PATH) + "\\avat para\\stock_watchlist.csv";
+		BufferedReader bf = utils.Utils.readFile_returnBufferedReader(stockWachlistPath);  // should be a line
+		String line = "";
+		while((line = bf.readLine()) != null)
+			stockWachlist.addAll(Arrays.asList(line.split(",")));
+		bf.close();
+		
+		
+		// --------- get voice map -------
+		String voiceF = "voices\\";
+		for(int i = 0; i <= 9; i++) {
+			String n = String.valueOf(i);
+			voiceMap_m.put(n, voiceF + n + ".wav");
+			voiceMap_f.put(n, voiceF + n + "_f.wav");
 		}
+		
+		// ------- 设置弹出窗口的容器 ----------
+	   avatDisplayFrame.setLocation(0,0);
+	   avatDisplayFrame.setSize(300, 700);
+	   avatDisplayFrame.setVisible(true);
+	   
+	   buyOrdersFrame.setLocation(0,300);
+	   buyOrdersFrame.setSize(300, 700);
+	   buyOrdersFrame.setVisible(true);
+   
 	}
 	
 	/**
@@ -306,647 +309,639 @@ public class AVAT {
 		}
 	}
 	
-	private static void scanForAvat() {
-		try {
-			String avatRecordPath = AVAT_ROOT_PATH + "avat record\\" + todayDate + "\\";
-			File f_r = new File(avatRecordPath);
-			if(!f_r.exists())
-				f_r.mkdir();
-			String avatRecordXMLPath = AVAT_ROOT_PATH + "avat record\\" + todayDate + "\\overview.xml";
+	private static void scanForAvat() throws Exception {
+		String avatRecordPath = AVAT_ROOT_PATH + "avat record\\" + todayDate + "\\";
+		File f_r = new File(avatRecordPath);
+		if(!f_r.exists())
+			f_r.mkdir();
+		String avatRecordXMLPath = AVAT_ROOT_PATH + "avat record\\" + todayDate + "\\overview.xml";
+		
+		Date now = new Date();
+		//Map<String,ArrayList<Double>> avatRatioNow = new HashMap();
+		ArrayList<AvatRecordSingleStock> avatRecord = new ArrayList<AvatRecordSingleStock>();
+		//ArrayList<AvatRecordSingleStock> lastAvatRecord = new ArrayList<AvatRecordSingleStock>();
+		Map<String, Integer> lastRankingData = new HashMap();
+		
+		boolean isFirst = true;
+		long scanPeriod = 1000 * 60;  //每次隔多久扫描一次
+		while(now.before(avatTimePath.get(avatTimePath.size() - 1))) {
+		//while(now.before(sdf_100.parse("20180201 14_33_30"))) {
+			// --------- 判断时间 -----------
+			logger.info("now = " + sdf.format(now));
+			if(now.before(sdf.parse(todayDate + " 09:30:00"))) {
+				logger.info("Market not open!");
+				Thread.sleep(scanPeriod);
+				now = new Date();
+				continue;
+			}
 			
-			Date now = new Date();
-			//Map<String,ArrayList<Double>> avatRatioNow = new HashMap();
-			ArrayList<AvatRecordSingleStock> avatRecord = new ArrayList<AvatRecordSingleStock>();
-			//ArrayList<AvatRecordSingleStock> lastAvatRecord = new ArrayList<AvatRecordSingleStock>();
-			Map<String, Integer> lastRankingData = new HashMap();
+			//---------- 正式开始 -----------
+			logger.info("Generating avat!");
 			
-			boolean isFirst = true;
-			long scanPeriod = 1000 * 60;  //每次隔多久扫描一次
-			while(now.before(avatTimePath.get(avatTimePath.size() - 1))) {
-			//while(now.before(sdf_100.parse("20180201 14_33_30"))) {
-				// --------- 判断时间 -----------
-				logger.info("now = " + sdf.format(now));
-				if(now.before(sdf.parse(todayDate + " 09:30:00"))) {
-					logger.info("Market not open!");
-					Thread.sleep(scanPeriod);
-					now = new Date();
+			avatRecord.clear();
+			//avatRecord = new ArrayList<AvatRecordSingleStock>();
+			
+			ArrayList<String> eligibleStocks = new ArrayList<String>(); // 看avat是否符合要求
+			ArrayList<Double> eligibleStocksValue = new ArrayList<Double>(); 
+			msg_eligibleStocksMap.clear();
+			
+			logger.debug("-- topMktDataHandlerArr.size=" + topMktDataHandlerArr.size());
+			for(int i = 0; i < topMktDataHandlerArr.size(); i++) { // 每一个handler负责一只股票
+				AvatITopMktDataHandler myTop = topMktDataHandlerArr.get(i);
+				
+				Double trdRtVolume = myTop.latestTrdRTVolume;
+				String stock = myTop.stockCode;
+				Double price = myTop.latestPrice;
+				Double trdRtTurnover = myTop.latestTrdRTTurnover;
+				Double latestBestBid = myTop.latestBestBid;
+				Double latestBestAsk = myTop.latestBestAsk;
+				
+				logger.trace("------- stock = " + stock);
+				
+				// find the nearest date
+				Map<Date,ArrayList<Double>> avatHist_stock = avatHist.get(stock);
+				if(avatHist_stock == null) {   // no such stock
+					logger.debug("[real time data] stock=" + stock + " no such stock!");
+					continue;
+				}
+				if(trdRtVolume == 0.0) {
+					logger.debug("[real time data] stock=" + stock + " zero volume!");
+					continue;
+				}
+				if(price == 0.0) {
+					logger.debug("[real time data] stock=" + stock + " zero price!");
 					continue;
 				}
 				
-				//---------- 正式开始 -----------
-				logger.info("Generating avat!");
-				
-				avatRecord.clear();
-				//avatRecord = new ArrayList<AvatRecordSingleStock>();
-				
-				ArrayList<String> eligibleStocks = new ArrayList<String>(); // 看avat是否符合要求
-				ArrayList<Double> eligibleStocksValue = new ArrayList<Double>(); 
-				msg_eligibleStocksMap.clear();
-				
-				logger.debug("-- topMktDataHandlerArr.size=" + topMktDataHandlerArr.size());
-				for(int i = 0; i < topMktDataHandlerArr.size(); i++) { // 每一个handler负责一只股票
-					AvatITopMktDataHandler myTop = topMktDataHandlerArr.get(i);
-					
-					Double trdRtVolume = myTop.latestTrdRTVolume;
-					String stock = myTop.stockCode;
-					Double price = myTop.latestPrice;
-					Double trdRtTurnover = myTop.latestTrdRTTurnover;
-					Double latestBestBid = myTop.latestBestBid;
-					Double latestBestAsk = myTop.latestBestAsk;
-					
-					logger.trace("------- stock = " + stock);
-					
-					// find the nearest date
-					Map<Date,ArrayList<Double>> avatHist_stock = avatHist.get(stock);
-					if(avatHist_stock == null) {   // no such stock
-						logger.debug("[real time data] stock=" + stock + " no such stock!");
-						continue;
-					}
-					if(trdRtVolume == 0.0) {
-						logger.debug("[real time data] stock=" + stock + " zero volume!");
-						continue;
-					}
-					if(price == 0.0) {
-						logger.debug("[real time data] stock=" + stock + " zero price!");
-						continue;
-					}
-					
-					// ------ find the time benchmark -------
-					Set<Date> dateSet = avatHist_stock.keySet();
-					long diff = 1000 * 1000 * 1000;
-					Date minDate = new Date();
-					for(Date d : dateSet) {
-						if(d.before(now)) {
-							long thisDiff = now.getTime() - d.getTime();
-							if(thisDiff < diff) {
-								diff = thisDiff;
-								minDate = (Date) d.clone();
-							}
+				// ------ find the time benchmark -------
+				Set<Date> dateSet = avatHist_stock.keySet();
+				long diff = 1000 * 1000 * 1000;
+				Date minDate = new Date();
+				for(Date d : dateSet) {
+					if(d.before(now)) {
+						long thisDiff = now.getTime() - d.getTime();
+						if(thisDiff < diff) {
+							diff = thisDiff;
+							minDate = (Date) d.clone();
 						}
 					}
-					//logger.debug("------- get min date=" + sdf.format(minDate));
-					ArrayList<Double> avatHist_nearData = avatHist_stock.get(minDate);
-					if(avatHist_nearData == null) {  // 虽然这种情况不太可能出现，但是也要做好应对措施
-						logger.info("[real time data] stock=" + stock + " avatHist_nearData null!");
-						continue;
+				}
+				//logger.debug("------- get min date=" + sdf.format(minDate));
+				ArrayList<Double> avatHist_nearData = avatHist_stock.get(minDate);
+				if(avatHist_nearData == null) {  // 虽然这种情况不太可能出现，但是也要做好应对措施
+					logger.info("[real time data] stock=" + stock + " avatHist_nearData null!");
+					continue;
+				}
+				
+				// get historical avat data
+				Double avat5D = avatHist_nearData.get(0);
+				Double avat20D = avatHist_nearData.get(1);
+				
+				// get current avat
+				Double ratio5D = trdRtVolume / avat5D;
+				Double ratio20D = trdRtVolume / avat20D;
+				
+				ArrayList<Double> temp = new ArrayList<Double>();
+				temp.add(ratio5D);
+				temp.add(ratio20D);
+				
+				if(ratio5D >= 3.0) {
+					//eligibleStocks.add(stock);
+					//msg_eligibleStocksMap.put(ratio5D, stock);
+				}
+				
+				//avatRatioNow.put(stock, temp);
+				
+				//logger.debug("------- avat 5D = " + ratio5D);
+				
+				// get prev close
+				Double prevClose = avatPrevClose.get(stock);
+				//logger.debug("------- prevClose="+prevClose);
+				Double prevCloseChgPct = (price / prevClose - 1) * 100.0;
+				//logger.debug("------- 1222");
+				// get industry
+				String industry = avatIndustry.get(stock);
+				//logger.debug("------- 1223");
+				
+				AvatRecordSingleStock at = new AvatRecordSingleStock(now.getTime(), stock, myTop.contract, price, prevCloseChgPct, ratio5D, ratio20D, industry);
+				at.turnover = trdRtTurnover;
+				at.latestBestAsk = latestBestAsk;
+				at.latestBestBid = latestBestBid;
+				at.prevVolume = prevVolume.get(stock);
+				at.volume = trdRtVolume;
+				
+				avatRecord.add(at);
+				
+				logger.trace("------- next ");
+			}  // end of for
+			
+			logger.info("-- sorting avat record");
+			// sorting
+			Collections.sort(avatRecord, AvatRecordSingleStock.getComparator());
+			
+			// calculate industry avg
+			logger.info("-- calculating industry avg");
+			ArrayList<String> industryList = new ArrayList<String> ();
+			ArrayList<Double> industryCum = new ArrayList<Double>();
+			ArrayList<Integer> industryNum = new ArrayList<Integer>();
+			for(int i = 0; i < avatRecord.size(); i++) {
+				AvatRecordSingleStock rec = avatRecord.get(i);
+				String thisIndustry = rec.industry;
+				Double thisRatio = rec.avatRatio5D;
+				
+				int ind = industryList.indexOf(thisIndustry);
+				if(ind == -1) {
+					industryList.add(thisIndustry);
+					industryCum.add(thisRatio);
+					industryNum.add(1);
+				}else {
+					industryCum.set(ind, industryCum.get(ind) + thisRatio);
+					industryNum.set(ind, industryNum.get(ind) + 1);
+				}
+			}
+			ArrayList<Double> industryAvg = new ArrayList<Double> ()	;
+			for(int i = 0;i < industryList.size(); i++) {
+				industryAvg.add(industryCum.get(i) / industryNum.get(i));
+			}
+			
+			// fill avatRecord & output
+			logger.info("-- fill avatRecord & output");
+			FileWriter fw = new FileWriter(avatRecordPath + sdf_100.format(now) + ".csv");
+			fw.write("Equity,Last_Price,Px Chg % vs T-1 Close,Vol / 5D AVAT"
+					+ ",Vol / 20D AVAT,Industry,Industry Average,Turnover,Rank Difference"
+					+ ",New Rank,Original Rank,Index Member?,Turn > Req.?\n");
+			for(int i = 0;i < avatRecord.size(); i++) {
+				AvatRecordSingleStock rec = avatRecord.get(i);
+				
+				// industry avg
+				rec.industryAvg = industryAvg.get(industryList.indexOf(rec.industry));
+				
+				// ranking
+				rec.newRank = i+1;
+				Integer lastRank = lastRankingData.get(rec.stockCode);
+				if(lastRank == null)
+					lastRank = 0;
+				rec.oldRank = lastRank;
+				rec.rankDiff = i+1 - lastRank;
+				
+				lastRankingData.put(rec.stockCode, i+1);  // update lastRankingData
+				
+				// index member
+				int isIndexMember = avatIndexMembers.indexOf(rec.stockCode);
+				if(isIndexMember == -1)
+					rec.isIndexMember = "N";
+				else
+					rec.isIndexMember = "Y";
+				
+				// output
+				fw.write(rec.toString() + "\n");
+			}
+			fw.close();
+			
+			// ----------- place orders --------
+			if(isStartOrders)
+				scanForOrders(avatRecord,now);
+			
+			// ----------- 弹出对话框 ---------------
+			BufferedReader bf_al = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "avat para\\isShowAlert.txt");
+			String line0 = bf_al.readLine();
+			bf_al.close();
+			if(line0.equals("1")) {  // 当avat ratio5D大于3的时候输出
+				String title = "AVAT results";
+				String nowTimeStr = sdf.format(now);
+				String blank = "    ";
+				
+				String avatLargerThan5 = "";
+				String avatLargerThan3 = "";
+				String rankDiffLargerThan20 = "";  // 排名上升超过20
+				String rankDiffLargerThan10 = "";  // 排名上升超过10
+				
+				DecimalFormat    df   = new DecimalFormat("######0.00");   
+				for(AvatRecordSingleStock rec: avatRecord) {
+					Double ratio5D = rec.avatRatio5D;
+					String stockCode = rec.stockCode;
+					int rankDiff = rec.rankDiff;
+					String industry = rec.industry;
+					
+					if(ratio5D >= 5) {
+						avatLargerThan5 += blank + stockCode + " : " + df.format(ratio5D) + " - " + industry + "\n";
 					}
-					
-					// get historical avat data
-					Double avat5D = avatHist_nearData.get(0);
-					Double avat20D = avatHist_nearData.get(1);
-					
-					// get current avat
-					Double ratio5D = trdRtVolume / avat5D;
-					Double ratio20D = trdRtVolume / avat20D;
-					
-					ArrayList<Double> temp = new ArrayList<Double>();
-					temp.add(ratio5D);
-					temp.add(ratio20D);
-					
-					if(ratio5D >= 3.0) {
-						//eligibleStocks.add(stock);
-						//msg_eligibleStocksMap.put(ratio5D, stock);
+					if(ratio5D >=3 && ratio5D < 5) {
+						avatLargerThan3 += blank + stockCode + " : " + df.format(ratio5D)  + " - " + industry + "\n";
 					}
-					
-					//avatRatioNow.put(stock, temp);
-					
-					//logger.debug("------- avat 5D = " + ratio5D);
-					
-					// get prev close
-					Double prevClose = avatPrevClose.get(stock);
-					//logger.debug("------- prevClose="+prevClose);
-					Double prevCloseChgPct = (price / prevClose - 1) * 100.0;
-					//logger.debug("------- 1222");
-					// get industry
-					String industry = avatIndustry.get(stock);
-					//logger.debug("------- 1223");
-					
-					AvatRecordSingleStock at = new AvatRecordSingleStock(now.getTime(), stock, myTop.contract, price, prevCloseChgPct, ratio5D, ratio20D, industry);
-					at.turnover = trdRtTurnover;
-					at.latestBestAsk = latestBestAsk;
-					at.latestBestBid = latestBestBid;
-					at.prevVolume = prevVolume.get(stock);
-					at.volume = trdRtVolume;
-					
-					avatRecord.add(at);
-					
-					logger.trace("------- next ");
-				}  // end of for
-				
-				logger.info("-- sorting avat record");
-				// sorting
-				Collections.sort(avatRecord, AvatRecordSingleStock.getComparator());
-				
-				// calculate industry avg
-				logger.info("-- calculating industry avg");
-				ArrayList<String> industryList = new ArrayList<String> ();
-				ArrayList<Double> industryCum = new ArrayList<Double>();
-				ArrayList<Integer> industryNum = new ArrayList<Integer>();
-				for(int i = 0; i < avatRecord.size(); i++) {
-					AvatRecordSingleStock rec = avatRecord.get(i);
-					String thisIndustry = rec.industry;
-					Double thisRatio = rec.avatRatio5D;
-					
-					int ind = industryList.indexOf(thisIndustry);
-					if(ind == -1) {
-						industryList.add(thisIndustry);
-						industryCum.add(thisRatio);
-						industryNum.add(1);
-					}else {
-						industryCum.set(ind, industryCum.get(ind) + thisRatio);
-						industryNum.set(ind, industryNum.get(ind) + 1);
+					if(rankDiff <= -20) { // 上升超过20名
+						rankDiffLargerThan20 = blank + stockCode + " rank diff=" + (-rankDiff) + " avat=" + df.format(ratio5D)  + " - " + industry +  "\n";
+					}
+					if(rankDiff <= -10 && rankDiff > -20) { // 上升超过10名
+						rankDiffLargerThan10 = blank + stockCode + " rank diff=" + (-rankDiff) + " avat=" + df.format(ratio5D)  + " - " + industry +  "\n";
 					}
 				}
-				ArrayList<Double> industryAvg = new ArrayList<Double> ()	;
-				for(int i = 0;i < industryList.size(); i++) {
-					industryAvg.add(industryCum.get(i) / industryNum.get(i));
+				
+				alertToShow = nowTimeStr + "\n"
+							+ "AVAT >= 5\n" + avatLargerThan5
+							+ "AVAT >= 3 && AVAT < 5\n" + avatLargerThan3
+							+ "Ranking increase > 20\n" + rankDiffLargerThan20
+							+ "Ranking increase > 10\n" + rankDiffLargerThan10;
+				
+				Thread t = new Thread(new Runnable(){
+					   public void run(){
+						   JOptionPane.showMessageDialog(avatDisplayFrame, alertToShow, "AVAT Results", JOptionPane.PLAIN_MESSAGE);
+					        
+					   }
+					});
+					t.start();
+			}
+			
+			
+			// -industry table
+			logger.info("-- industry table");
+			FileWriter fw2 = new FileWriter(avatRecordPath + sdf_100.format(now) + " industry.csv");
+			fw2.write("Industry,Industry Average\n");
+			ArrayList<Double> industryAvgCopy = (ArrayList<Double>) industryAvg.clone();
+			Collections.sort(industryAvgCopy, Collections.reverseOrder());  // 从高到低排列
+			for(int i = 0;i < industryAvgCopy.size(); i++) {
+				Double thisAvg = industryAvgCopy.get(i);
+				int ind1 = industryAvg.indexOf(thisAvg);
+				
+				String thisIndustry = industryList.get(ind1);
+				ArrayList<String> industryStockList = avatIndustry_byIndustry.get(thisIndustry);
+				
+				fw2.write(thisIndustry + "," + String.valueOf(thisAvg));
+				for(int j = 0; j < industryStockList.size(); j++) {
+					fw2.write("," + industryStockList.get(j));
 				}
-				
-				// fill avatRecord & output
-				logger.info("-- fill avatRecord & output");
-				FileWriter fw = new FileWriter(avatRecordPath + sdf_100.format(now) + ".csv");
-				fw.write("Equity,Last_Price,Px Chg % vs T-1 Close,Vol / 5D AVAT"
-						+ ",Vol / 20D AVAT,Industry,Industry Average,Turnover,Rank Difference"
-						+ ",New Rank,Original Rank,Index Member?,Turn > Req.?\n");
-				for(int i = 0;i < avatRecord.size(); i++) {
-					AvatRecordSingleStock rec = avatRecord.get(i);
-					
-					// industry avg
-					rec.industryAvg = industryAvg.get(industryList.indexOf(rec.industry));
-					
-					// ranking
-					rec.newRank = i+1;
-					Integer lastRank = lastRankingData.get(rec.stockCode);
-					if(lastRank == null)
-						lastRank = 0;
-					rec.oldRank = lastRank;
-					rec.rankDiff = i+1 - lastRank;
-					
-					lastRankingData.put(rec.stockCode, i+1);  // update lastRankingData
-					
-					// index member
-					int isIndexMember = avatIndexMembers.indexOf(rec.stockCode);
-					if(isIndexMember == -1)
-						rec.isIndexMember = "N";
-					else
-						rec.isIndexMember = "Y";
-					
-					// output
-					fw.write(rec.toString() + "\n");
+				fw2.write("\n");
+			}
+			fw2.close();
+			
+			logger.info("Generating avat ends!");
+			// ---------- 存储avat record --------
+			/*
+			Map<String, AvatRecordSingleStock> recordMap = new HashMap<String, AvatRecordSingleStock>();
+			for(AvatRecordSingleStock rec : avatRecord) {
+				recordMap.put(rec.stockCode, rec);
+			}
+			XMLUtil.convertToXml(recordMap, avatRecordXMLPath);
+			*/
+			
+			// -------- update 一下 lot size map --------
+			if(isLotSizeMapToUpdate == 1) {
+				FileWriter f = new FileWriter(AVAT_ROOT_PATH + "avat para\\lot size.csv");
+				for(String key : avatLotSize.keySet()) {
+					f.write(key + "," + avatLotSize.get(key) + "\n");
 				}
-				fw.close();
-				
-				// ----------- place orders --------
-				if(isStartOrders)
-					scanForOrders(avatRecord,now);
-				
-				// ----------- 弹出对话框 ---------------
-				BufferedReader bf_al = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "avat para\\isShowAlert.txt");
-				String line0 = bf_al.readLine();
-				bf_al.close();
-				if(line0.equals("1")) {  // 当avat ratio5D大于3的时候输出
-					String title = "AVAT results";
-					String nowTimeStr = sdf.format(now);
-					String blank = "    ";
-					
-					String avatLargerThan5 = "";
-					String avatLargerThan3 = "";
-					String rankDiffLargerThan20 = "";  // 排名上升超过20
-					String rankDiffLargerThan10 = "";  // 排名上升超过10
-					
-					DecimalFormat    df   = new DecimalFormat("######0.00");   
-					for(AvatRecordSingleStock rec: avatRecord) {
-						Double ratio5D = rec.avatRatio5D;
-						String stockCode = rec.stockCode;
-						int rankDiff = rec.rankDiff;
-						String industry = rec.industry;
-						
-						if(ratio5D >= 5) {
-							avatLargerThan5 += blank + stockCode + " : " + df.format(ratio5D) + " - " + industry + "\n";
-						}
-						if(ratio5D >=3 && ratio5D < 5) {
-							avatLargerThan3 += blank + stockCode + " : " + df.format(ratio5D)  + " - " + industry + "\n";
-						}
-						if(rankDiff <= -20) { // 上升超过20名
-							rankDiffLargerThan20 = blank + stockCode + " rank diff=" + (-rankDiff) + " avat=" + df.format(ratio5D)  + " - " + industry +  "\n";
-						}
-						if(rankDiff <= -10 && rankDiff > -20) { // 上升超过10名
-							rankDiffLargerThan10 = blank + stockCode + " rank diff=" + (-rankDiff) + " avat=" + df.format(ratio5D)  + " - " + industry +  "\n";
-						}
-					}
-					
-					alertToShow = nowTimeStr + "\n"
-								+ "AVAT >= 5\n" + avatLargerThan5
-								+ "AVAT >= 3 && AVAT < 5\n" + avatLargerThan3
-								+ "Ranking increase > 20\n" + rankDiffLargerThan20
-								+ "Ranking increase > 10\n" + rankDiffLargerThan10;
-					
-					Thread t = new Thread(new Runnable(){
-						   public void run(){
-							   JOptionPane.showMessageDialog(avatDisplayFrame, alertToShow, "AVAT Results", JOptionPane.PLAIN_MESSAGE);
-						        
-						   }
-						});
-						t.start();
-				}
-				
-				
-				// -industry table
-				logger.info("-- industry table");
-				FileWriter fw2 = new FileWriter(avatRecordPath + sdf_100.format(now) + " industry.csv");
-				fw2.write("Industry,Industry Average\n");
-				ArrayList<Double> industryAvgCopy = (ArrayList<Double>) industryAvg.clone();
-				Collections.sort(industryAvgCopy, Collections.reverseOrder());  // 从高到低排列
-				for(int i = 0;i < industryAvgCopy.size(); i++) {
-					Double thisAvg = industryAvgCopy.get(i);
-					int ind1 = industryAvg.indexOf(thisAvg);
-					
-					String thisIndustry = industryList.get(ind1);
-					ArrayList<String> industryStockList = avatIndustry_byIndustry.get(thisIndustry);
-					
-					fw2.write(thisIndustry + "," + String.valueOf(thisAvg));
-					for(int j = 0; j < industryStockList.size(); j++) {
-						fw2.write("," + industryStockList.get(j));
-					}
-					fw2.write("\n");
-				}
-				fw2.close();
-				
-				logger.info("Generating avat ends!");
-				// ---------- 存储avat record --------
-				/*
-				Map<String, AvatRecordSingleStock> recordMap = new HashMap<String, AvatRecordSingleStock>();
-				for(AvatRecordSingleStock rec : avatRecord) {
-					recordMap.put(rec.stockCode, rec);
-				}
-				XMLUtil.convertToXml(recordMap, avatRecordXMLPath);
-				*/
-				
-				// -------- update 一下 lot size map --------
-				if(isLotSizeMapToUpdate == 1) {
-					FileWriter f = new FileWriter(AVAT_ROOT_PATH + "avat para\\lot size.csv");
-					for(String key : avatLotSize.keySet()) {
-						f.write(key + "," + avatLotSize.get(key) + "\n");
-					}
-					f.close();
-				}
-				isLotSizeMapToUpdate = 0;
-				
-				Thread.sleep(scanPeriod); // wait for 1 min
-				//lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
-				
-				isFirst = false;
-				now = new Date();
-			}  // end of while
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
+				f.close();
+			}
+			isLotSizeMapToUpdate = 0;
+			
+			Thread.sleep(scanPeriod); // wait for 1 min
+			//lastAvatRecord = (ArrayList<AvatRecordSingleStock>) avatRecord.clone();
+			
+			isFirst = false;
+			now = new Date();
+		}  // end of while
 	}
 	
-	public static void scanForOrders(ArrayList<AvatRecordSingleStock> avatRecord, Date now) {
-		try {
-			logger.info("---------- scanForOrders ---------");
-			
-			String errMsgHead  = "[trading strategy] ";
-			//Double fixedBuyAmount = fixedBuyAmount;  // fix buying amount for each stock, HKD
-			Double buyPriceDiscount = 1.0;  // 为了testing，不让order被fill，可以将buyprice设小点
-			
-			// ------- 与买入有关的variables ----------
-			String buyStartTimeStr = todayDate + " 09:30:00";  // 这个时间点之后才进行一切buy
-			Date buyStartTime = sdf.parse(buyStartTimeStr);
+	public static void scanForOrders(ArrayList<AvatRecordSingleStock> avatRecord, Date now) throws Exception {
+		logger.info("---------- scanForOrders ---------");
+		
+		String errMsgHead  = "[trading strategy] ";
+		//Double fixedBuyAmount = fixedBuyAmount;  // fix buying amount for each stock, HKD
+		Double buyPriceDiscount = 1.0;  // 为了testing，不让order被fill，可以将buyprice设小点
+		
+		// ------- 与买入有关的variables ----------
+		String buyStartTimeStr = todayDate + " 09:30:00";  // 这个时间点之后才进行一切buy
+		Date buyStartTime = sdf.parse(buyStartTimeStr);
 
-			//String buyEndTimeStr = todayDate + " 11:00:00";
-			String buyEndTimeStr = todayDate + " 16:00:00";    // 这个时间点之后才停止一切buy
+		//String buyEndTimeStr = todayDate + " 11:00:00";
+		String buyEndTimeStr = todayDate + " 16:00:00";    // 这个时间点之后才停止一切buy
 
-			Date buyEndTime = sdf.parse(buyEndTimeStr);
-			String volumeCondEndTimeStr = todayDate + " 11:00:00";    // 这个时间点之后停止对于volume condition的判断 （buyCond2_3）
-			Date volumeCondEndTime = sdf.parse(volumeCondEndTimeStr);
+		Date buyEndTime = sdf.parse(buyEndTimeStr);
+		String volumeCondEndTimeStr = todayDate + " 11:00:00";    // 这个时间点之后停止对于volume condition的判断 （buyCond2_3）
+		Date volumeCondEndTime = sdf.parse(volumeCondEndTimeStr);
+		
+		double avatThld5D = 3.0;  // avat threshold
+		double avatThld20D = 2.0;  // avat threshold
+		double turnoverThld = 8000000.0;
+		
+		// ------- 与卖出有关的variables ----------
+		String sellThldTimeStr = todayDate + " 16:10:00";
+		Date sellThldTime = sdf.parse(sellThldTimeStr);
+		Set<String> holdingStocks = holdingRecords.keySet();
+		
+		// --------- 浏览各个AvatRecordSingleStock ----------- 
+		Set<String> thisBuyStocksSet = new HashSet<String>();
+		Map<String, String> thisBuyStockReasons = new HashMap<String, String>();
+		
+		//logger.info("********* 1111 **********");
+		for(AvatRecordSingleStock singleRec : avatRecord) {
+			/*
+			 * ------- 先看是否有买入信号 ---------
+			 * 买入条件：
+			 * 		1. 时间是11:00之前；并且
+			 * 		(	2.1 当前的avat5D ratio超过2，并且股价上涨超过1.5%；或者
+			 * 			2.2 avat20D ratio超过1，并且股价上涨超过1.5%；或者
+			 * 			2.3. 当时的volume超过了昨天全天的volume)；并且
+			 * 		3. turnover 大于一个threshold 
+			 * 		4. 已经买过的股票如果三注码都加满，则不再买入；同一注码重复出现，不再重复下注
+			 * 
+			 * 	其中2.1-2.3每满足一个条件就加一注码
+			 */
+		
+			Date thisTime = new Date(singleRec.timeStamp);
+			String stockCode = singleRec.stockCode;
 			
-			double avatThld5D = 3.0;  // avat threshold
-			double avatThld20D = 2.0;  // avat threshold
-			double turnoverThld = 8000000.0;
-			
-			// ------- 与卖出有关的variables ----------
-			String sellThldTimeStr = todayDate + " 16:10:00";
-			Date sellThldTime = sdf.parse(sellThldTimeStr);
-			Set<String> holdingStocks = holdingRecords.keySet();
-			
-			// --------- 浏览各个AvatRecordSingleStock ----------- 
-			Set<String> thisBuyStocksSet = new HashSet<String>();
-			Map<String, String> thisBuyStockReasons = new HashMap<String, String>();
-			
-			//logger.info("********* 1111 **********");
-			for(AvatRecordSingleStock singleRec : avatRecord) {
-				/*
-				 * ------- 先看是否有买入信号 ---------
-				 * 买入条件：
-				 * 		1. 时间是11:00之前；并且
-				 * 		(	2.1 当前的avat5D ratio超过2，并且股价上涨超过1.5%；或者
-				 * 			2.2 avat20D ratio超过1，并且股价上涨超过1.5%；或者
-				 * 			2.3. 当时的volume超过了昨天全天的volume)；并且
-				 * 		3. turnover 大于一个threshold 
-				 * 		4. 已经买过的股票如果三注码都加满，则不再买入；同一注码重复出现，不再重复下注
-				 * 
-				 * 	其中2.1-2.3每满足一个条件就加一注码
-				 */
-			
-				Date thisTime = new Date(singleRec.timeStamp);
-				String stockCode = singleRec.stockCode;
+			if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
 				
-				if(thisTime.after(buyStartTime) && thisTime.before(buyEndTime)) {  // 只在合适的时间段内判读是否出现买入信号
-					
-					boolean isBuy = false;
-					//boolean isShort = false;
-					
-					int buyCond2_1 = 0;
-					int buyCond2_2 = 0;
-					int buyCond2_3 = 0;
-					int buyCond3 = 0;
-					//int buyCond4 = 0; 
-					
-					double priceChg = singleRec.currentPrice / avatPrevClose.get(singleRec.stockCode) - 1;
-					//double priceChg = 0.02;
-					
-					if(singleRec.avatRatio5D > avatThld5D) {   // 如果股价变动是负的，则short
-						if(priceChg >= -1000) { // if this is a very negative number, it means there is no threshold...
-							buyCond2_1 = 1;
-							isBuy = true;
-						}
-							
+				boolean isBuy = false;
+				//boolean isShort = false;
+				
+				int buyCond2_1 = 0;
+				int buyCond2_2 = 0;
+				int buyCond2_3 = 0;
+				int buyCond3 = 0;
+				//int buyCond4 = 0; 
+				
+				double priceChg = singleRec.currentPrice / avatPrevClose.get(singleRec.stockCode) - 1;
+				//double priceChg = 0.02;
+				
+				if(singleRec.avatRatio5D > avatThld5D) {   // 如果股价变动是负的，则short
+					if(priceChg >= -1000) { // if this is a very negative number, it means there is no threshold...
+						buyCond2_1 = 1;
+						isBuy = true;
 					}
 						
-					if(singleRec.avatRatio20D > avatThld20D ) {
-						if(priceChg >= -1000) {
-							buyCond2_2 = 1;
-							isBuy = true;
-						}
-						
+				}
+					
+				if(singleRec.avatRatio20D > avatThld20D ) {
+					if(priceChg >= -1000) {
+						buyCond2_2 = 1;
+						isBuy = true;
 					}
-					if(singleRec.volume >= singleRec.prevVolume && thisTime.before(volumeCondEndTime) && priceChg > 0)
-						buyCond2_3 = 1;
-					if(singleRec.turnover >= turnoverThld )
-						buyCond3 = 1;
 					
-					//isShort =  false; // 先不考虑short
-					//buyCond2_2 = 0;
-					//buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
-					
-					Double toBuyAmt = 0.0;
-					int[] buyTracer = {0,0,0,0};  //看看到底是因为哪个信号使得要买入
-					
-					Map<Integer, HoldingRecord> thisHoldingMap = holdingRecords.get(singleRec.stockCode);
-					// ---------- 是否出现buy signal------------
-					if((buyCond2_1 == 1 || buyCond2_2 == 1 || buyCond2_3 == 1) && priceChg > 0) {
-					
-						int thisHoldingBuyCond2_1 = 0;
-						int thisHoldingBuyCond2_2 = 0;
-						int thisHoldingBuyCond2_3 = 0;
-						if(thisHoldingMap != null) {
-							for(HoldingRecord hld : thisHoldingMap.values()) {
-								thisHoldingBuyCond2_1 = hld.buyCond2_1 == 1? 1: thisHoldingBuyCond2_1;
-								thisHoldingBuyCond2_2 = hld.buyCond2_2 == 1? 1: thisHoldingBuyCond2_2;
-								thisHoldingBuyCond2_3 = hld.buyCond2_3 == 1? 1: thisHoldingBuyCond2_3;
-							}
-						}
-						
-						HoldingRecord newHld = null;
-						if(buyCond2_1 == 1 && thisHoldingBuyCond2_1 == 0) {  // 会在下面更新 thisHoldingRec.buyCond2_1
-							toBuyAmt += fixedBuyAmount;
-							buyTracer[0] = 1;
-						}
-						if(buyCond2_2 == 1 && thisHoldingBuyCond2_2 == 0) {
-							toBuyAmt += fixedBuyAmount;
-							buyTracer[1] = 1;
-						}
-						if(buyCond2_3 == 1 && thisHoldingBuyCond2_3 == 0) {
-							toBuyAmt += fixedBuyAmount;
-							buyTracer[2] = 1;
+				}
+				if(singleRec.volume >= singleRec.prevVolume && thisTime.before(volumeCondEndTime) && priceChg > 0)
+					buyCond2_3 = 1;
+				if(singleRec.turnover >= turnoverThld )
+					buyCond3 = 1;
+				
+				//isShort =  false; // 先不考虑short
+				//buyCond2_2 = 0;
+				//buyCond2_3 = 0;  // 暂时，先不考虑这两个factor的影响
+				
+				Double toBuyAmt = 0.0;
+				int[] buyTracer = {0,0,0,0};  //看看到底是因为哪个信号使得要买入
+				
+				Map<Integer, HoldingRecord> thisHoldingMap = holdingRecords.get(singleRec.stockCode);
+				// ---------- 是否出现buy signal------------
+				if((buyCond2_1 == 1 || buyCond2_2 == 1 || buyCond2_3 == 1) && priceChg > 0) {
+				
+					int thisHoldingBuyCond2_1 = 0;
+					int thisHoldingBuyCond2_2 = 0;
+					int thisHoldingBuyCond2_3 = 0;
+					if(thisHoldingMap != null) {
+						for(HoldingRecord hld : thisHoldingMap.values()) {
+							thisHoldingBuyCond2_1 = hld.buyCond2_1 == 1? 1: thisHoldingBuyCond2_1;
+							thisHoldingBuyCond2_2 = hld.buyCond2_2 == 1? 1: thisHoldingBuyCond2_2;
+							thisHoldingBuyCond2_3 = hld.buyCond2_3 == 1? 1: thisHoldingBuyCond2_3;
 						}
 					}
 					
-					//logger.info("      ********* 2222 ********** stock = " + stockCode);
-					// ----------- 处理 buy signal -------------
-					if(buyCond3 == 1 && toBuyAmt > 0) {  
-						//logger.info("[scan for orders] found stock! stock=" + stockCode);
-						// 新开一个线程来处理似乎不妥当，因为每个order的id必须大于之前order的id，所以如果很多线程并行的话，不能保证先提交给ib的order的id是最小的
-						
-						Contract con = conMap.get(stockCode);
-						Double lotSize = avatLotSize.get(stockCode);
-						
-						// ----------  其中一半的qty放在best bid上，另一半放在best offer上 --------------
-						Order order1 = new Order();
-						order1.action(Action.BUY);
-						order1.orderType(OrderType.LMT);
-						
-						Double buyPrice1 = singleRec.latestBestBid;
-						//buyPrice1 = AvatUtils.getCorrectPrice_up(buyPrice1 * buyPriceDiscount);
-						order1.lmtPrice(buyPrice1);  // 以best bid作为买入价
-						
-						Double orderQty1 = lotSize * (int)(toBuyAmt/2 / lotSize / buyPrice1) ;
-						order1.totalQuantity(orderQty1);
-						order1.transmit(transmitToIB);  // false - 只在api平台有这个order
-						
-						Order order2 = new Order();
-						order1.action(Action.BUY);
-						order2.orderType(OrderType.LMT);
-						
-						Double buyPrice2 = singleRec.latestBestAsk;
-						//buyPrice1 = AvatUtils.getCorrectPrice_up(buyPrice1 * buyPriceDiscount);
-						order2.lmtPrice(buyPrice2);  // 以best bid作为买入价
-						
-						Double orderQty2 = lotSize * (int)(toBuyAmt/2 / lotSize / buyPrice2) ;
-						order2.totalQuantity(orderQty2);
-						order2.transmit(transmitToIB);  // false - 只在api平台有这个order
-					
-						//logger.info("      ********* 3301 **********");
-						// --------- submit orders ---------
-						String buyReason = "";
-						if(isPlaceOrder) {
-							AvatIOrderHandler myOrderH1 = new AvatIOrderHandler (con, order1); 
-							myOrderH1.isTransmit = transmitToIB;
-							//logger.info("      ********* 3302 **********");
-							
-							myController.placeOrModifyOrder(con, order1, myOrderH1);
-							AvatIOrderHandler myOrderH2 = new AvatIOrderHandler (con, order2); 
-							myOrderH2.isTransmit = transmitToIB;
-							myController.placeOrModifyOrder(con, order2, myOrderH2);
-							//logger.info("      ********* 3303 **********");
-							
-							while(myOrderH1.getOrderId() == -1) {
-								Thread.sleep(5);
-								//logger.info("                 myOrderH1.getOrderId() = " + myOrderH1.getOrderId());
-							}
-							//logger.info("      ********* 3304 **********");
-							
-							while(myOrderH2.getOrderId() == -1) {Thread.sleep(5);}
-							//logger.info("      ********* 3305 **********");
-							
-							HoldingRecord hld1 = new HoldingRecord(myOrderH1, now.getTime());
-							HoldingRecord hld2 = new HoldingRecord(myOrderH2, now.getTime());
-							//logger.info("      ********* 3306 **********");
-							
-							if(thisHoldingMap == null)
-								thisHoldingMap = new HashMap<Integer, HoldingRecord>();
-							//logger.info("      ********* 3307 **********");
-							if(buyTracer[0] == 1) {
-								hld1.buyCond2_1 = 1;
-								hld2.buyCond2_1 = 1;
-								buyReason += "avat5D;";
-							}
-							if(buyTracer[1] == 1) {
-								hld1.buyCond2_2 = 1;
-								hld2.buyCond2_2 = 1;
-								buyReason += "avat20D;";
-							}
-							if(buyTracer[2] == 1) {
-								hld1.buyCond2_3 = 1;
-								hld2.buyCond2_3 = 1;
-								buyReason += "volume;";
-							}
-							//logger.info("      ********* 3308 **********");
-							hld1.buyReason = buyReason ;
-							hld2.buyReason = buyReason ;
-							
-							thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
-							thisHoldingMap.put(myOrderH2.getOrderId(), hld2);
-							holdingRecords.put(stockCode, thisHoldingMap);
-							
-							//logger.info("      ********* 3309 **********");
-							
-							orderWriter.write(hld1.toString() + "\n");
-							orderWriter.write(hld2.toString() + "\n");
-							orderWriter.flush();
-							
-							logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
-							//logger.info("      ********* 3310 **********");
-							
-							SimpleDateFormat sdf_temp = new SimpleDateFormat ("dd/MM/yyyy hh:mm:ss");
-							buyOrdersToShow += "time=" + sdf_temp.format(now) + " stock=" + stockCode + " buyReason=" + buyReason + "\n";
-							//logger.info("      ********* 3311 **********");
-						}
-						
-						thisBuyStocksSet.add(stockCode);
-						thisBuyStockReasons.put(stockCode, buyReason);
-						//logger.info("      ********* 3333 **********");
-						//buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + "222" + " buyReason=" + "123" + "\n";
-						/*
-						Thread placingOrderAlert = new Thread(new Runnable(){
-							   public void run(){
-								   try {
-										//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
-									   PlayWAV.play("hahaha.wav");
-										//logger.info("            logging holding records done!");
-									}catch(Exception e) {
-										logger.error("           Sound alert failed!");
-									}
-							   }
-							});
-						//placingOrderAlert.start();
-						*/
+					HoldingRecord newHld = null;
+					if(buyCond2_1 == 1 && thisHoldingBuyCond2_1 == 0) {  // 会在下面更新 thisHoldingRec.buyCond2_1
+						toBuyAmt += fixedBuyAmount;
+						buyTracer[0] = 1;
 					}
-				}  // 买入信号的if结束
-
-			} // end of for
-			
-			ArrayList<String> thisBuyStocks = new ArrayList<String>(thisBuyStocksSet);
-			
-			//logger.info("********* 6987 **********");
-			Thread t_save = new Thread(new Runnable(){
-				   public void run(){
-					   try {
-							//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
-						   saveHoldingRecords();
-						   //logger.info("            logging holding records done!");
-						}catch(Exception e) {
-							e.printStackTrace();
-							logger.error("           Can't log holding records!");
-						}
-				   }
-				});
-			t_save.start();
-			
-			Thread t_sound = new Thread(new Runnable() {
-				public void run() {
-					try {
-						if(thisBuyStocks.size() > 0) {
-							int repeatTimes = 1;
-							
-							for(int i = 0; i < repeatTimes; i++) {
-								   for(int j = 0; j < thisBuyStocks.size(); j++) {
-									   String stock = thisBuyStocks.get(j);
-									   char[] c = stock.toCharArray();	
-									   
-									   String reason = thisBuyStockReasons.get(stock);
-									   String[] reasons = reason.split(";");
-									   String reasonWeWant = "volume";
-									   boolean getWeWant = false;
-									   for(int m=0; m < reasons.length; m++) {
-										   if(reasons[m].equals(reasonWeWant)) {
-											   getWeWant = true;
-											   break;
-										   }
-									   }
-									   
-									   if(getWeWant ) {  // if out of special reason we pick this stock, we make a special voice
-										   PlayWAV.play("voices\\dingdong.wav");
-									   }
-									   
-									   if(stockWachlist.indexOf(stock) == -1) {  // the stock is not in the watchlist
-										   for(int k = 0; k < c.length; k++) {
-												PlayWAV.play(voiceMap_m.get(String.valueOf(c[k])));
-											}
-									   }else {
-										   for(int k = 0; k < c.length; k++) {
-												PlayWAV.play(voiceMap_f.get(String.valueOf(c[k])));
-											}
-									   }
-										
-										Thread.sleep(500);
-										if(false && j < thisBuyStocks.size()-1) {
-											PlayWAV.play("tungLF.wav");
-											PlayWAV.play("maiLF.wav");
-										}
-										//Thread.sleep(1);
-										
-								   }
-								   
-								   if(i == 0 && repeatTimes > 1) {
-									   PlayWAV.play("chungLT.wav");
-										PlayWAV.play("fukHT.wav");
-										PlayWAV.play("1.wav");
-										PlayWAV.play("chiMR.wav");
-								   }
-								   	
-							   }
-						}
-						 
-					}catch(Exception e) {
-						e.printStackTrace();
-						logger.error("           Can't sound!");
+					if(buyCond2_2 == 1 && thisHoldingBuyCond2_2 == 0) {
+						toBuyAmt += fixedBuyAmount;
+						buyTracer[1] = 1;
+					}
+					if(buyCond2_3 == 1 && thisHoldingBuyCond2_3 == 0) {
+						toBuyAmt += fixedBuyAmount;
+						buyTracer[2] = 1;
 					}
 				}
-			});
-			t_sound.start();
-			
-			Thread t_show = new Thread(new Runnable(){
-				   public void run(){
-					   try {
-						   if(thisBuyStocks.size() > 0) {
-							   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
-						   }
-						   //logger.info("            logging holding records done!");
-						}catch(Exception e) {
-							e.printStackTrace();
-							logger.error("           Can't show orders!");
+				
+				//logger.info("      ********* 2222 ********** stock = " + stockCode);
+				// ----------- 处理 buy signal -------------
+				if(buyCond3 == 1 && toBuyAmt > 0) {  
+					//logger.info("[scan for orders] found stock! stock=" + stockCode);
+					// 新开一个线程来处理似乎不妥当，因为每个order的id必须大于之前order的id，所以如果很多线程并行的话，不能保证先提交给ib的order的id是最小的
+					
+					Contract con = conMap.get(stockCode);
+					Double lotSize = avatLotSize.get(stockCode);
+					
+					// ----------  其中一半的qty放在best bid上，另一半放在best offer上 --------------
+					Order order1 = new Order();
+					order1.action(Action.BUY);
+					order1.orderType(OrderType.LMT);
+					
+					Double buyPrice1 = singleRec.latestBestBid;
+					//buyPrice1 = AvatUtils.getCorrectPrice_up(buyPrice1 * buyPriceDiscount);
+					order1.lmtPrice(buyPrice1);  // 以best bid作为买入价
+					
+					Double orderQty1 = lotSize * (int)(toBuyAmt/2 / lotSize / buyPrice1) ;
+					order1.totalQuantity(orderQty1);
+					order1.transmit(transmitToIB);  // false - 只在api平台有这个order
+					
+					Order order2 = new Order();
+					order1.action(Action.BUY);
+					order2.orderType(OrderType.LMT);
+					
+					Double buyPrice2 = singleRec.latestBestAsk;
+					//buyPrice1 = AvatUtils.getCorrectPrice_up(buyPrice1 * buyPriceDiscount);
+					order2.lmtPrice(buyPrice2);  // 以best bid作为买入价
+					
+					Double orderQty2 = lotSize * (int)(toBuyAmt/2 / lotSize / buyPrice2) ;
+					order2.totalQuantity(orderQty2);
+					order2.transmit(transmitToIB);  // false - 只在api平台有这个order
+				
+					//logger.info("      ********* 3301 **********");
+					// --------- submit orders ---------
+					String buyReason = "";
+					if(isPlaceOrder) {
+						AvatIOrderHandler myOrderH1 = new AvatIOrderHandler (con, order1); 
+						myOrderH1.isTransmit = transmitToIB;
+						//logger.info("      ********* 3302 **********");
+						
+						myController.placeOrModifyOrder(con, order1, myOrderH1);
+						AvatIOrderHandler myOrderH2 = new AvatIOrderHandler (con, order2); 
+						myOrderH2.isTransmit = transmitToIB;
+						myController.placeOrModifyOrder(con, order2, myOrderH2);
+						//logger.info("      ********* 3303 **********");
+						
+						while(myOrderH1.getOrderId() == -1) {
+							Thread.sleep(5);
+							//logger.info("                 myOrderH1.getOrderId() = " + myOrderH1.getOrderId());
 						}
-				   }
-				});
-			t_show.start();
-			
-			logger.info("---------- scanForOrders ENDS ---------");
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
+						//logger.info("      ********* 3304 **********");
+						
+						while(myOrderH2.getOrderId() == -1) {Thread.sleep(5);}
+						//logger.info("      ********* 3305 **********");
+						
+						HoldingRecord hld1 = new HoldingRecord(myOrderH1, now.getTime());
+						HoldingRecord hld2 = new HoldingRecord(myOrderH2, now.getTime());
+						//logger.info("      ********* 3306 **********");
+						
+						if(thisHoldingMap == null)
+							thisHoldingMap = new HashMap<Integer, HoldingRecord>();
+						//logger.info("      ********* 3307 **********");
+						if(buyTracer[0] == 1) {
+							hld1.buyCond2_1 = 1;
+							hld2.buyCond2_1 = 1;
+							buyReason += "avat5D;";
+						}
+						if(buyTracer[1] == 1) {
+							hld1.buyCond2_2 = 1;
+							hld2.buyCond2_2 = 1;
+							buyReason += "avat20D;";
+						}
+						if(buyTracer[2] == 1) {
+							hld1.buyCond2_3 = 1;
+							hld2.buyCond2_3 = 1;
+							buyReason += "volume;";
+						}
+						//logger.info("      ********* 3308 **********");
+						hld1.buyReason = buyReason ;
+						hld2.buyReason = buyReason ;
+						
+						thisHoldingMap.put(myOrderH1.getOrderId(), hld1);
+						thisHoldingMap.put(myOrderH2.getOrderId(), hld2);
+						holdingRecords.put(stockCode, thisHoldingMap);
+						
+						//logger.info("      ********* 3309 **********");
+						
+						orderWriter.write(hld1.toString() + "\n");
+						orderWriter.write(hld2.toString() + "\n");
+						orderWriter.flush();
+						
+						logger.debug("    stock=" + stockCode + " BUY , orderId=" + myOrderH1.getOrderId()+ "&" + myOrderH2.getOrderId());
+						//logger.info("      ********* 3310 **********");
+						
+						SimpleDateFormat sdf_temp = new SimpleDateFormat ("dd/MM/yyyy hh:mm:ss");
+						buyOrdersToShow += "time=" + sdf_temp.format(now) + " stock=" + stockCode + " buyReason=" + buyReason + "\n";
+						//logger.info("      ********* 3311 **********");
+					}
+					
+					thisBuyStocksSet.add(stockCode);
+					thisBuyStockReasons.put(stockCode, buyReason);
+					//logger.info("      ********* 3333 **********");
+					//buyOrdersToShow += "time=" + sdf_100.format(now) + " stock=" + "222" + " buyReason=" + "123" + "\n";
+					/*
+					Thread placingOrderAlert = new Thread(new Runnable(){
+						   public void run(){
+							   try {
+									//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
+								   PlayWAV.play("hahaha.wav");
+									//logger.info("            logging holding records done!");
+								}catch(Exception e) {
+									logger.error("           Sound alert failed!");
+								}
+						   }
+						});
+					//placingOrderAlert.start();
+					*/
+				}
+			}  // 买入信号的if结束
+
+		} // end of for
+		
+		ArrayList<String> thisBuyStocks = new ArrayList<String>(thisBuyStocksSet);
+		
+		//logger.info("********* 6987 **********");
+		Thread t_save = new Thread(new Runnable(){
+			   public void run(){
+				   try {
+						//utils.Utils.saveObject(holdingRecords, holdingRecordsPath);  // 运行速度比较慢，新开个thread运行比较好
+					   saveHoldingRecords();
+					   //logger.info("            logging holding records done!");
+					}catch(Exception e) {
+						e.printStackTrace();
+						logger.error("           Can't log holding records!");
+					}
+			   }
+			});
+		t_save.start();
+		
+		Thread t_sound = new Thread(new Runnable() {
+			public void run() {
+				try {
+					if(thisBuyStocks.size() > 0) {
+						int repeatTimes = 1;
+						
+						for(int i = 0; i < repeatTimes; i++) {
+							   for(int j = 0; j < thisBuyStocks.size(); j++) {
+								   String stock = thisBuyStocks.get(j);
+								   char[] c = stock.toCharArray();	
+								   
+								   String reason = thisBuyStockReasons.get(stock);
+								   String[] reasons = reason.split(";");
+								   String reasonWeWant = "volume";
+								   boolean getWeWant = false;
+								   for(int m=0; m < reasons.length; m++) {
+									   if(reasons[m].equals(reasonWeWant)) {
+										   getWeWant = true;
+										   break;
+									   }
+								   }
+								   
+								   if(getWeWant ) {  // if out of special reason we pick this stock, we make a special voice
+									   PlayWAV.play("voices\\dingdong.wav");
+								   }
+								   
+								   if(stockWachlist.indexOf(stock) == -1) {  // the stock is not in the watchlist
+									   for(int k = 0; k < c.length; k++) {
+											PlayWAV.play(voiceMap_m.get(String.valueOf(c[k])));
+										}
+								   }else {
+									   for(int k = 0; k < c.length; k++) {
+											PlayWAV.play(voiceMap_f.get(String.valueOf(c[k])));
+										}
+								   }
+									
+									Thread.sleep(500);
+									if(false && j < thisBuyStocks.size()-1) {
+										PlayWAV.play("tungLF.wav");
+										PlayWAV.play("maiLF.wav");
+									}
+									//Thread.sleep(1);
+									
+							   }
+							   
+							   if(i == 0 && repeatTimes > 1) {
+								   PlayWAV.play("chungLT.wav");
+									PlayWAV.play("fukHT.wav");
+									PlayWAV.play("1.wav");
+									PlayWAV.play("chiMR.wav");
+							   }
+							   	
+						   }
+					}
+					 
+				}catch(Exception e) {
+					e.printStackTrace();
+					logger.error("           Can't sound!");
+				}
+			}
+		});
+		t_sound.start();
+		
+		Thread t_show = new Thread(new Runnable(){
+			   public void run(){
+				   try {
+					   if(thisBuyStocks.size() > 0) {
+						   JOptionPane.showMessageDialog(buyOrdersFrame, buyOrdersToShow, "Buy Orders", JOptionPane.PLAIN_MESSAGE);
+					   }
+					   //logger.info("            logging holding records done!");
+					}catch(Exception e) {
+						e.printStackTrace();
+						logger.error("           Can't show orders!");
+					}
+			   }
+			});
+		t_show.start();
+		
+		logger.info("---------- scanForOrders ENDS ---------");
 	}
 	
 	

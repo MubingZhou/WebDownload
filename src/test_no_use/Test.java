@@ -1,5 +1,6 @@
 package test_no_use;
 
+import java.awt.Toolkit;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -11,6 +12,7 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,9 +30,16 @@ public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
-		try {		
+		try {								
 			
-			replaceSpace("T:\\HK_Futures\\HI1_Index", "T:\\HK_Futures\\HI1_Index_copy");
+			String inputPath = "D:\\new_tdx\\T0002\\export";
+			String outputPath = "Z:\\Mubing\\stock data\\A share data\\tdx_data";
+			String todayDate = sdf.format(new Date());
+			//todayDate = "20180511";
+			utils.Utils.convertTDX2AB_Daily(inputPath, outputPath, todayDate);
+			
+			
+			//replaceSpace("T:\\HK_Futures\\HI1_Index", "T:\\HK_Futures\\HI1_Index_copy");
 	        
 			//getPrice();
 			//getSBFromHKEx();

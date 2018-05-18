@@ -86,6 +86,7 @@ public class AvatAPIController extends ApiController{
 	
 	@Override public void nextValidId(int orderId) {
 		super.nextValidId(orderId);
+		System.out.println("Next order Id = " + orderId);
 	}
 	
 	@Override public void error(Exception e) {

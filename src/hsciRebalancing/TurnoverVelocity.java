@@ -36,18 +36,24 @@ public class TurnoverVelocity {
 //			monthList.add(sdf.parse("2016-10-01"));
 //			monthList.add(sdf.parse("2016-11-01"));
 //			monthList.add(sdf.parse("2016-12-01"));
-			monthList.add(sdf.parse("2017-01-01"));
-			monthList.add(sdf.parse("2017-02-01"));
-			monthList.add(sdf.parse("2017-03-01"));
-			monthList.add(sdf.parse("2017-04-01"));
-			monthList.add(sdf.parse("2017-05-01"));
-			monthList.add(sdf.parse("2017-06-01"));
+//			monthList.add(sdf.parse("2017-01-01"));
+//			monthList.add(sdf.parse("2017-02-01"));
+//			monthList.add(sdf.parse("2017-03-01"));
+//			monthList.add(sdf.parse("2017-04-01"));
+//			monthList.add(sdf.parse("2017-05-01"));
+//			monthList.add(sdf.parse("2017-06-01"));
 			monthList.add(sdf.parse("2017-07-01"));
 			monthList.add(sdf.parse("2017-08-01"));
 			monthList.add(sdf.parse("2017-09-01"));
 			monthList.add(sdf.parse("2017-10-01"));
 			monthList.add(sdf.parse("2017-11-01"));
 			monthList.add(sdf.parse("2017-12-01"));
+			monthList.add(sdf.parse("2018-01-01"));
+			monthList.add(sdf.parse("2018-02-01"));
+			monthList.add(sdf.parse("2018-03-01"));
+			monthList.add(sdf.parse("2018-04-01"));
+//			monthList.add(sdf.parse("2018-05-01"));
+//			monthList.add(sdf.parse("2018-06-01"));
 			for(int i = 1; i <= -11; i++) {   // no use now
 				String m = "";
 				if( i <= 9) {
@@ -60,7 +66,7 @@ public class TurnoverVelocity {
 				monthList.add(sdf.parse(dStr));
 			}
 			
-			String outputPath = "Z:\\Mubing\\HSCI Methodology\\201712 rebal\\stocks monthly volume median 201712.csv";
+			String outputPath = "Z:\\Mubing\\HSCI Methodology\\201806 rebal\\stocks monthly volume median 201806.csv";
 			getVolumeMedian(stockList, monthList,outputPath);
 			
 			

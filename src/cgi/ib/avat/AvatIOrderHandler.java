@@ -41,14 +41,14 @@ public class AvatIOrderHandler implements IOrderHandler,Serializable {
 	// call backs...
 	@Override
 	public void orderState(OrderState orderState) {
-		logger.trace("[MyIOrderHandler - orderState - " + this.contract.symbol() + "] " + orderState.getStatus() );
+		logger.trace("[AvatIOrderHandler - orderState - " + this.contract.symbol() + "] " + orderState.getStatus() );
 		
 	}
 
 	@Override
 	public void orderStatus(OrderStatus status, double filled, double remaining, double avgFillPrice, long permId,
 			int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
-		logger.info("[MyIOrderHandler - orderStatus - " + this.contract.symbol() + "] " + status.toString());
+		logger.info("[AvatIOrderHandler - orderStatus - " + this.contract.symbol() + "] " + status.toString());
 		if(isTransmit && (status.equals(OrderStatus.Submitted) || status.equals(OrderStatus.PreSubmitted))) {
 			isSubmitted = 1;
 			//logger.info("         Confirm submitted! - isTransmit=True");
@@ -63,7 +63,7 @@ public class AvatIOrderHandler implements IOrderHandler,Serializable {
 
 	@Override
 	public void handle(int errorCode, String errorMsg) {
-		logger.info("[MyIOrderHandler - handle - " + this.contract.symbol() + "] errCode=" + errorCode + " errMsg=" + errorMsg);
+		logger.info("[AvatIOrderHandler - handle - " + this.contract.symbol() + "] errCode=" + errorCode + " errMsg=" + errorMsg);
 		this.errorCode = errorCode;
 		
 		if(errorCode == 461) {  
@@ -74,7 +74,7 @@ public class AvatIOrderHandler implements IOrderHandler,Serializable {
 			 */
 			String[] lineArr = errorMsg.split(" ");
 			newLostSize = Double.parseDouble(lineArr[lineArr.length - 1]);
-			logger.trace("[MyIOrderHandler - handle] new lot size = " + newLostSize);
+			logger.trace("[AvatIOrderHandler - handle] new lot size = " + newLostSize);
 		}
 	}
 

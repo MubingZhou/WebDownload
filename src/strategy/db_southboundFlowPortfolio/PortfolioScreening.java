@@ -45,7 +45,10 @@ public class PortfolioScreening {
 	public static Map<String, Map<Date,ArrayList<Double>>> osDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {outstanding shares, outstanding value}
 	public static Map<String, Map<Date,ArrayList<Double>>> SbChgPercentileDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {percentile wrt all hist data, percentile wrt to 250-day data, percentile wrt to 60-day data}
 	public static Map<String, ArrayList<Object>> osDataMap2 = new HashMap<String, ArrayList<Object>>();  // String - stock, ArrayList<Object> - 三个元素，一个是ArrayList<Date>，一个是ArrayList<Double>，一个是ArrayList<Double>，第一个是股本有变化的日期，第二个是当日的股本，第三个当日的市值
-	public static String outstandingFilePath = "D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
+	public static String outstandingFilePath = 
+			utils.Utils.addBackSlashToPath(
+					utils.PathConifiguration.HK_STOCK_OUTSTANDING_DATA);
+			//"D:\\stock data\\HK CCASS - WEBB SITE\\outstanding\\";
 	//public static Map<String, Map<Date,ArrayList<Double>>> priceDataMap = new HashMap<String, Map<Date,ArrayList<Double>>>();  // String - stock code, Date - date, ArrayList<Double> - {unadjusted price, adjusted price}
 	//public static String priceFilePath = "Z:\\Mubing\\stock data\\stock hist data - webb\\";
 	public static Map<Date, Map<String, Double>> notionalChgData = new HashMap<Date, Map<String, Double>>();	// 每一天，所有港股通股票相对于前一天的flow的notional chg（

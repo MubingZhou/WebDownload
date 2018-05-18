@@ -1533,7 +1533,7 @@ public class BacktestFrame {
 				
 				//String 
 				Date endDate2 = utils.Utils.getRefDate(new Date(), allTradingDate_date, -1);  // 上一个交易日
-				//Date endDate2 = sdf_yyyyMMdd.parse("20180329");
+				//Date endDate2 = sdf_yyyyMMdd.parse("20180508");
 				endDate2 = utils.Utils.getMostRecentDate(endDate2, allTradingDate_date);
 				int endInd2 = allTradingDate_date.indexOf(endDate2);
 				

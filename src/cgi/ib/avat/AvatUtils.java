@@ -583,207 +583,199 @@ public class AvatUtils {
 	 * @param dateFormat
 	 * @return
 	 */
-	public static boolean preparePrevCrossSectionalAvat2(ArrayList<Contract> conArr, String lastDateStr /*exclusive*/, String dateFormat) {
-		boolean isOK = true;
-		try {
-			int numOfTradingDays = 20;
-			avatHistPath = AVAT_ROOT_PATH + "avat para\\" + todayDate + "\\" ;  // 存放avat历史数据的文件夹
-			
-			// 先判断哪些已经完成了
-			ArrayList<String> alreadyExists = new ArrayList<String> (); 
-			File fileList = new File(avatHistPath);
-			if(!fileList.exists())
-				fileList.mkdirs();
-			else {
-				String[] files = fileList.list();
-				for(int i = 0; i < files.length; i++) {
-					String file = files[i];
-					String suffix = file.length() >= 4? file.substring(file.length()-4, file.length()):"";
-					if(suffix.equals(".csv")) {
-						alreadyExists.add(file.substring(0,file.length() - 4));
-					}
+	public static void preparePrevCrossSectionalAvat2(ArrayList<Contract> conArr, String lastDateStr /*exclusive*/, String dateFormat)  throws Exception{
+		int numOfTradingDays = 20;
+		avatHistPath = AVAT_ROOT_PATH + "avat para\\" + todayDate + "\\" ;  // 存放avat历史数据的文件夹
+		
+		// 先判断哪些已经完成了
+		ArrayList<String> alreadyExists = new ArrayList<String> (); 
+		File fileList = new File(avatHistPath);
+		if(!fileList.exists())
+			fileList.mkdirs();
+		else {
+			String[] files = fileList.list();
+			for(int i = 0; i < files.length; i++) {
+				String file = files[i];
+				String suffix = file.length() >= 4? file.substring(file.length()-4, file.length()):"";
+				if(suffix.equals(".csv")) {
+					alreadyExists.add(file.substring(0,file.length() - 4));
 				}
 			}
-			
-			logger.trace("read auction data");
-			// ------------ read auction data ------------ 
-			if(auctionData == null || auctionData.size() == 0)
-				getAuctionData();
-			
-			// --------- initializing varaibles ----------
-			// 从9:30 - 15:59共330分钟
-			ArrayList<Date> timePath = getTimePath();
-			int numOfMins = 330;
-			LinkedHashMap<String, LinkedHashMap<Date, Double>> cumHistAvat20D_byStock = new LinkedHashMap<String, LinkedHashMap<Date, Double>>();
-			LinkedHashMap<String, LinkedHashMap<Date, Double>> cumHistAvat5D_byStock = new LinkedHashMap<String, LinkedHashMap<Date, Double>>();
-						
-			logger.trace("read 1min bar data");
-			// ------------  read 1min bar data ------------  (还没考虑auction data) 
-			String _1minBarRootPath = AVAT_ROOT_PATH + "\\historical 1min data\\";
-			
-			SimpleDateFormat sdf_temp = new SimpleDateFormat(dateFormat);
-			Date lastDate = sdf_temp.parse(lastDateStr);
-			
-			ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingCal(allTrdingDatePath);
-			ArrayList<Date> allTradingDate = new ArrayList<Date> ();
-			Calendar lastDateCal = (Calendar) allTradingCal .get(0).clone();
-			lastDateCal.setTime((Date) lastDate.clone()); 
-			Calendar recentCal = utils.Utils.getMostRecentDate(lastDateCal, allTradingCal);
-			
-			int lastDateInd = allTradingCal.indexOf(recentCal);
-			lastDateInd = lastDateInd - 1;
-			//lastDate = (Date) recentCal .getTime().clone();
-			
-			for(int i = 0; i < conArr.size(); i++) {
-				String stock = conArr.get(i).symbol();
-				//String _1minBarPath = _1minBarRootPath + stock + ".csv";
-				//logger.info("[Prepare avat]  stock=" + stock);
-				if(alreadyExists.indexOf(stock) > -1) // 对于已经存在的股票就不用再进行处理
-					continue;
-	
-				LinkedHashMap<Date, Double> thisStockCumAvat20D = new LinkedHashMap<Date, Double>();
-				LinkedHashMap<Date, Double> thisStockCumAvat5D = new LinkedHashMap<Date, Double>();
-				LinkedHashMap<Date, Double> thisStockAuctionData = auctionData.get(stock);
-				
-				for(int j = 0; j < numOfTradingDays; j++) {
-					//logger.info("   [prepare avat] j=" + j);
-					Calendar thisTrdCal = allTradingCal.get(lastDateInd - j);
-					String thisTrdDateStr = sdf2.format(thisTrdCal.getTime());
-					
-					//logger.trace("stock=" + stock + " " + thisTrdDateStr);
-					
-					String _1minBarPath = _1minBarRootPath + thisTrdDateStr + "\\" + stock + ".csv";
-					
-					boolean isFileExist = true;
-					File file = new File(_1minBarPath);
-					if(!file.exists()) {
-						isFileExist = false;
-					}
-					
-					BufferedReader bf_ha = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "\\test-not_delete_it.csv");  //为了处理历史数据不存在的情况，这个文件里面可以什么也没有
-					if(isFileExist) {
-						bf_ha.close();
-						bf_ha = utils.Utils.readFile_returnBufferedReader(_1minBarPath);
-					}
-					
-					String line = "";
-					int timePathInd = 0;
-					Double todayAvat = thisStockAuctionData.get(sdf2.parse(thisTrdDateStr));
-					int temp_count = 0;
-					boolean isReadEnd = false;
-					line = bf_ha.readLine();
-					if(line == null) {
-						isReadEnd = true;
-						isFileExist = false;  // 这种情况是文件存在，但是里面没有内容，当做不存在
-					}
-					while((isFileExist && !isReadEnd)||
-							(!isFileExist)) {
-						temp_count++;
-						//logger.info("             [prepare avat] line=" + temp_count + " content=" + line);
-						if(timePathInd == timePath.size())  // 不需要15：59之后的数据
-							break;
-
-						Date readTime1 = new Date();
-						Double thisTimeVol = null;
-						if(isFileExist) {
-							String[] lineArr = line.split(",");
-							
-							thisTimeVol = Double.parseDouble(lineArr[5]);
-							if(thisTimeVol == null)
-								thisTimeVol = 0.0;
-							//todayAvat += vol;
-							
-							SimpleDateFormat sdf_temp2 =  new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss"); 
-							Date readTime0 = sdf_temp2.parse(lineArr[0]);
-							String readTime1Str = sdf3.format(readTime0); // change to hh:MM:ss
-							readTime1 = sdf3.parse(readTime1Str);
-						}
-						String timePath1Str = sdf3.format(timePath.get(timePathInd)); // change to hh:MM:ss
-						Date timePath1 = sdf3.parse(timePath1Str);
-						if(!isFileExist) {
-							readTime1 = (Date) timePath1.clone();
-							thisTimeVol = 0.0;
-						}
-						
-						while(!timePath1.after(readTime1)){ // timePath1要去追 readTime1
-							if(timePath1.equals(readTime1)) {
-								if(todayAvat == null)
-									System.out.println("stock=" + stock + " todayAvat null - date=" + thisTrdDateStr);
-								if(thisTimeVol == null)
-									System.out.println("stock=" + stock + " thisTimeVol null - date=" + thisTrdDateStr);
-								todayAvat += thisTimeVol;
-							}
-							
-							Date timePath0 = timePath.get(timePathInd);
-							logger.trace("readTime=" + sdf.format(readTime1) + " timePath1=" + sdf.format(timePath1) + " timePathInd=" + timePathInd);
-							
-							Double todayAvat20D = todayAvat.doubleValue();
-							Double todayAvat5D = todayAvat.doubleValue();
-							
-							Double avat20D_prevDay = 0.0;	// 上一天的值，比如现在是9：34，则这个值存储了昨天9：34的累计的avat
-							avat20D_prevDay = thisStockCumAvat20D.get(timePath.get(timePathInd));
-							if(avat20D_prevDay == null)
-								avat20D_prevDay = 0.0;
-							
-							Double todayCumAvat20D = todayAvat20D + avat20D_prevDay;
-							
-							thisStockCumAvat20D.put(timePath0, todayCumAvat20D);
-							logger.trace(" todayAvat20D=" + todayAvat20D + " vol20D_prevDay=" + avat20D_prevDay + " todayCumAvat20D=" + todayCumAvat20D);
-							
-							// update 5D data
-							if(j <= 4) {
-								Double vol5D_prevDay = 0.0;	// 上一天的值，比如现在是9：34，则这个值存储了昨天9：34的累计的avat
-								vol5D_prevDay = thisStockCumAvat5D.get(timePath.get(timePathInd));
-								if(vol5D_prevDay == null)
-									vol5D_prevDay = 0.0;
-								
-								Double todayCumAvat5D = todayAvat5D + vol5D_prevDay;
-								
-								thisStockCumAvat5D.put(timePath0, todayCumAvat5D);
-								//logger.trace(" todayAvat5D=" + todayAvat5D + " vol5D_prevDay=" + vol5D_prevDay + " todayCumAvat5D=" + todayCumAvat5D);
-								
-							}
-							timePathInd++;
-							
-							if(timePathInd == timePath.size())  // 不需要15：59之后的数据
-								break;
-							
-							timePath1Str = sdf3.format(timePath.get(timePathInd)); // change to hh:MM:ss
-							timePath1 = sdf3.parse(timePath1Str);
-						
-						} // timePath1要去追 readTime1
-						
-						line = bf_ha.readLine();
-						if(line == null) isReadEnd = true;
-					} // end of while
-					bf_ha.close();
-					
-				} // end of for - 每天循环
-				cumHistAvat20D_byStock.put(stock, thisStockCumAvat20D);
-				
-				// ----------- output ---------------
-				logger.trace("--- outoput data, stock=" + stock + " thisStockCumAvat5D.size=" + thisStockCumAvat5D.size() + " thisStockCumAvat20D.size=" + thisStockCumAvat20D.size());
-				
-				String avatPath = avatHistPath + stock + ".csv";  // 虽然路径是以今日命名的，但是包含的历史数据不含今日的数据
-				FileWriter fw = new FileWriter (avatPath);
-				for(int j = 0; j < timePath.size(); j++) {
-					String timeS = sdf.format(timePath.get(j));
-					fw.write(timeS + "," 
-							+ String.valueOf(thisStockCumAvat5D.get(timePath.get(j)) / 5.0) + ","
-							+ String.valueOf(thisStockCumAvat20D.get(timePath.get(j)) / 20.0) + "\n");
-				}
-				fw.close();
-				
-				
-				//Thread.sleep(1000 * 100000);
-			} // 每只股票循环
-			
-		}catch(Exception e) {
-			e.printStackTrace();
-			isOK = false;
 		}
 		
-		return isOK;
+		logger.trace("read auction data");
+		// ------------ read auction data ------------ 
+		if(auctionData == null || auctionData.size() == 0)
+			getAuctionData();
+		
+		// --------- initializing varaibles ----------
+		// 从9:30 - 15:59共330分钟
+		ArrayList<Date> timePath = getTimePath();
+		int numOfMins = 330;
+		LinkedHashMap<String, LinkedHashMap<Date, Double>> cumHistAvat20D_byStock = new LinkedHashMap<String, LinkedHashMap<Date, Double>>();
+		LinkedHashMap<String, LinkedHashMap<Date, Double>> cumHistAvat5D_byStock = new LinkedHashMap<String, LinkedHashMap<Date, Double>>();
+					
+		logger.trace("read 1min bar data");
+		// ------------  read 1min bar data ------------  (还没考虑auction data) 
+		String _1minBarRootPath = AVAT_ROOT_PATH + "\\historical 1min data\\";
+		
+		SimpleDateFormat sdf_temp = new SimpleDateFormat(dateFormat);
+		Date lastDate = sdf_temp.parse(lastDateStr);
+		
+		ArrayList<Calendar> allTradingCal = utils.Utils.getAllTradingCal(allTrdingDatePath);
+		ArrayList<Date> allTradingDate = new ArrayList<Date> ();
+		Calendar lastDateCal = (Calendar) allTradingCal .get(0).clone();
+		lastDateCal.setTime((Date) lastDate.clone()); 
+		Calendar recentCal = utils.Utils.getMostRecentDate(lastDateCal, allTradingCal);
+		
+		int lastDateInd = allTradingCal.indexOf(recentCal);
+		lastDateInd = lastDateInd - 1;
+		//lastDate = (Date) recentCal .getTime().clone();
+		
+		for(int i = 0; i < conArr.size(); i++) {
+			String stock = conArr.get(i).symbol();
+			//String _1minBarPath = _1minBarRootPath + stock + ".csv";
+			//logger.info("[Prepare avat]  stock=" + stock);
+			if(alreadyExists.indexOf(stock) > -1) // 对于已经存在的股票就不用再进行处理
+				continue;
+
+			LinkedHashMap<Date, Double> thisStockCumAvat20D = new LinkedHashMap<Date, Double>();
+			LinkedHashMap<Date, Double> thisStockCumAvat5D = new LinkedHashMap<Date, Double>();
+			LinkedHashMap<Date, Double> thisStockAuctionData = auctionData.get(stock);
+			
+			for(int j = 0; j < numOfTradingDays; j++) {
+				//logger.info("   [prepare avat] j=" + j);
+				Calendar thisTrdCal = allTradingCal.get(lastDateInd - j);
+				String thisTrdDateStr = sdf2.format(thisTrdCal.getTime());
+				
+				//logger.trace("stock=" + stock + " " + thisTrdDateStr);
+				
+				String _1minBarPath = _1minBarRootPath + thisTrdDateStr + "\\" + stock + ".csv";
+				
+				boolean isFileExist = true;
+				File file = new File(_1minBarPath);
+				if(!file.exists()) {
+					isFileExist = false;
+				}
+				
+				BufferedReader bf_ha = utils.Utils.readFile_returnBufferedReader(AVAT_ROOT_PATH + "\\test-not_delete_it.csv");  //为了处理历史数据不存在的情况，这个文件里面可以什么也没有
+				if(isFileExist) {
+					bf_ha.close();
+					bf_ha = utils.Utils.readFile_returnBufferedReader(_1minBarPath);
+				}
+				
+				String line = "";
+				int timePathInd = 0;
+				Double todayAvat = thisStockAuctionData.get(sdf2.parse(thisTrdDateStr));
+				int temp_count = 0;
+				boolean isReadEnd = false;
+				line = bf_ha.readLine();
+				if(line == null) {
+					isReadEnd = true;
+					isFileExist = false;  // 这种情况是文件存在，但是里面没有内容，当做不存在
+				}
+				while((isFileExist && !isReadEnd)||
+						(!isFileExist)) {
+					temp_count++;
+					//logger.info("             [prepare avat] line=" + temp_count + " content=" + line);
+					if(timePathInd == timePath.size())  // 不需要15：59之后的数据
+						break;
+
+					Date readTime1 = new Date();
+					Double thisTimeVol = null;
+					if(isFileExist) {
+						String[] lineArr = line.split(",");
+						
+						thisTimeVol = Double.parseDouble(lineArr[5]);
+						if(thisTimeVol == null)
+							thisTimeVol = 0.0;
+						//todayAvat += vol;
+						
+						SimpleDateFormat sdf_temp2 =  new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss"); 
+						Date readTime0 = sdf_temp2.parse(lineArr[0]);
+						String readTime1Str = sdf3.format(readTime0); // change to hh:MM:ss
+						readTime1 = sdf3.parse(readTime1Str);
+					}
+					String timePath1Str = sdf3.format(timePath.get(timePathInd)); // change to hh:MM:ss
+					Date timePath1 = sdf3.parse(timePath1Str);
+					if(!isFileExist) {
+						readTime1 = (Date) timePath1.clone();
+						thisTimeVol = 0.0;
+					}
+					
+					while(!timePath1.after(readTime1)){ // timePath1要去追 readTime1
+						if(timePath1.equals(readTime1)) {
+							if(todayAvat == null)
+								System.out.println("stock=" + stock + " todayAvat null - date=" + thisTrdDateStr);
+							if(thisTimeVol == null)
+								System.out.println("stock=" + stock + " thisTimeVol null - date=" + thisTrdDateStr);
+							todayAvat += thisTimeVol;
+						}
+						
+						Date timePath0 = timePath.get(timePathInd);
+						logger.trace("readTime=" + sdf.format(readTime1) + " timePath1=" + sdf.format(timePath1) + " timePathInd=" + timePathInd);
+						
+						Double todayAvat20D = todayAvat.doubleValue();
+						Double todayAvat5D = todayAvat.doubleValue();
+						
+						Double avat20D_prevDay = 0.0;	// 上一天的值，比如现在是9：34，则这个值存储了昨天9：34的累计的avat
+						avat20D_prevDay = thisStockCumAvat20D.get(timePath.get(timePathInd));
+						if(avat20D_prevDay == null)
+							avat20D_prevDay = 0.0;
+						
+						Double todayCumAvat20D = todayAvat20D + avat20D_prevDay;
+						
+						thisStockCumAvat20D.put(timePath0, todayCumAvat20D);
+						logger.trace(" todayAvat20D=" + todayAvat20D + " vol20D_prevDay=" + avat20D_prevDay + " todayCumAvat20D=" + todayCumAvat20D);
+						
+						// update 5D data
+						if(j <= 4) {
+							Double vol5D_prevDay = 0.0;	// 上一天的值，比如现在是9：34，则这个值存储了昨天9：34的累计的avat
+							vol5D_prevDay = thisStockCumAvat5D.get(timePath.get(timePathInd));
+							if(vol5D_prevDay == null)
+								vol5D_prevDay = 0.0;
+							
+							Double todayCumAvat5D = todayAvat5D + vol5D_prevDay;
+							
+							thisStockCumAvat5D.put(timePath0, todayCumAvat5D);
+							//logger.trace(" todayAvat5D=" + todayAvat5D + " vol5D_prevDay=" + vol5D_prevDay + " todayCumAvat5D=" + todayCumAvat5D);
+							
+						}
+						timePathInd++;
+						
+						if(timePathInd == timePath.size())  // 不需要15：59之后的数据
+							break;
+						
+						timePath1Str = sdf3.format(timePath.get(timePathInd)); // change to hh:MM:ss
+						timePath1 = sdf3.parse(timePath1Str);
+					
+					} // timePath1要去追 readTime1
+					
+					line = bf_ha.readLine();
+					if(line == null) isReadEnd = true;
+				} // end of while
+				bf_ha.close();
+				
+			} // end of for - 每天循环
+			cumHistAvat20D_byStock.put(stock, thisStockCumAvat20D);
+			
+			// ----------- output ---------------
+			logger.trace("--- outoput data, stock=" + stock + " thisStockCumAvat5D.size=" + thisStockCumAvat5D.size() + " thisStockCumAvat20D.size=" + thisStockCumAvat20D.size());
+			
+			String avatPath = avatHistPath + stock + ".csv";  // 虽然路径是以今日命名的，但是包含的历史数据不含今日的数据
+			FileWriter fw = new FileWriter (avatPath);
+			for(int j = 0; j < timePath.size(); j++) {
+				String timeS = sdf.format(timePath.get(j));
+				fw.write(timeS + "," 
+						+ String.valueOf(thisStockCumAvat5D.get(timePath.get(j)) / 5.0) + ","
+						+ String.valueOf(thisStockCumAvat20D.get(timePath.get(j)) / 20.0) + "\n");
+			}
+			fw.close();
+			
+			
+			//Thread.sleep(1000 * 100000);
+		} // 每只股票循环
+		
 	}
 	
 	//-------------------------------- historical bar data (1min, 3min, ..., daily, ... ) ------------------------

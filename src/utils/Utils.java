@@ -1,5 +1,6 @@
 package utils;
 
+import java.awt.Toolkit;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -264,6 +265,22 @@ public class Utils {
 			}
 			
 			return data;
+		}
+		
+		public static BufferedReader readFile_returnBufferedReader(String filePath, String code) {
+			// code - file formatting
+			
+			//ArrayList<String> data = new ArrayList<String> ();
+			BufferedReader bufReader = null;
+			
+			try{
+				InputStream input = new FileInputStream(new File(filePath));
+				InputStreamReader inputStreamReader = new InputStreamReader(input, code);
+				bufReader = new BufferedReader(inputStreamReader);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			return bufReader;
 		}
 		
 		public static BufferedReader readFile_returnBufferedReader(String filePath) {
@@ -1140,8 +1157,8 @@ public class Utils {
 	 */
 	public static void convertTDX2AB_Daily(String readFilePath, String writeFilePath, String todayDate) {
 		try {
-			BufferedReader br = readFile_returnBufferedReader(addBackSlashToPath(readFilePath )+ "自选股" + todayDate + ".txt");
-			BufferedReader br2 = readFile_returnBufferedReader(addBackSlashToPath(readFilePath )+ "沪深主要指数" + todayDate + ".txt");
+			BufferedReader br = readFile_returnBufferedReader(addBackSlashToPath(readFilePath )+ "自选股" + todayDate + ".txt", "gbk");
+			BufferedReader br2 = readFile_returnBufferedReader(addBackSlashToPath(readFilePath )+ "沪深主要指数" + todayDate + ".txt", "gbk");
 			
 			// writing files
 			FileWriter fw = new FileWriter(addBackSlashToPath(writeFilePath) + "A Share - Strutured Fund - ETF" + todayDate + ".txt");
@@ -1195,9 +1212,14 @@ public class Utils {
 					List<String> listA = Arrays.asList(txtArr);
 					ArrayList<String> txtArrList = new ArrayList<String>(listA);   // 将String[]转换成ArrayList
 					  
+					System.out.println("Biaotou");
+					for(String str : txtArrList) {
+						System.out.println(str);
+					}
+					
 					for(int i = 0; i < items.size(); i++){
 						itemsIndex.add(txtArrList.indexOf(items.get(i)));   // 得到items中每个item的列号
-						//System.out.println("item = " + items.get(i) + " index = " + itemsIndex.get(i));
+						System.out.println("item = " + items.get(i) + " index = " + itemsIndex.get(i));
 						
 						// 写表头???
 						fw.write(items.get(i) + ",");
@@ -1389,6 +1411,14 @@ public class Utils {
 			}
 		}
 		return output;
+	}
+	
+	public static void beepNTimes(int N) throws Exception{
+		Toolkit toolkit = Toolkit.getDefaultToolkit();
+		for(int i = 0; i < N; i++) {
+			toolkit.beep();
+			Thread.sleep(100);
+		}
 	}
 	
 }
