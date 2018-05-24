@@ -35,7 +35,7 @@ public class Test {
 			String inputPath = "D:\\new_tdx\\T0002\\export";
 			String outputPath = "Z:\\Mubing\\stock data\\A share data\\tdx_data";
 			String todayDate = sdf.format(new Date());
-			//todayDate = "20180511";
+//			todayDate = "20180522";
 			utils.Utils.convertTDX2AB_Daily(inputPath, outputPath, todayDate);
 			
 			

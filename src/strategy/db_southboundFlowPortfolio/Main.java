@@ -1073,7 +1073,7 @@ public class Main {
 			String southboundDateFormat = "yyyy-MM-dd";
 			SimpleDateFormat sdf_2 = new SimpleDateFormat (southboundDateFormat); 
 			String dateStr_2 = sdf_2.format(lastTrdDate);
-			//dateStr_2 = "2018-05-04";
+			//dateStr_2 = "2018-05-17";
 			
 			// ---------- southbound ------------
 			String shPath = southboundDataRootPath + "\\sh";
